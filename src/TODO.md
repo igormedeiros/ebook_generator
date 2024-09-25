@@ -1,11 +1,16 @@
- - criar llm
- - revisar prompts
- - importar pacote que altera arquivos docx
- - definir todas as tarefas com memória
- - definir ferramenta de pesquisa google
- - definir ferramenta wikipedia
- - pesquisa artigos cientificos
- - criar metodo para atualizar o template com os conteudos gerados
- - criar agente que cria a capa
- - colocar delay de 2s antes de chamar o groq
- - cria um agente de revisão de texto fluído
+ - [ok] criar llm
+ - [  ] testar llm
+ - [ok] criar .env
+ - [  ] acertar relatividade de pacotes
+ - [ok] colocar .env no .gitignore
+ - [  ] revisar prompts
+ - [ok] importar pacote que altera arquivos docx
+ - [ok] definir agente com memória
+ - [ok] criar tasks com prompts para cada seção do ebook
+ - [  ] definir ferramenta de pesquisa google
+ - [  ] definir ferramenta wikipedia
+ - [  ] pesquisa artigos cientificos
+ - [  ] criar metodo para atualizar o template com os conteudos gerados
+ - [  ] criar agente que cria a capa
+ - [ok] colocar delay de 2s antes de chamar o groq
+ - [  ] cria um agente de revisão de texto fluído

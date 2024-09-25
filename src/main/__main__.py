@@ -1,16 +1,17 @@
 
 # -----------------------
-# Configurações dos agentes
-# configuração do groq
 # configuração do RAG com supabase
 # configuração do embeddings
 # configuração dos agentes com as tools
+# configuração dos agentes com memória
 # criação da tool RAG
 
 # -----------------------
 # Gera o ebook
 
-from crew import Crew, Process
+import time
+
+from crewai import Crew, Process
 from agents import writer_agent
 from tasks import (
     write_introduction_task,
@@ -24,6 +25,12 @@ from tasks import (
 
 ebook_config_path = 'config/ebook_config.json'
 ebook_template_path = '../templates/ebook_template.docx'
+
+
+
+# Exemplo de uso (pode ser removido ou comentado)
+# response = groq_llm([HumanMessage(content="Olá, como você está?")])
+# print(response.content)
 
 
 # Criando a crew com o agente e a task
@@ -41,9 +48,20 @@ crew = Crew(
     process=Process.sequential  # Execução sequencial das tasks
 )
 
-# Executando o processo com o tema proposto
-result = crew.kickoff(inputs={'topic': 'Autoconhecimento e Inteligência Emocional'})
+# Modificando a execução da crew para incluir um delay entre as tarefas
+for task in crew.tasks:
+    result = crew.kickoff(inputs={'topic': 'Autoconhecimento e Inteligência Emocional'}, task=task)
+    print(f"Resultado da tarefa {task.__name__}:")
+    print(result)
+    print("\nAguardando 2 segundos antes da próxima tarefa...")
+    time.sleep(2)  # Delay de 2 segundos
+
 print(result)
+
+# Removendo a execução anterior, que agora está dentro do loop
+# result = crew.kickoff(inputs={'topic': 'Autoconhecimento e Inteligência Emocional'})
+# print(result)
+
 
 # 1) ler os valores de configuração do ebook
 # 2) gera os capítulos do ebook

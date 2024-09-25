@@ -1,5 +1,6 @@
-from crew import Task
-from agents import writer_agent
+from crewai import Task
+from main.agents import writer_agent
+from main.tools import ReplaceTextInDocxTool as replace_tool
 
 # Task que o agente deve realizar
 write_introduction_task = Task(
@@ -13,7 +14,7 @@ write_introduction_task = Task(
         "de entender e gerenciar emoções e explorar o valor do autoconhecimento."
     ),
     agent=writer_agent,
-    tools=[] # Todo: Adicionar ferramentas de pesquisa em artigos científicos que evidenciam o conceito
+    tools=[replace_tool] # Todo: Adicionar ferramentas de pesquisa em artigos científicos que evidenciam o conceito
     # rag tool que busque histórias inspiradoras que mostram a importância do tema
 )
 s
@@ -30,7 +31,7 @@ task_problema = Task(
         "e à gestão emocional, incluindo exemplos práticos de como essas questões impactam diferentes áreas da vida."
     ),
     agent=writer_agent,
-    tools=[]  # Todo: Adicionar ferramentas de pesquisa sobre números e estatísticas que evidenciam o problema
+    tools=[replace_tool]  # Todo: Adicionar ferramentas de pesquisa sobre números e estatísticas que evidenciam o problema
 )
 
 # Task: Identificação - Conectar o leitor com experiências pessoais
@@ -45,7 +46,7 @@ task_identificacao = Task(
         "essas situações podem ser aplicadas ao desenvolvimento emocional de cada pessoa."
     ),
     agent=writer_agent,
-    tools=[]  # Todo: Adicionar ferramentas RAG de histórias de superação pessoal do Igor que estão relacionadas ao tema
+    tools=[replace_tool]  # Todo: Adicionar ferramentas RAG de histórias de superação pessoal do Igor que estão relacionadas ao tema
 )
 
 # Task: Solução - Apresentar um método prático para os leitores
@@ -61,7 +62,7 @@ task_solucao = Task(
         "no dia a dia, incluindo exemplos que facilitem a compreensão e implementação."
     ),
     agent=writer_agent,
-    tools=[]  # Todo: Adicionar ferramentas de pesquisa sobre métodos eficazes sobre o tema
+    tools=[replace_tool]  # Todo: Adicionar ferramentas de pesquisa sobre métodos eficazes sobre o tema
 )
 
 # Task: Proteção - Alertar sobre comportamentos prejudiciais
@@ -76,7 +77,7 @@ task_protecao = Task(
         "evitar esses comportamentos prejudiciais e manter o foco no desenvolvimento emocional."
     ),
     agent=writer_agent,
-    tools=[]  # Todo: Adicionar ferramentas de pesquisa sobre comportamentos autossabotadores e como evitá-los
+    tools=[replace_tool]  # Todo: Adicionar ferramentas de pesquisa sobre comportamentos autossabotadores e como evitá-los
 )
 
 # Task: Permissão - Oferecer uma permissão psicológica para buscar felicidade
@@ -92,7 +93,7 @@ task_permissao = Task(
         "dando a eles a segurança para perseguirem mudanças positivas em suas vidas."
     ),
     agent=writer_agent,
-    tools=[]  # Todo: Adicionar ferramentas de pesquisa sobre exemplos da permissão psicológica para o desejo do leitor
+    tools=[replace_tool]  # Todo: Adicionar ferramentas de pesquisa sobre exemplos da permissão psicológica para o desejo do leitor
 )
 
 # Task: Potência - Encorajar a ação e celebração das conquistas
@@ -107,5 +108,6 @@ task_potencia = Task(
         "Um texto final motivacional que celebre o progresso dos leitores e os encoraje a continuar aplicando as práticas de "
         "autoconhecimento e inteligência emocional no dia a dia, com linguagem poderosa e energizante."
     ),
-    agent=writer_agent
+    agent=writer_agent,
+    tools=[replace_tool]  # Todo: Adicionar ferramentas de pesquisa sobre técnicas de motivação e celebração de conquistas
 )
