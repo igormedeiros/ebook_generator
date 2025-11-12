@@ -1,246 +1,246 @@
-# PRD – Gerador Automatizado de eBook via Python, LangChain 1.0 e Gemini 2.5
+# PRD – Automated eBook Generator via Python, LangChain 1.0 and Gemini 2.5
 
-**Ebook Generator 1.0 - Plataforma de Automação Editorial com IA**
+**Ebook Generator 1.0 - AI-Powered Editorial Automation Platform**
 
-**Status:** Desenvolvimento Ativo  
-**Última Atualização:** 12 de Novembro de 2025  
-**Versão:** 1.0
-
----
-
-## 1. Objetivo
-
-Construir um sistema automatizado de geração de eBooks, integrando Python, LangChain 1.0, Google Gemini 2.5 Flash (escrita editorial rápida) e Gemini 2.5 Pro (pesquisa profunda/RAG), capaz de criar livros digitais customizados, revisados de forma multiagente, com captação e uso das histórias e opiniões pessoais do autor.
-
-### Objetivos de Negócio
-
-- **Reduzir tempo de produção editorial** em ≥80% comparado com fluxos tradicionais
-- **Alcançar ≥95% de precisão factual** via integração RAG e validação
-- **Garantir 100% de compatibilidade Amazon KDP** para publicação direta
-- **Manter ≥90% de satisfação do usuário** através de revisão e iteração de qualidade
+**Status:** Active Development  
+**Last Updated:** November 12, 2025  
+**Version:** 1.0
 
 ---
 
-## 2. Funcionalidades Principais
+## 1. Objective
 
-### Input Flexível
-- Usuário informa tema, problema, público-alvo ou fornece um arquivo `.md` com especificações obrigatórias:
-  - Número de palavras desejado
-  - Estilo de linguagem (empático, técnico, informal, etc.)
-  - Nome do autor
-  - Público-alvo, tom e complexidade (opcional)
-- O parser adapta o pipeline de geração conforme as especificações do arquivo `.md`
+Build an automated ebook generation system integrating Python, LangChain 1.0, Google Gemini 2.5 Flash (fast editorial writing) and Gemini 2.5 Pro (deep research/RAG), capable of creating customized digital books, reviewed through a multi-agent approach, with ingestion and use of the author's personal stories and opinions.
 
-### Ideia Central & Transformação
-- Agente sintetiza a essência do livro e a promessa ao leitor a partir dos dados fornecidos
+### Business Objectives
 
-### Geração de Título/Subtítulo
-- Agente pesquisa títulos e fórmulas de best-sellers
-- Sugere opções vencedoras para o livro atual
-
-### Estruturação Automática de Capítulos
-- Geração de índice, capítulos e seções adaptados ao contexto e ao input .md
-
-### Pesquisa Automática Gemini 2.5 Pro (RAG)
-- Para cada capítulo, busca insumos externos, dados, referências
-- Armazenados em Supabase e vetorizados para uso via Retriever
-
-### Histórias e Opiniões do Autor (RAG Autoral)
-- Ingestão, vetorização e uso recorrente de histórias pessoais do autor como insumos
-- Incorporação de opiniões autorais — especialmente sobre IA em saúde e temas correlatos
-- Integração na geração dos capítulos, trechos e revisões
-
-### Geração e Revisão Multi-Persona
-- Capítulos criados por agentes que simulam diferentes públicos
-- Loop de revisões (editorial, técnica, empatia, humor, etc.)
-- Baseadas nos estilos e feedback crítico
-
-### Validação de Código
-- Blocos Python do livro são validados por agente específico
-- Ferramentas de execução e teste integradas
-
-### Editoração & Estética
-- Ajuste de headings, links, estilos, template Markdown
-- Inserção automática de capa gerada por IA
-
-### Exportação e Publicação
-- Conversão automática para HTML, DOCX e EPUB
-- Assistência na geração de insumos para publicação KDP
-- Sinopse, autor, título otimizados
+- **Reduce editorial production time** by ≥80% compared to traditional workflows
+- **Achieve ≥95% factual accuracy** via RAG integration and validation
+- **Ensure 100% Amazon KDP compatibility** for direct publication
+- **Maintain ≥90% user satisfaction** through quality review and iteration
 
 ---
 
-## 3. Fluxo Macro
+## 2. Main Functionalities
 
-1. **Input** - Manual ou via arquivo `.md`
-2. **Parsing** - Adaptação das configurações globais
-3. **Ideia Central** - Geração de ideia e transformação prometida
-4. **Pesquisa de Mercado** - Título/subtítulo otimizados
-5. **Estruturação** - Automatizada do livro
-6. **Pesquisa Profunda** - RAG externo + RAG interno (histórias e opiniões autorais)
-7. **Escrita Orientada** - Revisões multi-persona
-8. **Ajustes Finais** - Validação de código e estética
-9. **Geração Visual** - Sumário e capa
-10. **Exportação** - Formatos desejados e preparação para KDP
+### Flexible Input
+- User provides topic, problem, target audience or provides a `.md` file with mandatory specifications:
+  - Desired word count
+  - Language style (empathetic, technical, informal, etc.)
+  - Author name
+  - Target audience, tone and complexity (optional)
+- The parser adapts the generation pipeline according to the specifications in the `.md` file
+
+### Central Idea & Transformation
+- Agent synthesizes the essence of the book and the promise to the reader based on provided data
+
+### Title/Subtitle Generation
+- Agent researches titles and bestseller formulas
+- Suggests winning options for the current book
+
+### Automatic Chapter Structuring
+- Generation of index, chapters and sections adapted to context and input `.md`
+
+### Automatic Research with Gemini 2.5 Pro (RAG)
+- For each chapter, searches external inputs, data, references
+- Stored in Supabase and vectorized for use via Retriever
+
+### Author Stories and Opinions (RAG Autoral)
+- Ingestion, vectorization and recurring use of author's personal stories as inputs
+- Incorporation of author's opinions — especially on AI in healthcare and related topics
+- Integration in chapter generation, excerpts and reviews
+
+### Multi-Persona Generation and Review
+- Chapters created by agents simulating different audiences
+- Review loops (editorial, technical, empathy, humor, etc.)
+- Based on styles and critical feedback
+
+### Code Validation
+- Python code blocks in the book are validated by a specific agent
+- Integrated execution and testing tools
+
+### Editing & Aesthetics
+- Adjustment of headings, links, styles, Markdown template
+- Automatic cover insertion generated by AI
+
+### Export and Publication
+- Automatic conversion to HTML, DOCX and EPUB
+- Assistance in generating inputs for KDP publication
+- Synopsis, author, optimized title
 
 ---
 
-## 4. Arquitetura Técnica
+## 3. Macro Flow
 
-### Stack Tecnológico
+1. **Input** - Manual or via `.md` file
+2. **Parsing** - Adaptation of global configurations
+3. **Central Idea** - Idea generation and promised transformation
+4. **Market Research** - Optimized title/subtitle
+5. **Structuring** - Automated book structure
+6. **Deep Research** - External RAG + internal RAG (author stories and opinions)
+7. **Guided Writing** - Multi-persona reviews
+8. **Final Adjustments** - Code validation and aesthetics
+9. **Visual Generation** - Summary and cover
+10. **Export** - Desired formats and KDP preparation
 
-| Componente | Tecnologia | Versão |
+---
+
+## 4. Technical Architecture
+
+### Technology Stack
+
+| Component | Technology | Version |
 |-----------|-----------|---------|
 | **Backend** | Python | 3.11+ |
-| **Orquestração IA** | LangChain | 1.0+ |
-| **Modelo de Escrita** | Gemini 2.5 Flash | Última |
-| **Modelo de Pesquisa** | Gemini 2.5 Pro | Última |
-| **Armazenamento Vetorial** | Supabase + pgvector | Última |
-| **Exportação** | Pandoc | 3.0+ |
-| **Geração de Capa** | Integração API | - |
+| **AI Orchestration** | LangChain | 1.0+ |
+| **Writing Model** | Gemini 2.5 Flash | Latest |
+| **Research Model** | Gemini 2.5 Pro | Latest |
+| **Vector Storage** | Supabase + pgvector | Latest |
+| **Export** | Pandoc | 3.0+ |
+| **Cover Generation** | API Integration | - |
 
-### Configuração dos Modelos
+### Model Configuration
 
-**Gemini 2.5 Flash (Escrita Rápida)**
-- Temperatura: 0.7 (criatividade balanceada)
+**Gemini 2.5 Flash (Fast Writing)**
+- Temperature: 0.7 (balanced creativity)
 - top_p: 0.95
 - top_k: 40
-- Uso: Escrita de capítulos, revisões, geração de sumário
+- Usage: Chapter writing, reviews, summary generation
 
-**Gemini 2.5 Pro (Pesquisa Profunda)**
-- Temperatura: 0.3 (foco em precisão)
+**Gemini 2.5 Pro (Deep Research)**
+- Temperature: 0.3 (focus on precision)
 - top_p: 0.95
 - top_k: 40
-- Uso: RAG externo, ingestão de histórias/opiniões, validação factual
+- Usage: External RAG, story/opinion ingestion, factual validation
 
 ---
 
-## 5. Componentes Principais
+## 5. Main Components
 
-### Input Parser MD
-- Interpreta especificações do arquivo `.md`
-- Propaga configurações para todo o pipeline
-- Validação de campos obrigatórios
+### MD Input Parser
+- Interprets specifications from `.md` file
+- Propagates configurations throughout the pipeline
+- Validates mandatory fields
 
-### 8 Agentes Principais
-1. **Agent: Ideia Central** - Essência do livro conforme input
-2. **Agent: Título/Subtítulo** - Pesquisa e sugestão de titles vencedores
-3. **Agent: Estruturador** - Template do livro + capítulos/seções
-4. **Agent: Redator** - Capítulos com insumos RAG sintéticos
-5. **Agent: Revisão Múltipla** - Personas de revisão (editorial, técnica, empatia, humor, compliance)
-6. **Agent: Código** - Validação de blocos Python
-7. **Agent: Editor Estético** - Refinamento de estilos e template Markdown
-8. **Agent: Sumário/Capa** - Geração dinâmica com inserção via API
+### 8 Main Agents
+1. **Agent: Central Idea** - Essence of book according to input
+2. **Agent: Title/Subtitle** - Research and suggestion of winning titles
+3. **Agent: Structurer** - Book template + chapters/sections
+4. **Agent: Writer** - Chapters with synthetic RAG inputs
+5. **Agent: Multi-Persona Review** - Review personas (editorial, technical, empathy, humor, compliance)
+6. **Agent: Code** - Python code block validation
+7. **Agent: Style Editor** - Style refinement and Markdown template
+8. **Agent: Summary/Cover** - Dynamic generation with API insertion
 
 ### RAG Pipeline
-- **RAG Externo**: Gemini 2.5 Pro para busca externa
-- **RAG Autoral**: Ingestão de histórias e opiniões do autor
-- **Armazenamento**: Supabase com vetorização via pgvector
-- **Retriever**: LangChain para busca semântica
+- **External RAG**: Gemini 2.5 Pro for external search
+- **Author RAG**: Ingestion of author's stories and opinions
+- **Storage**: Supabase with vectorization via pgvector
+- **Retriever**: LangChain for semantic search
 
-### Personas de Revisão (8)
-1. **Editorial** - Clareza, tom, fluxo
-2. **Técnica** - Qualidade de código, precisão conceitual
-3. **Empatia** - Acessibilidade, conexão emocional
-4. **Engajamento** - Leveza, interesse, humor
+### Review Personas (8)
+1. **Editorial** - Clarity, tone, flow
+2. **Technical** - Code quality, conceptual precision
+3. **Empathy** - Accessibility, emotional connection
+4. **Engagement** - Lightness, interest, humor
 5. **Compliance** - LGPD, HIPAA, KDP
-6. **Author Stories & Didactics** - Equilibra histórias pessoais com pedagogia clara (RAG autoral)
-7. **Author Positioning** - Valida posicionamento de marketing e autoridade (RAG posicionamento)
-8. **Author Vision & Opinions** - Revisa visões e opiniões do autor sobre o tema (RAG visão)
+6. **Author Stories & Didactics** - Balances personal stories with clear pedagogy (Author RAG)
+7. **Author Positioning** - Validates marketing positioning and authority (Positioning RAG)
+8. **Author Vision & Opinions** - Reviews author's views and opinions on the topic (Vision RAG)
 
-### Conversor/Finalizador
-- Exportação nos formatos definidos (HTML, DOCX, EPUB)
-- Revisão de integridade de arquivos e assets
-- Preparação para KDP
+### Converter/Finalizer
+- Export in defined formats (HTML, DOCX, EPUB)
+- File and asset integrity review
+- Preparation for KDP
 
-### Agent: Publicação
-- Compilação de metadados
-- Geração de sinopse e ficha catalográfica
-- Preparação de arquivos finais para KDP
-
----
-
-## 6. Requisitos Especiais
-
-- **Separação clara** entre insumos externos (Gemini Pro), internos autorais (histórias e opiniões), e revisão multi-agentes
-- **Rastreabilidade total** de todas as fontes e insumos no documento final
-- **Personalização radical** garantindo que conteúdo do autor se mescle com resultado editorial universal
-- **Adaptações futuras** estruturadas para novos tipos de input, assets e canais de pesquisa
+### Publication Agent
+- Metadata compilation
+- Synopsis and catalog sheet generation
+- Preparation of final files for KDP
 
 ---
 
-## 7. Métricas de Sucesso
+## 6. Special Requirements
 
-### Velocidade
-- **Tempo de Execução**: 2-5 minutos para pipeline completo
-- **Redução Relativa**: ≥80% vs fluxo manual (5 min vs 2-3 horas)
+- **Clear separation** between external inputs (Gemini Pro), author-owned internal inputs (stories and opinions), and multi-agent review
+- **Full traceability** of all sources and inputs in final document
+- **Radical personalization** ensuring author content merges with universal editorial result
+- **Structured future adaptations** for new input types, assets and research channels
 
-### Qualidade
-- **Precisão Factual**: ≥95% via RAG + validação
-- **Compatibilidade KDP**: 100% (zero rejeições)
-- **Formatação**: 100% compliant
-- **Satisfação do Usuário**: ≥90%
+---
 
-### Técnicas
-- **Disponibilidade API**: ≥99.5% uptime
-- **Taxa de Erro**: <1% execuções falhadas
-- **Eficiência de Tokens**: Otimizado por ebook
-- **Latência p95**: <5 minutos
+## 7. Success Metrics
+
+### Speed
+- **Execution Time**: 2-5 minutes for complete pipeline
+- **Relative Reduction**: ≥80% vs manual flow (5 min vs 2-3 hours)
+
+### Quality
+- **Factual Accuracy**: ≥95% via RAG + validation
+- **KDP Compatibility**: 100% (zero rejections)
+- **Formatting**: 100% compliant
+- **User Satisfaction**: ≥90%
+
+### Technical
+- **API Availability**: ≥99.5% uptime
+- **Error Rate**: <1% failed executions
+- **Token Efficiency**: Optimized per ebook
+- **p95 Latency**: <5 minutes
 
 ---
 
 ## 8. Roadmap
 
-### Q4 2024 (Agora)
-- ✅ Pipeline de 8 estágios
-- ✅ 5 personas especializadas de revisão
-- ✅ Integração LangChain 1.0+
-- ✅ Documentação de padrões de código
+### Q4 2024 (Now)
+- ✅ 8-stage pipeline
+- ✅ 5 specialized review personas
+- ✅ LangChain 1.0+ integration
+- ✅ Code standards documentation
 
 ### Q1 2025
-- ⏳ Implementação RAG Supabase pgvector
-- ⏳ Geração de agentes leitores virtuais
-- ⏳ Suite de testes e CI/CD
-- ⏳ Otimização de performance
+- ⏳ Supabase pgvector RAG implementation
+- ⏳ Virtual reader agent generation
+- ⏳ Testing suite and CI/CD
+- ⏳ Performance optimization
 
 ### Q2 2025
-- ⏳ Desenvolvimento REST API
-- ⏳ Dashboard Web UI
-- ⏳ Processamento em lote
-- ⏳ Módulo de analytics
+- ⏳ REST API development
+- ⏳ Web UI dashboard
+- ⏳ Batch processing
+- ⏳ Analytics module
 
 ### Q3 2025
-- ⏳ Suporte multi-idioma
-- ⏳ Templates de agente customizável
-- ⏳ Features de compliance avançado
-- ⏳ Licensing enterprise
+- ⏳ Multi-language support
+- ⏳ Customizable agent templates
+- ⏳ Advanced compliance features
+- ⏳ Enterprise licensing
 
 ---
 
-## 9. Conformidade e Segurança
+## 9. Compliance and Security
 
-### LGPD (Lei Geral de Proteção de Dados)
-- Validação de privacidade de dados pessoais
-- Mecanismos de consentimento
-- Políticas de retenção de dados
+### LGPD (General Data Protection Law)
+- Personal data privacy validation
+- Consent mechanisms
+- Data retention policies
 
-### HIPAA (Regulações de Saúde)
-- Requisitos de disclaimer para conteúdo médico
-- Padrões de proteção de dados de saúde
-- Revisão qualificada quando aplicável
+### HIPAA (Healthcare Regulations)
+- Medical content disclaimer requirements
+- Healthcare data protection standards
+- Qualified review when applicable
 
 ### Amazon KDP
-- Compatibilidade de formato (EPUB, DOCX, PDF)
-- Requisitos de metadata
-- Conformidade com política de conteúdo
-- Suporte a integração ISBN
+- Format compatibility (EPUB, DOCX, PDF)
+- Metadata requirements
+- Content policy compliance
+- ISBN integration support
 
 ---
 
-**Versão do Documento**: 1.0  
-**Última Atualização**: 12 de Novembro de 2025  
-**Proprietário**: Igor Medeiros  
-**Status**: Ativo
+**Document Version**: 1.0  
+**Last Updated**: November 12, 2025  
+**Owner**: Igor Medeiros  
+**Status**: Active
 
 ---
 

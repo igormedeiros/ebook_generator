@@ -1,162 +1,162 @@
-# Arquitetura Técnica – Gerador Automatizado de eBook
+# Technical Architecture – Automated eBook Generator
 
-**Ebook Generator 1.0 - Especificação Técnica da Arquitetura**
+**Ebook Generator 1.0 - Technical Architecture Specification**
 
-**Versão**: 1.0  
-**Última Atualização**: 12 de Novembro de 2025  
+**Version**: 1.0  
+**Last Updated**: November 12, 2025  
 
 ---
 
-## 1. Stack e Integrações
+## 1. Stack and Integrations
 
 ### Backend
-- **Linguagem**: Python 3.11+
-- **Orquestração IA**: LangChain 1.0+
-- **Modelos IA**: 
-  - Gemini 2.5 Flash (escrita rápida, temperatura 0.7)
-  - Gemini 2.5 Pro (pesquisa profunda/RAG, temperatura 0.3)
+- **Language**: Python 3.11+
+- **AI Orchestration**: LangChain 1.0+
+- **AI Models**: 
+  - Gemini 2.5 Flash (fast writing, temperature 0.7)
+  - Gemini 2.5 Pro (deep research/RAG, temperature 0.3)
 
-### Armazenamento e Vetorização
-- **Banco de Dados**: Supabase
-- **Vetorização**: pgvector extension
+### Storage and Vectorization
+- **Database**: Supabase
+- **Vectorization**: pgvector extension
 - **Retriever**: LangChain Retriever
 
-### Conversão e Exportação
+### Conversion and Export
 - **Markdown → HTML/DOCX/EPUB**: Pandoc 3.0+
-- **Geração de Capa**: Integração API (Banana ou similar)
-- **Publicação**: Assistente para KDP (Kindle Direct Publishing)
+- **Cover Generation**: API Integration (Banana or similar)
+- **Publication**: Assistant for KDP (Kindle Direct Publishing)
 
 ---
 
-## 2. Componentes Arquiteturais
+## 2. Architectural Components
 
-### 2.1 Input Parser MD
+### 2.1 MD Input Parser
 ```
-Função: Interpretar e validar arquivo .md com especificações
-Entrada: Arquivo .md com campos obrigatórios
+Function: Interpret and validate .md file with specifications
+Input: .md file with mandatory fields
   - numero_palavras: int
-  - estilo_linguagem: str (empático, técnico, informal)
+  - estilo_linguagem: str (empathetic, technical, informal)
   - nome_autor: str
-  - publico_alvo: str (opcional)
-  - tom: str (opcional)
-  - complexidade: str (opcional)
-Saída: Configurações globais validadas
-Responsabilidade: Propagar configurações para todo o pipeline
+  - publico_alvo: str (optional)
+  - tom: str (optional)
+  - complexidade: str (optional)
+Output: Validated global configurations
+Responsibility: Propagate configurations throughout the pipeline
 ```
 
-### 2.2 Agentes Principais (8)
+### 2.2 Main Agents (8)
 
-#### 1. Agent: Ideia Central
-- **Responsabilidade**: Gerar essência do livro conforme input/parâmetros
-- **Entrada**: Tema, público-alvo, meta de palavras
-- **Saída**: Ideia central, problema, promessa de transformação
-- **Ferramentas**: Busca de conhecimento base, RAG context
+#### 1. Agent: Central Idea
+- **Responsibility**: Generate book essence according to input/parameters
+- **Input**: Topic, target audience, word count goal
+- **Output**: Central idea, problem definition, transformation promise
+- **Tools**: Knowledge base search, RAG context
 
-#### 2. Agent: Título/Subtítulo
-- **Responsabilidade**: Pesquisar best-sellers e sugerir título vencedor
-- **Entrada**: Ideia central, público-alvo
-- **Saída**: 3 opções de título + subtítulo otimizadas para Amazon
-- **Ferramentas**: Pesquisa de mercado, validação SEO
+#### 2. Agent: Title/Subtitle
+- **Responsibility**: Research best-sellers and suggest winning title
+- **Input**: Central idea, target audience
+- **Output**: 3 Amazon-optimized title options
+- **Tools**: Market research, SEO validation
 
-#### 3. Agent: Estruturador
-- **Responsabilidade**: Criar template do livro + capítulos/seções
-- **Entrada**: Ideia central, título, meta de palavras
-- **Saída**: Índice hierarchical com distribuição de palavras
-- **Ferramentas**: Geração de outline, cálculo de palavras
+#### 3. Agent: Structurer
+- **Responsibility**: Create book template + chapters/sections
+- **Input**: Central idea, title, word count goal
+- **Output**: Hierarchical index with word distribution
+- **Tools**: Outline generation, word count calculation
 
-#### 4. Agent: Redator
-- **Responsabilidade**: Escrever capítulos com insumos sintéticos
-- **Entrada**: Outline, ideia central, estilo especificado
-- **Saída**: Capítulos didáticos com exemplos pessoais/autoriais
-- **Ferramentas**: 
-  - RAG externo (Gemini 2.5 Pro)
-  - RAG autoral (histórias e opiniões)
-  - Formatação Markdown
-  - Validação de qualidade
+#### 4. Agent: Writer
+- **Responsibility**: Write chapters with synthetic inputs
+- **Input**: Outline, central idea, specified style
+- **Output**: Didactic chapters with personal/author examples
+- **Tools**: 
+  - External RAG (Gemini 2.5 Pro)
+  - Author RAG (stories and opinions)
+  - Markdown formatting
+  - Quality validation
 
-#### 5. Agent: Revisão Múltipla
-- **Responsabilidade**: Simular personas de revisão especializada (8 personas)
+#### 5. Agent: Multiple Review
+- **Responsibility**: Simulate specialized review personas (8 personas)
 - **Personas**:
-  - Editorial: Clareza, tom, fluxo
-  - Técnica: Qualidade de código, precisão conceitual
-  - Empatia: Acessibilidade, conexão emocional
-  - Humor/Engajamento: Leveza, interesse
+  - Editorial: Clarity, tone, flow
+  - Technical: Code quality, conceptual precision
+  - Empathy: Accessibility, emotional connection
+  - Humor/Engagement: Lightness, interest
   - Compliance: LGPD, HIPAA, KDP
-  - Histórias & Didática: Equilibra narrativas autorais com pedagogia
-  - Posicionamento: Valida autoridade e posicionamento de mercado do autor
-  - Visão & Opiniões: Revisa coerência com visão e opiniões do autor
-- **Entrada**: Capítulos brutos
-- **Saída**: Feedback estruturado por persona (8 perspectivas)
+  - Stories & Didactics: Balances author narratives with pedagogy
+  - Positioning: Validates author authority and market positioning
+  - Vision & Opinions: Reviews author vision and opinions coherence
+- **Input**: Raw chapters
+- **Output**: Structured feedback by persona (8 perspectives)
 - **RAG Integration**:
-  - RAG Histórias do Autor (para avaliação de equilíbrio narrativo)
-  - RAG Posicionamento (para validação de autoridade)
-  - RAG Visão & Opiniões (para coerência filosófica)
-- **Loop**: Crítico de revisão baseado em público-alvo, estilo e identidade do autor
+  - RAG Author Stories (for narrative balance evaluation)
+  - RAG Positioning (for authority validation)
+  - RAG Vision & Opinions (for philosophical coherence)
+- **Loop**: Review cycle critical based on target audience, style and author identity
 
-#### 6. Agent: Código
-- **Responsabilidade**: Validar blocos Python do livro
-- **Entrada**: Blocos de código extraídos dos capítulos
-- **Saída**: Relatório de validação, sugestões de correção
-- **Ferramentas**: Execução de código, linter, formatter
+#### 6. Agent: Code
+- **Responsibility**: Validate Python blocks in the book
+- **Input**: Code blocks extracted from chapters
+- **Output**: Validation report, correction suggestions
+- **Tools**: Code execution, linter, formatter
 
-#### 7. Agent: Editor Estético
-- **Responsabilidade**: Refinar estilos, headings, links, template Markdown
-- **Entrada**: Capítulos revisados
-- **Saída**: Documento com formatação padronizada
-- **Validações**: Hierarchia de headings, consistência, accessibility
+#### 7. Agent: Style Editor
+- **Responsibility**: Refine styles, headings, links, Markdown template
+- **Input**: Reviewed chapters
+- **Output**: Document with standardized formatting
+- **Validations**: Heading hierarchy, consistency, accessibility
 
-#### 8. Agent: Sumário/Capa
-- **Responsabilidade**: Gerar sumário dinâmico e criar capa
-- **Entrada**: Capítulos finais, tema, público-alvo
-- **Saída**: 
-  - Sumário atualizado
-  - Capa gerada via API
-  - Capa inserida no documento
-- **Ferramentas**: Geração de capa, API de design
+#### 8. Agent: Summary/Cover
+- **Responsibility**: Generate dynamic summary and create cover
+- **Input**: Final chapters, theme, target audience
+- **Output**: 
+  - Updated summary
+  - Generated cover via API
+  - Cover inserted in document
+- **Tools**: Cover generation, design API
 
 ---
 
-## 3. RAG Pipeline (Arquitetura)
+## 3. RAG Pipeline (Architecture)
 
-### 3.1 RAG Externo
+### 3.1 External RAG
 ```
-Fluxo: Redator → Gemini 2.5 Pro → Query Supabase → Retriever
-- Gemini 2.5 Pro faz pesquisa profunda para cada capítulo
-- Resultados vetorizados e armazenados em Supabase
-- LangChain Retriever busca top-k documentos relevantes
-- Resultados alimentam contexto da escrita
-```
-
-### 3.2 RAG Autoral - Author Knowledge Integration (Histórias, Posicionamento, Visão)
-```
-Fluxo: Input Autoral → Ingestão → Vetorização → Supabase (3 categorias) → Retriever
-- Ingestão de 3 tipos de conhecimento autoral:
-  1. Histórias Pessoais (narrativas, experiências, memórias do autor)
-  2. Posicionamento de Mercado (autoridade, nicho, diferenciação)
-  3. Visão & Opiniões (valores, filosofia, worldview do autor)
-- Vetorização de cada categoria com metadata de contexto
-- Armazenamento em tabelas separadas em Supabase (rag_author_stories, rag_author_positioning, rag_author_vision)
-- Retriever integrado em:
-  - Redator: Para incorporar narrativas autorais de forma orgânica
-  - Autor Stories Reviewer: Para validar equilíbrio narrativo
-  - Autor Positioning Reviewer: Para validar clareza de posicionamento
-  - Autor Vision Reviewer: Para validar coerência filosófica
-- Garantia de rastreabilidade: Cada insumo RAG autoral é marcado no documento final
+Flow: Writer → Gemini 2.5 Pro → Query Supabase → Retriever
+- Gemini 2.5 Pro performs deep research for each chapter
+- Results vectorized and stored in Supabase
+- LangChain Retriever searches top-k relevant documents
+- Results feed into writing context
 ```
 
-### 3.3 RAG Externo
+### 3.2 RAG Autoral - Author Knowledge Integration (Stories, Positioning, Vision)
 ```
-Fluxo: Input Autoral → Ingestão → Vetorização → Supabase → Retriever
-- Ingestão de histórias pessoais do autor
-- Vetorização de opiniões (especialmente sobre IA em saúde)
-- Armazenamento em tabela separada em Supabase
-- Retriever integrado no Redator para uso recorrente
-- Garantia de rastreabilidade no documento final
+Flow: Author Input → Ingestion → Vectorization → Supabase (3 categories) → Retriever
+- Ingestion of 3 types of author knowledge:
+  1. Personal Stories (narratives, experiences, author memories)
+  2. Market Positioning (authority, niche, differentiation)
+  3. Vision & Opinions (values, philosophy, worldview)
+- Vectorization of each category with context metadata
+- Storage in separate Supabase tables (rag_author_stories, rag_author_positioning, rag_author_vision)
+- Retriever integrated in:
+  - Writer: To incorporate author narratives organically
+  - Author Stories Reviewer: To validate narrative balance
+  - Author Positioning Reviewer: To validate positioning clarity
+  - Author Vision Reviewer: To validate philosophical coherence
+- Traceability guarantee: Each author RAG input is marked in final document
 ```
 
-### 3.4 Configuração Supabase
+### 3.3 External RAG
+```
+Flow: Author Input → Ingestion → Vectorization → Supabase → Retriever
+- Ingestion of author's personal stories
+- Vectorization of opinions (especially on AI in healthcare)
+- Storage in separate Supabase table
+- Retriever integrated in Writer for recurring use
+- Traceability guarantee in final document
+```
+
+### 3.4 Supabase Configuration
 ```sql
--- Tabela: rag_external
+-- Table: rag_external
 CREATE TABLE rag_external (
   id BIGSERIAL PRIMARY KEY,
   content TEXT NOT NULL,
@@ -165,7 +165,7 @@ CREATE TABLE rag_external (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Tabela: rag_author_stories
+-- Table: rag_author_stories
 CREATE TABLE rag_author_stories (
   id BIGSERIAL PRIMARY KEY,
   story TEXT NOT NULL,
@@ -176,7 +176,7 @@ CREATE TABLE rag_author_stories (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Tabela: rag_author_positioning
+-- Table: rag_author_positioning
 CREATE TABLE rag_author_positioning (
   id BIGSERIAL PRIMARY KEY,
   positioning_statement TEXT NOT NULL,
@@ -186,7 +186,7 @@ CREATE TABLE rag_author_positioning (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Tabela: rag_author_vision
+-- Table: rag_author_vision
 CREATE TABLE rag_author_vision (
   id BIGSERIAL PRIMARY KEY,
   vision_or_opinion TEXT NOT NULL,
@@ -197,7 +197,7 @@ CREATE TABLE rag_author_vision (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Índices para busca vetorial
+-- Indexes for vector search
 CREATE INDEX ON rag_external USING ivfflat (embedding vector_cosine_ops);
 CREATE INDEX ON rag_author_stories USING ivfflat (embedding vector_cosine_ops);
 CREATE INDEX ON rag_author_positioning USING ivfflat (embedding vector_cosine_ops);
@@ -206,223 +206,223 @@ CREATE INDEX ON rag_author_vision USING ivfflat (embedding vector_cosine_ops);
 
 ---
 
-## 4. Sequência de Execução (Flowchart)
+## 4. Execution Sequence (Flowchart)
 
 ```
 InputMD 
   ↓
-ParserMD (validação e propagação de config)
+MD Parser (validation and configuration propagation)
   ↓
-IdeiaCentral (essência + promessa)
+Central Idea (essence + promise)
   ↓
-TituloSubtitulo (pesquisa + 3 opções)
+Title Subtitle (research + 3 options)
   ↓
-Estruturador (outline + distribuição de palavras)
+Structurer (outline + word distribution)
   ↓
-Redator (capítulos com RAG)
-  ├→ RAGExterno (Gemini 2.5 Pro)
-  ├→ RAGHistoriasAutorais (histórias pessoais)
-  ├→ RAGOpinioesAutorais (opiniões do autor)
-  └→ Redator (síntese de insumos)
+Writer (chapters with RAG)
+  ├→ External RAG (Gemini 2.5 Pro)
+  ├→ Author Stories RAG (personal stories)
+  ├→ Author Opinions RAG (author opinions)
+  └→ Writer (synthesis of inputs)
   ↓
-RevisaoMultipla (8 personas)
+Multiple Review (8 personas)
   ├→ Editorial
-  ├→ Técnica
-  ├→ Empatia
-  ├→ Engajamento
+  ├→ Technical
+  ├→ Empathy
+  ├→ Engagement
   ├→ Compliance
-  ├→ Histórias & Didática (RAG Histórias)
-  ├→ Posicionamento (RAG Posicionamento)
-  └→ Visão & Opiniões (RAG Visão)
+  ├→ Stories & Didactics (Stories RAG)
+  ├→ Positioning (Positioning RAG)
+  └→ Vision & Opinions (Vision RAG)
   ↓
-CodigoAgente (validação de blocos Python)
+Code Agent (Python code block validation)
   ↓
-EditorEstetico (formatação Markdown)
+Style Editor (Markdown formatting)
   ↓
-SumarioCapa (dinâmico + API design)
+Summary Cover (dynamic + design API)
   ↓
-ConversorFinalizador (export formatos)
+Final Converter (format export)
   ├→ HTML
   ├→ DOCX
   ├→ EPUB
-  └→ JSON (metadados)
+  └→ JSON (metadata)
   ↓
-AgentPublicacao (compilação KDP)
-  ├→ Metadados
-  ├→ Sinopse
-  ├→ Ficha catalográfica
-  └→ Arquivos finais
+Publication Agent (KDP compilation)
+  ├→ Metadata
+  ├→ Synopsis
+  ├→ Catalog sheet
+  └→ Final files
   ↓
-OUTPUT (eBook pronto para KDP)
+OUTPUT (eBook ready for KDP)
 ```
 
 ---
 
-## 5. Papéis dos Modelos Gemini
+## 5. Gemini Model Roles
 
-### Gemini 2.5 Flash (Escrita Rápida)
-- **Temperatura**: 0.7 (criatividade balanceada)
-- **Uso Primário**:
-  - Escrita de capítulos
-  - Revisões (todas as 5 personas)
-  - Geração de sumário
-  - Prompts curtos e rápidos
-- **Características**: Rápido, criativo, balanceado
+### Gemini 2.5 Flash (Fast Writing)
+- **Temperature**: 0.7 (balanced creativity)
+- **Primary Usage**:
+  - Chapter writing
+  - Reviews (all 8 personas)
+  - Summary generation
+  - Short and fast prompts
+- **Characteristics**: Fast, creative, balanced
 
-### Gemini 2.5 Pro (Pesquisa Profunda)
-- **Temperatura**: 0.3 (foco em precisão)
-- **Uso Primário**:
-  - Pesquisas externas (RAG externo)
-  - Ingestão de histórias/opiniões do autor
-  - Vetorização de conteúdo autoral
-  - Validação factual
-- **Características**: Preciso, profundo, contextual
-
----
-
-## 6. Fluxo de Tokens e Otimização
-
-### Estratégia de Minimização de Tokens
-1. **Caching de Queries**: Resultados de RAG cacheados localmente
-2. **Deduplicação**: Mesma query = mesmo resultado armazenado
-3. **Resumos**: Uso de resumos ao invés de conteúdo completo
-4. **Top-k Reduzido**: top_k=3 ao invés de 10 para RAG
-5. **Prompts Otimizados**: Prompts concisos sem informações desnecessárias
-
-### Estimativa de Uso
-- **Por Capítulo**: 500-1000 tokens
-- **Revisão Multi-Persona**: 300-500 tokens
-- **RAG Externo**: 200-400 tokens
-- **Pipeline Completo (10 capítulos)**: 10,000-20,000 tokens
+### Gemini 2.5 Pro (Deep Research)
+- **Temperature**: 0.3 (focus on precision)
+- **Primary Usage**:
+  - External research (External RAG)
+  - Author story/opinion ingestion
+  - Author content vectorization
+  - Factual validation
+- **Characteristics**: Precise, deep, contextual
 
 ---
 
-## 7. Observações Críticas
+## 6. Token Flow and Optimization
 
-### Rastreabilidade
-- Todo insumo utilizado é rastreável no documento final
-- Marcação clara de fonte: externa (RAG), autoral (histórias/opiniões), ou gerada
-- Footnotes/citações automáticas para cada insumo RAG
+### Strategy to Minimize Tokens
+1. **Query Caching**: RAG results cached locally
+2. **Deduplication**: Same query = same stored result
+3. **Summaries**: Use summaries instead of full content
+4. **Reduced Top-k**: top_k=3 instead of 10 for RAG
+5. **Optimized Prompts**: Concise prompts without unnecessary information
 
-### Personalização Radical
-- Garantir que conteúdo do autor se mescle com resultado editorial universal
-- Histórias e opiniões do autor aparecem de forma orgânica
-- Balance entre voz do autor e qualidade editorial
-
-### Adaptações Futuras
-- Estruturas internas permitem adicionar novos tipos de input
-- Canal extensível para novos assets (imagens, vídeos, etc.)
-- Novos canais de pesquisa integráveis sem refatoração
+### Usage Estimate
+- **Per Chapter**: 500-1000 tokens
+- **Multi-Persona Review**: 300-500 tokens
+- **External RAG**: 200-400 tokens
+- **Complete Pipeline (10 chapters)**: 10,000-20,000 tokens
 
 ---
 
-## 8. Dependências de Externos
+## 7. Critical Observations
 
-### APIs Requeridas
-- **Google Gemini API**: Para LLMs (Flash + Pro)
-- **Supabase API**: Para armazenamento e vetorização
-- **Banana API** (ou similar): Para geração de capa IA
-- **Pandoc**: Para conversão de formatos (local)
+### Traceability
+- Every input used is traceable in final document
+- Clear source marking: external (RAG), author-owned (stories/opinions), or generated
+- Automatic footnotes/citations for each RAG input
 
-### Configuração de Ambiente
+### Radical Personalization
+- Ensure author content meshes with universal editorial result
+- Author stories and opinions appear organically
+- Balance between author voice and editorial quality
+
+### Future Adaptations
+- Internal structures allow adding new input types
+- Extensible channel for new assets (images, videos, etc.)
+- New research channels integrable without refactoring
+
+---
+
+## 8. External Dependencies
+
+### Required APIs
+- **Google Gemini API**: For LLMs (Flash + Pro)
+- **Supabase API**: For storage and vectorization
+- **Banana API** (or similar): For AI cover generation
+- **Pandoc**: For format conversion (local)
+
+### Environment Configuration
 ```bash
 export GOOGLE_API_KEY="your-key"
 export SUPABASE_URL="https://your-project.supabase.co"
 export SUPABASE_KEY="your-key"
-export BANANA_API_KEY="your-key"  # opcional para capa
+export BANANA_API_KEY="your-key"  # optional for cover
 ```
 
 ---
 
-## 9. Segurança e Conformidade
+## 9. Security and Compliance
 
-### LGPD (Lei Geral de Proteção de Dados)
-- Dados pessoais do autor criptografados
-- Conformidade validada em Agent: Compliance
-- Política de retenção: 6 meses (customizável)
+### LGPD (General Data Protection Law)
+- Author personal data encrypted
+- Compliance validated in Compliance Agent
+- Retention policy: 6 months (customizable)
 
-### HIPAA (Saúde)
-- Validação automática de disclaimers médicos
-- Alertas para conteúdo sensível em saúde
-- Review qualificado para conteúdo médico
+### HIPAA (Healthcare)
+- Automatic medical disclaimer validation
+- Alerts for sensitive health content
+- Qualified review for medical content
 
 ### KDP Compliance
-- Validação automática de formatos
-- Metadata conforme requisitos Amazon
-- Teste de publicabilidade antes de export
+- Automatic format validation
+- Metadata according to Amazon requirements
+- Publishability test before export
 
 ---
 
-## 10. Próximas Evoluções
+## 10. Next Evolutions
 
 ### v1.1 (Q1 2025)
-- [ ] Loop de revisão completo (3 iterações)
-- [ ] Dashboard simples para monitoramento
-- [ ] Logging detalhado de execução
+- [ ] Complete review loop (3 iterations)
+- [ ] Simple dashboard for monitoring
+- [ ] Detailed execution logging
 
 ### v1.2 (Q2 2025)
-- [ ] REST API para execução remota
-- [ ] Publicação automática no KDP
-- [ ] Analytics de qualidade por capítulo
+- [ ] REST API for remote execution
+- [ ] Automatic KDP publishing
+- [ ] Quality analytics per chapter
 
 ### v2.0 (Q3 2025)
-- [ ] LangGraph para orquestração avançada
-- [ ] Web UI completa
-- [ ] Batch processing para múltiplos eBooks
-- [ ] Multi-idioma
+- [ ] LangGraph for advanced orchestration
+- [ ] Complete web UI
+- [ ] Batch processing for multiple eBooks
+- [ ] Multi-language
 
 ---
 
-## 11. Diagrama de Componentes
+## 11. Component Diagram
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│        EBOOK GENERATOR 1.0 - ARQUITETURA             │
+│        EBOOK GENERATOR 1.0 - ARCHITECTURE           │
 └─────────────────────────────────────────────────────┘
 
 INPUT LAYER
 ├── InputMD Parser
 └── Config Validator
 
-AGENT LAYER (8 Agentes)
-├── Ideia Central
-├── Título/Subtítulo
-├── Estruturador
-├── Redator
-├── Revisão Múltipla (8 personas especializadas)
-├── Código
-├── Editor Estético
-└── Sumário/Capa
+AGENT LAYER (8 Agents)
+├── Central Idea
+├── Title/Subtitle
+├── Structurer
+├── Writer
+├── Multiple Review (8 specialized personas)
+├── Code
+├── Style Editor
+└── Summary/Cover
 
 RAG LAYER
-├── RAG Externo (Gemini 2.5 Pro)
-├── RAG Autoral - 3 Conhecimentos:
-│   ├── Histórias Pessoais (rag_author_stories)
-│   ├── Posicionamento Marketing (rag_author_positioning)
-│   └── Visão & Opiniões (rag_author_vision)
-├── Supabase Storage (4 tabelas vetorizadas)
+├── External RAG (Gemini 2.5 Pro)
+├── Author RAG - 3 Knowledge Types:
+│   ├── Personal Stories (rag_author_stories)
+│   ├── Market Positioning (rag_author_positioning)
+│   └── Vision & Opinions (rag_author_vision)
+├── Supabase Storage (4 vectorized tables)
 └── LangChain Retriever
 
 EXPORT LAYER
-├── Conversor HTML
-├── Conversor DOCX
-├── Conversor EPUB
+├── HTML Converter
+├── DOCX Converter
+├── EPUB Converter
 └── JSON Metadata
 
 PUBLICATION LAYER
 └── KDP Assistant
 
 LLM LAYER
-├── Gemini 2.5 Flash (escrita)
-└── Gemini 2.5 Pro (pesquisa)
+├── Gemini 2.5 Flash (writing)
+└── Gemini 2.5 Pro (research)
 ```
 
 ---
 
-**Documento Versão**: 1.0  
-**Última Atualização**: 12 de Novembro de 2025  
-**Proprietário**: Igor Medeiros  
-**Status**: Ativo
+**Document Version**: 1.0  
+**Last Updated**: November 12, 2025  
+**Owner**: Igor Medeiros  
+**Status**: Active
 
 ```
 USER INPUT (topic, audience, word_count)
@@ -698,115 +698,115 @@ src/
 
 ## 🛠️ Ferramentas Disponíveis
 
-### Pesquisa e Busca
-- `pesquisar()` - Busca informações contextualizadas
-- `calcular()` - Expressões matemáticas
-- `consultar_rag()` - Banco de dados vetorial
+### Search and Query
+- `search()` - Context-aware information search
+- `calculate()` - Mathematical expressions
+- `query_rag()` - Vector database query
 
-### Criação e Formatação
-- `gerar_outline()` - Estrutura de conteúdo
-- `gerar_titulo_amazon()` - Títulos otimizados KDP
-- `formatar_markdown()` - Formatação padrão
-- `gerar_capa_ia()` - Capa visual
-- `gerar_metadados_kdp()` - Arquivo JSON metadados
+### Creation and Formatting
+- `generate_outline()` - Content structure
+- `generate_amazon_title()` - KDP-optimized titles
+- `format_markdown()` - Standard formatting
+- `generate_ai_cover()` - Visual cover
+- `generate_kdp_metadata()` - JSON metadata file
 
-### Validação e Revisão
-- `revisar_humor()` - Tone e engajamento
-- `revisar_empatia()` - Clareza e acessibilidade
-- `revisar_gramatica()` - Ortografia e gramática
-- `revisar_coerencia()` - Fluxo lógico
-- `revisar_codigo()` - Exemplos técnicos
-- `validar_conteudo()` - Qualidade geral
+### Validation and Review
+- `review_engagement()` - Tone and engagement
+- `review_empathy()` - Clarity and accessibility
+- `review_grammar()` - Spelling and grammar
+- `review_coherence()` - Logical flow
+- `review_code()` - Technical examples
+- `validate_content()` - Overall quality
 
-### Exportação
-- `exportar_docx()` - Microsoft Word
-- `exportar_epub()` - E-book format
-- `contar_palavras()` - Word counter final
+### Export
+- `export_docx()` - Microsoft Word
+- `export_epub()` - E-book format
+- `count_words()` - Final word counter
 
 ---
 
-## 📁 Estrutura de Arquivos
+## 📁 File Structure
 
 ```
 src/
-├── main.py           # Pipeline editorial principal (8 etapas)
-├── agents.py         # Definição dos 8 agentes especializados
-├── tools.py          # Ferramentas disponíveis (30+ tools)
-├── config.py         # Configuração do modelo Gemini 2.5 Flash
+├── main.py           # Main editorial pipeline (8 stages)
+├── agents.py         # Definition of 8 specialized agents
+├── tools.py          # Available tools (30+ tools)
+├── config.py         # Gemini 2.5 Flash model configuration
 └── __pycache__/
 ```
 
 ---
 
-## 🚀 Como Executar
+## 🚀 How to Run
 
 ```bash
-# Configurar variável de ambiente
-export GOOGLE_API_KEY='sua_api_key'
+# Set environment variable
+export GOOGLE_API_KEY='your_api_key'
 
-# Executar pipeline
+# Run pipeline
 uv run python src/main.py
 ```
 
-### Customizar Tema e Meta
+### Customize Topic and Target
 
-Editar em `src/main.py`, função `main()`:
+Edit in `src/main.py`, function `main()`:
 
 ```python
-tema = "Seu Tema"
-publico_alvo = "Seu Público"
-meta_palavras = 15000  # ou outro valor
-pipeline_ebook(tema, publico_alvo, meta_palavras)
+topic = "Your Topic"
+target_audience = "Your Audience"
+word_count_target = 15000  # or another value
+run_ebook_pipeline(topic, target_audience, word_count_target)
 ```
 
 ---
 
-## 📊 Fluxo do Pipeline
+## 📊 Pipeline Flow
 
 ```
-INPUT (tema, público, meta)
+INPUT (topic, audience, target)
          ↓
-    IDEAÇÃO (Agent 1)
+    IDEATION (Agent 1)
          ↓
-    TÍTULO (Agent 2)
+    TITLE (Agent 2)
          ↓
-    ESTRUTURA (Agent 3)
+    STRUCTURE (Agent 3)
          ↓
-    CAPÍTULOS (Agent 4) → RAG
+    CHAPTERS (Agent 4) → RAG
          ↓
-    REVISÃO (Agent 5) → 3 loops
+    REVIEW (Agent 5) → 3 loops
          ↓
-    EDITORAÇÃO (Agent 6)
+    EDITING (Agent 6)
          ↓
-    FINALIZAÇÃO (Agent 7) → Capa
+    FINALIZATION (Agent 7) → Cover
          ↓
     KDP (Agent 8) → DOCX + EPUB + JSON
          ↓
-OUTPUT (E-book pronto para publicação)
+OUTPUT (eBook ready for publication)
 ```
 
 ---
 
-## ✨ Características
+## ✨ Features
 
-- ✅ **Modular:** Cada agente tem responsabilidade única
-- ✅ **Escalável:** Fácil adicionar novos agentes/ferramentas
-- ✅ **RAG-Ready:** Integrado com banco vetorial (Supabase pgvector)
-- ✅ **MCP-Compatible:** Interface para ferramentas externas
-- ✅ **KDP-Compliant:** Saída pronta para Amazon Kindle
-- ✅ **Multi-language:** Strings em português, código em inglês
-
----
-
-## 🎯 Próximas Iterações (Roadmap)
-
-- [ ] **v1.1:** Loop de revisão completo (3 iterações)
-- [ ] **v1.2:** Integração MCP com ferramentas externas
-- [ ] **v2.0:** LangGraph + Interface Web
-- [ ] **v2.1:** Publicação automática no KDP
+- ✅ **Modular:** Each agent has single responsibility
+- ✅ **Scalable:** Easy to add new agents/tools
+- ✅ **RAG-Ready:** Integrated with vector database (Supabase pgvector)
+- ✅ **MCP-Compatible:** Interface for external tools
+- ✅ **KDP-Compliant:** Output ready for Amazon Kindle
+- ✅ **Bilingual:** Strings in Portuguese, code in English
 
 ---
 
-**Desenvolvido por:** Igor Medeiros  
-**Data:** Novembro de 2025  
-**Versão:** 1.0 (MVP)
+## 🎯 Next Iterations (Roadmap)
+
+- [ ] **v1.1:** Complete review loop (3 iterations)
+- [ ] **v1.2:** MCP integration with external tools
+- [ ] **v2.0:** LangGraph + Web Interface
+- [ ] **v2.1:** Automatic KDP publication
+
+---
+
+**Developed by:** Igor Medeiros  
+**Date:** November 2025  
+**Version:** 1.0 (MVP)
