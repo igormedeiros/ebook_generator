@@ -28,7 +28,7 @@ Build an automated ebook generation system integrating Python, LangChain 1.0, Go
   - Desired word count
   - Language style (empathetic, technical, informal, etc.)
   - Author name
-  - Target audience, tone and complexity (optional)
+  - Target audience, tone and complexity
 - The parser adapts the generation pipeline according to the specifications in the `.md` file
 
 ### Central Idea & Transformation
@@ -41,14 +41,19 @@ Build an automated ebook generation system integrating Python, LangChain 1.0, Go
 ### Automatic Chapter Structuring
 - Generation of index, chapters and sections adapted to context and input `.md`
 
-### Automatic Research with Gemini 2.5 Pro (RAG)
-- For each chapter, searches external inputs, data, references
-- Stored in Supabase and vectorized for use via Retriever
+### Automatic Research with Gemini 2.5 Pro and Context7 (RAG)
+- For each chapter (after chapter definitions): Query Context7 MCP Server
+- Retrieve relevant knowledge bases via semantic search
+- Perform deep research using Gemini 2.5 Pro
+- Vectorize research results with Gemini embeddings model
+- Store in Supabase rag_external table for Writer Agent
+- Context7 runs independently (not dependent on VS Code)
 
-### Author Stories and Opinions (RAG Autoral)
-- Ingestion, vectorization and recurring use of author's personal stories as inputs
-- Incorporation of author's opinions — especially on AI in healthcare and related topics
-- Integration in chapter generation, excerpts and reviews
+### Author Knowledge Base (Pre-loaded in Supabase)
+- Author stories, positioning, and opinions already available
+- Retrieved by reviewers to validate author authenticity
+- Used to ensure author voice is preserved throughout ebook
+- No additional ingestion needed during pipeline execution
 
 ### Multi-Persona Generation and Review
 - Chapters created by agents simulating different audiences
@@ -125,18 +130,31 @@ Build an automated ebook generation system integrating Python, LangChain 1.0, Go
 ### 8 Main Agents
 1. **Agent: Central Idea** - Essence of book according to input
 2. **Agent: Title/Subtitle** - Research and suggestion of winning titles
-3. **Agent: Structurer** - Book template + chapters/sections
-4. **Agent: Writer** - Chapters with synthetic RAG inputs
-5. **Agent: Multi-Persona Review** - Review personas (editorial, technical, empathy, humor, compliance)
-6. **Agent: Code** - Python code block validation
-7. **Agent: Style Editor** - Style refinement and Markdown template
-8. **Agent: Summary/Cover** - Dynamic generation with API insertion
+3. **Agent: Structurer** - Book template + chapters/sections with chapter definitions
+4. **Agent: Deep Research** (NEW) - Query Context7 for knowledge bases, vectorize research
+5. **Agent: Writer** - Chapters with research-backed content and author narratives
+6. **Agent: Multi-Persona Review** - Review personas (editorial, technical, empathy, humor, compliance)
+7. **Agent: Code** - Python code block validation
+8. **Agent: Style Editor** - Style refinement and Markdown template
+9. **Agent: Summary/Cover** - Dynamic generation with API insertion
 
-### RAG Pipeline
-- **External RAG**: Gemini 2.5 Pro for external search
-- **Author RAG**: Ingestion of author's stories and opinions
-- **Storage**: Supabase with vectorization via pgvector
-- **Retriever**: LangChain for semantic search
+### RAG Architecture
+- **Author Knowledge (Pre-loaded)**: Stories, positioning, vision stored in Supabase
+  - Retrieved directly during review phases
+  - No vectorization needed (already available)
+  - Ensures author authenticity throughout pipeline
+  
+- **External Research (Generated)**: Deep research results vectorized during pipeline
+  - Stage 4A: Deep Research Agent queries Context7 MCP Server
+  - Vectorized with Gemini embeddings model
+  - Stored in rag_external table
+  - Used by Writer Agent to enrich chapter content
+  
+- **Context7 MCP Server**: Independent semantic knowledge base retrieval
+  - Runs independently from VS Code or Copilot
+  - Executed directly by pipeline
+  - Provides semantic search across knowledge bases
+  - Returns top-k relevant documents per chapter topic
 
 ### Review Personas (8)
 1. **Editorial** - Clarity, tone, flow
@@ -312,22 +330,44 @@ Success Criteria:
 - Clear learning objectives per chapter
 
 #### Stage 4: Chapter Writing
-**Input**: Outline and ideation framework  
+**Input**: Outline, chapter definitions, vectorized research from rag_external  
 **Output**: Didactic content chapters  
 **Agent**: `create_chapter_agent()`
 
 Activities:
-- Generate chapter content
-- Integrate RAG context for factuality
+- Retrieve vectorized research from rag_external (queried by topic)
+- Integrate author knowledge from pre-loaded rag_author_* tables
+- Generate chapter content enriched with research
 - Add code examples (if applicable)
-- Include citations for sourced material
-- Maintain consistent voice and tone
+- Include citations for all RAG-sourced information
+- Maintain consistent author voice and tone
 
 Success Criteria:
 - Content meets word count targets
-- Sources properly cited
+- All sources properly cited
 - Code examples functional
-- Tone consistent with audience
+- Author voice consistent throughout
+- Research integrated naturally
+
+#### Stage 4A: Deep Research (NEW - Runs BEFORE Chapter Writing)
+**Input**: Chapter definitions from Structure Agent  
+**Output**: Vectorized research stored in rag_external  
+**Agent**: `create_deep_research_agent()`
+
+Activities:
+- For each chapter: Extract topic and learning objectives
+- Query Context7 MCP Server for relevant knowledge bases
+- Perform deep research analysis using Gemini 2.5 Pro
+- Generate embeddings using Gemini embeddings model
+- Store vectorized results with chapter_id and topic tags
+- Maintain traceability of all sources
+
+Success Criteria:
+- Research vectorized and stored successfully
+- All chapters have corresponding research context
+- Embeddings generated correctly
+- Source attribution complete
+- Ready for Writer Agent consumption
 
 #### Stage 5: Specialized Review (5 Personas)
 **Input**: Draft content  
@@ -479,9 +519,9 @@ Success Criteria:
 
 #### Orchestration Agents (2)
 1. `create_coordinator_superagent()` - Full pipeline orchestration
-2. Execution function: `execute_review_personas()` - Manage 5 reviewers
+2. Execution function: `execute_review_personas()` - Manage 8 reviewers
 
-**Total Agents**: 17 (8 main + 8 review + 1 coordinator)
+**Total Agents**: 18 (8 main + 1 deep research + 8 review + 1 coordinator)
 
 ### 3.3 Tool System (30+ Specialized Tools)
 
@@ -559,24 +599,51 @@ top_k: 40
 Purpose: Deep analysis, RAG retrieval, semantic search, fact-checking
 ```
 
-### 4.3 RAG Integration
+### 4.3 RAG Integration Architecture
 
-**Backend**: Supabase with pgvector extension
+**Two-Tier RAG System**:
 
-**Integration Points**:
-- Stage 4 (Chapter Writing): RAG context retrieval
-- Stage 5 (Review): Fact validation
-- Stage 6 (Virtual Readers): Knowledge base reference
+**Tier 1: Author Knowledge (Pre-loaded)**
+- Location: Supabase (rag_author_stories, rag_author_positioning, rag_author_vision)
+- Content: Author personal stories, market positioning, values and philosophy
+- Accessed: By reviewers to validate author authenticity
+- Retrieval: Direct table queries (no vectorization)
+
+**Tier 2: External Research (Generated During Pipeline)**
+- Source: Context7 MCP Server (independent semantic search)
+- Process: Deep Research Agent (Stage 4A) performs semantic queries
+- Vectorization: Using Gemini embeddings model
+- Storage: Supabase rag_external table with chapter_id and topic tags
+- Accessed: By Writer Agent (Stage 4B) to enrich chapters with research
+- Traceability: All sources marked in final document
+
+**Context7 MCP Server Integration**:
+- Runs independently from VS Code and Copilot
+- Executed directly by Ebook Generator pipeline
+- Provides semantic search across multiple knowledge bases
+- Called during Stage 4A (Deep Research)
+- Returns top-k relevant documents per chapter topic
 
 **Implementation Pattern**:
 ```python
-from langchain.vectorstores import PGVectorStore
+# Stage 4A: Deep Research
+for chapter in chapters:
+    # Query Context7 MCP Server
+    research_results = query_context7(chapter.topic)
+    
+    # Vectorize with Gemini embeddings
+    embeddings = generate_embeddings(research_results)
+    
+    # Store in rag_external
+    store_in_rag_external(embeddings, chapter_id=chapter.id)
 
-vector_store = PGVectorStore.connect_from_documents(
-    connection_string="postgresql+psycopg://...",
-    documents=documents,
-    embedding=embeddings,
-)
+# Stage 4B: Writer
+for chapter in chapters:
+    # Retrieve vectorized research
+    research_context = retrieve_rag_external(chapter.id)
+    
+    # Write with research context
+    chapter_content = write_chapter(chapter, research_context)
 ```
 
 ### 4.4 LangChain 1.0+ Standards

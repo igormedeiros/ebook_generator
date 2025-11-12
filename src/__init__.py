@@ -26,6 +26,13 @@ from agents import (
     execute_agent,
     execute_review_personas,
 )
+from tools import (
+    search_knowledge_base,
+    retrieve_rag_context,
+    retrieve_author_stories,
+    retrieve_author_positioning,
+    retrieve_author_vision,
+)
 from main import run_ebook_pipeline
 
 __all__ = [
@@ -47,5 +54,11 @@ __all__ = [
     "create_ethics_validator_agent",
     "execute_agent",
     "execute_review_personas",
+    "search_knowledge_base",
+    "retrieve_rag_context",
+    "retrieve_author_stories",
+    "retrieve_author_positioning",
+    "retrieve_author_vision",
     "run_ebook_pipeline",
 ]
+

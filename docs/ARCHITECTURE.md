@@ -65,14 +65,33 @@ Responsibility: Propagate configurations throughout the pipeline
 - **Tools**: Outline generation, word count calculation
 
 #### 4. Agent: Writer
-- **Responsibility**: Write chapters with synthetic inputs
-- **Input**: Outline, central idea, specified style
-- **Output**: Didactic chapters with personal/author examples
+- **Responsibility**: Write chapters with deep research context
+- **Input**: Outline, chapter definitions, vectorized research from rag_external
+- **Output**: Didactic chapters with research-backed content
 - **Tools**: 
-  - External RAG (Gemini 2.5 Pro)
-  - Author RAG (stories and opinions)
-  - Markdown formatting
-  - Quality validation
+  - retrieve_rag_external_research() - Query vectorized research
+  - retrieve_author_stories() - Query author narratives (already in DB)
+  - retrieve_author_positioning() - Query author positioning (already in DB)
+  - retrieve_author_vision() - Query author vision (already in DB)
+  - format_markdown()
+  - validate_content_quality()
+
+#### 4A. Agent: Deep Research (NEW - Runs BEFORE Writer)
+- **Responsibility**: Perform deep research for each chapter and vectorize results
+- **Input**: Chapter definitions from Structure Agent
+- **Output**: Vectorized research stored in rag_external table
+- **Process**:
+  1. For each chapter: Extract topic and learning objectives
+  2. Query Context7 MCP Server for relevant knowledge bases
+  3. Perform deep research using Gemini 2.5 Pro
+  4. Generate embeddings using Gemini embeddings model
+  5. Store vectorized results in rag_external with chapter_id and topic
+- **Tools**:
+  - query_context7_mcp() - Retrieve knowledge bases from Context7
+  - perform_deep_research() - Use Gemini 2.5 Pro for analysis
+  - vectorize_research() - Create embeddings with Gemini
+  - store_in_rag_external() - Persist vectorized research
+- **Execution**: Runs sequentially before Writer Agent in Stage 4
 
 #### 5. Agent: Multiple Review
 - **Responsibility**: Simulate specialized review personas (8 personas)
@@ -118,54 +137,78 @@ Responsibility: Propagate configurations throughout the pipeline
 
 ## 3. RAG Pipeline (Architecture)
 
-### 3.1 External RAG
+### 3.1 Author Knowledge Base (Pre-loaded in Supabase)
 ```
-Flow: Writer → Gemini 2.5 Pro → Query Supabase → Retriever
-- Gemini 2.5 Pro performs deep research for each chapter
-- Results vectorized and stored in Supabase
-- LangChain Retriever searches top-k relevant documents
-- Results feed into writing context
+Status: Already available in Supabase tables
+- rag_author_stories: Personal narratives, experiences, memories
+- rag_author_positioning: Market positioning, authority, niche differentiation
+- rag_author_vision: Values, philosophy, worldview, opinions
+
+These tables contain pre-ingested author knowledge and are referenced by:
+- Writer: To incorporate author narratives organically
+- Author Stories Reviewer: To validate narrative balance
+- Author Positioning Reviewer: To validate positioning clarity
+- Author Vision Reviewer: To validate philosophical coherence
 ```
 
-### 3.2 RAG Autoral - Author Knowledge Integration (Stories, Positioning, Vision)
+### 3.2 External RAG - Deep Research Pipeline
 ```
-Flow: Author Input → Ingestion → Vectorization → Supabase (3 categories) → Retriever
-- Ingestion of 3 types of author knowledge:
-  1. Personal Stories (narratives, experiences, author memories)
-  2. Market Positioning (authority, niche, differentiation)
-  3. Vision & Opinions (values, philosophy, worldview)
-- Vectorization of each category with context metadata
-- Storage in separate Supabase tables (rag_author_stories, rag_author_positioning, rag_author_vision)
-- Retriever integrated in:
-  - Writer: To incorporate author narratives organically
-  - Author Stories Reviewer: To validate narrative balance
-  - Author Positioning Reviewer: To validate positioning clarity
-  - Author Vision Reviewer: To validate philosophical coherence
-- Traceability guarantee: Each author RAG input is marked in final document
+Execution Flow:
+1. Stage 3: Structure Agent creates hierarchical outline
+   └─ Defines chapters and sections to be written
+
+2. Stage 4A: Deep Research Agent (NEW - runs BEFORE writing)
+   ├─ For each chapter: Query Context7 MCP Server
+   ├─ Retrieve relevant knowledge bases via semantic search
+   ├─ Perform deep research using Gemini 2.5 Pro
+   └─ Vectorize research results with Gemini embeddings model
+
+3. Stage 4B: Vector Storage
+   ├─ Store vectorized research in rag_external table
+   └─ Tag with chapter_id, topic, source for traceability
+
+4. Stage 4C: Chapter Writing
+   ├─ Writer Agent queries rag_external (vectorized research)
+   ├─ Integrates RAG context naturally into chapters
+   ├─ Cites sources for all RAG-sourced information
+   └─ Maintains author's voice while enhancing with research
+
+Context7 MCP Server Integration:
+- Provides semantic search across multiple knowledge bases
+- Returns top-k relevant documents for each chapter topic
+- Runs independently (not dependent on VS Code or Copilot)
+- Executed directly by the Ebook Generator pipeline
 ```
 
-### 3.3 External RAG
+### 3.3 Author RAG vs Research RAG (Clear Distinction)
 ```
-Flow: Author Input → Ingestion → Vectorization → Supabase → Retriever
-- Ingestion of author's personal stories
-- Vectorization of opinions (especially on AI in healthcare)
-- Storage in separate Supabase table
-- Retriever integrated in Writer for recurring use
-- Traceability guarantee in final document
+AUTHOR RAG (rag_author_stories, rag_author_positioning, rag_author_vision)
+- Pre-loaded: Ingested before pipeline execution
+- Content: Author personal stories, positioning, vision & opinions
+- Usage: By reviewers to validate author authenticity
+- Retrieved by: Direct table queries (no vectorization needed)
+
+EXTERNAL RESEARCH RAG (rag_external)
+- Generated: During pipeline execution (Stage 4A)
+- Content: Knowledge base research results, academic sources, frameworks
+- Usage: By Writer to enrich chapter content with facts
+- Retrieved by: Semantic vector search (vectorized with Gemini embeddings)
 ```
 
 ### 3.4 Supabase Configuration
 ```sql
--- Table: rag_external
+-- Table: rag_external (Research knowledge - vectorized during pipeline)
 CREATE TABLE rag_external (
   id BIGSERIAL PRIMARY KEY,
   content TEXT NOT NULL,
   embedding vector(1536),
+  chapter_id VARCHAR(100),
+  topic VARCHAR(255),
   source VARCHAR(255),
   created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Table: rag_author_stories
+-- Table: rag_author_stories (Pre-loaded - author personal narratives)
 CREATE TABLE rag_author_stories (
   id BIGSERIAL PRIMARY KEY,
   story TEXT NOT NULL,
@@ -176,7 +219,7 @@ CREATE TABLE rag_author_stories (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Table: rag_author_positioning
+-- Table: rag_author_positioning (Pre-loaded - market positioning)
 CREATE TABLE rag_author_positioning (
   id BIGSERIAL PRIMARY KEY,
   positioning_statement TEXT NOT NULL,
@@ -186,7 +229,7 @@ CREATE TABLE rag_author_positioning (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Table: rag_author_vision
+-- Table: rag_author_vision (Pre-loaded - values and philosophy)
 CREATE TABLE rag_author_vision (
   id BIGSERIAL PRIMARY KEY,
   vision_or_opinion TEXT NOT NULL,
@@ -217,23 +260,30 @@ Central Idea (essence + promise)
   ↓
 Title Subtitle (research + 3 options)
   ↓
-Structurer (outline + word distribution)
+Structurer (outline + word distribution + chapter definitions)
   ↓
-Writer (chapters with RAG)
-  ├→ External RAG (Gemini 2.5 Pro)
-  ├→ Author Stories RAG (personal stories)
-  ├→ Author Opinions RAG (author opinions)
-  └→ Writer (synthesis of inputs)
+Deep Research Agent (NEW - Stage 4A)
+  ├─ For each chapter: Query Context7 MCP Server
+  ├─ Retrieve knowledge bases via semantic search
+  ├─ Deep research using Gemini 2.5 Pro
+  ├─ Vectorize results with Gemini embeddings model
+  └─ Store in rag_external table
+  ↓
+Writer (Stage 4B - chapters with RAG)
+  ├─ Query rag_external (vectorized research)
+  ├─ Integrate author narratives from rag_author_* tables
+  ├─ Markdown formatting
+  └─ Synthesis of all inputs
   ↓
 Multiple Review (8 personas)
-  ├→ Editorial
-  ├→ Technical
-  ├→ Empathy
-  ├→ Engagement
-  ├→ Compliance
-  ├→ Stories & Didactics (Stories RAG)
-  ├→ Positioning (Positioning RAG)
-  └→ Vision & Opinions (Vision RAG)
+  ├─ Editorial
+  ├─ Technical
+  ├─ Empathy
+  ├─ Engagement
+  ├─ Compliance
+  ├─ Stories & Didactics (queries rag_author_stories)
+  ├─ Positioning (queries rag_author_positioning)
+  └─ Vision & Opinions (queries rag_author_vision)
   ↓
 Code Agent (Python code block validation)
   ↓
@@ -242,16 +292,16 @@ Style Editor (Markdown formatting)
 Summary Cover (dynamic + design API)
   ↓
 Final Converter (format export)
-  ├→ HTML
-  ├→ DOCX
-  ├→ EPUB
-  └→ JSON (metadata)
+  ├─ HTML
+  ├─ DOCX
+  ├─ EPUB
+  └─ JSON (metadata)
   ↓
 Publication Agent (KDP compilation)
-  ├→ Metadata
-  ├→ Synopsis
-  ├→ Catalog sheet
-  └→ Final files
+  ├─ Metadata
+  ├─ Synopsis
+  ├─ Catalog sheet
+  └─ Final files
   ↓
 OUTPUT (eBook ready for KDP)
 ```
@@ -318,17 +368,29 @@ OUTPUT (eBook ready for KDP)
 
 ## 8. External Dependencies
 
-### Required APIs
-- **Google Gemini API**: For LLMs (Flash + Pro)
-- **Supabase API**: For storage and vectorization
-- **Banana API** (or similar): For AI cover generation
-- **Pandoc**: For format conversion (local)
+### Required APIs and Services
+- **Google Gemini API**: For LLMs (Flash + Pro) and embeddings
+- **Supabase API**: For storage and vector operations
+- **Context7 MCP Server**: For semantic knowledge base retrieval (independent execution)
+- **Banana API** (or similar): For AI cover generation (optional)
+- **Pandoc**: For format conversion (local installation)
+
+### Context7 MCP Server
+- **Purpose**: Provide semantic search across multiple knowledge bases
+- **Execution**: Runs independently from VS Code and Copilot
+- **Integration**: Called directly by Deep Research Agent in pipeline
+- **Functionality**:
+  - Query multiple knowledge bases by topic
+  - Return top-k relevant documents for chapter research
+  - Support for semantic similarity search
+  - Used only during Stage 4A (Deep Research)
 
 ### Environment Configuration
 ```bash
-export GOOGLE_API_KEY="your-key"
-export SUPABASE_URL="https://your-project.supabase.co"
-export SUPABASE_KEY="your-key"
+export GOOGLE_API_KEY="your-gemini-api-key"
+export NEXT_PUBLIC_SUPABASE_URL="https://your-project.supabase.co"
+export NEXT_PUBLIC_SUPABASE_ANON_KEY="your-supabase-key"
+export CONTEXT7_SERVER_URL="http://localhost:8000"  # or production URL
 export BANANA_API_KEY="your-key"  # optional for cover
 ```
 
