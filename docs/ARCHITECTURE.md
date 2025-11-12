@@ -30,7 +30,102 @@
 
 ## 2. Architectural Components
 
-### 2.1 MD Input Parser
+### 2.1 Configuration System (`specs/`)
+
+All pipeline parameters are externalized to YAML configuration files:
+
+```
+specs/
+├── pipeline.yaml         # 9-stage parameter definitions
+├── config.yaml           # Portuguese strings, messages, labels
+├── models.yaml           # Gemini model configuration
+├── personas.yaml         # 10 review personas + 5 virtual readers
+├── tools.yaml            # 30+ tool specifications
+├── README.md             # Configuration documentation
+└── examples/             # Pre-configured templates
+    ├── academic_book.yaml
+    ├── tech_guide.yaml
+    ├── health_wellness.yaml
+    └── business_book.yaml
+```
+
+**Key Files**:
+
+1. **pipeline.yaml** - Parameters for each of 9 stages:
+   - Word count targets, outline depth, persona activation, iteration cycles, export formats
+   - Each stage has configurable parameters with types, defaults, ranges
+   
+2. **config.yaml** - Centralized Portuguese content:
+   - 100+ messages (pipeline events, agent operations, validation results)
+   - Labels for UI and reporting
+   - System prompts for agents
+   - Table titles and icons
+   
+3. **models.yaml** - AI model configuration:
+   - Gemini 2.5 Flash (0.7 temperature) for creative writing
+   - Gemini 2.5 Pro (0.3 temperature) for research/RAG
+   - API configuration and token limits
+   
+4. **personas.yaml** - Reviewer specifications:
+   - 10 review personas with expertise areas and evaluation criteria
+   - 5 virtual readers with focus areas
+   - Feedback aggregation strategies and iteration settings
+   
+5. **tools.yaml** - Tool definitions:
+   - 9 categories across 9 pipeline stages
+   - 30+ tool specifications with parameters
+   - Default values and constraints
+
+### 2.2 Configuration Loader (`src/config_loader.py`)
+
+Provides unified interface for loading and accessing all configurations:
+
+```python
+from src.config_loader import (
+    get_config,              # Load any config section
+    get_message,             # Load Portuguese messages
+    get_pipeline_config,     # Load pipeline parameters
+    get_models_config,       # Load model configuration
+    get_personas_config,     # Load personas
+    get_tools_config,        # Load tools
+    load_example_config,     # Load pre-configured example
+    get_logger,              # Get configured logger
+    console,                 # Rich console for output
+    print_panel,             # Display formatted panels
+    print_table,             # Display formatted tables
+    print_progress,          # Display progress bars
+    setup_logging            # Configure logging with Rich
+)
+```
+
+**Usage Examples**:
+
+```python
+# Get pipeline parameters
+config = get_pipeline_config()
+ideation_params = config['stages']['stage_1_ideation']['parameters']
+
+# Get Portuguese message
+msg = get_message('pipeline_start')  # "🚀 Iniciando pipeline..."
+
+# Load example configuration
+example = load_example_config('tech_guide')
+result = run_ebook_pipeline(**example['input'])
+
+# Logging with Rich
+logger = get_logger('my_module')
+logger.info("Iniciando processamento")
+logger.error("Erro detectado")
+
+# Output with Rich
+print_panel(
+    title="Resultado",
+    content="Conteúdo formatado",
+    style="cyan"
+)
+```
+
+### 2.3 MD Input Parser
 ```
 Function: Interpret and validate .md file with specifications
 Input: .md file with mandatory fields
@@ -500,9 +595,70 @@ export BANANA_API_KEY="your-key"  # optional for cover
 
 ---
 
-## 9. Security and Compliance
+### Logging and Output Standards
 
-### LGPD (General Data Protection Law)
+All output must use logging and Rich formatting:
+
+```python
+from src.config_loader import get_logger, console, print_panel
+
+logger = get_logger('module_name')
+
+# ✅ Logging (never use print)
+logger.info("Pipeline iniciado")
+logger.warning("Aviso importante")  
+logger.error("Erro na execução")
+logger.debug("Detalhes técnicos")
+
+# ✅ Rich output
+print_panel(
+    title="Resultado da Revisão",
+    content="Feedback dos personas",
+    style="cyan"
+)
+
+# ❌ NEVER use print()
+print("Resultado")  # Incorrect - use logging instead
+```
+
+**Logging Levels**:
+- `logger.debug()` - Technical details and tracing
+- `logger.info()` - Normal progress information
+- `logger.warning()` - Warnings (e.g., outdated versions)
+- `logger.error()` - Execution errors
+- `logger.critical()` - Critical failures blocking continuation
+
+**Rich Output Methods**:
+- `print_panel(title, content, style)` - Display formatted panels
+- `print_table(title, headers, rows, style)` - Display formatted tables
+- `print_progress(total, description)` - Display progress bars
+- `console.print()` - Direct Rich console output for structured data
+
+### Parameter-Driven Architecture
+
+Pipeline execution is fully parameterized from specs/:
+
+```python
+from src.main import run_ebook_pipeline
+from src.config_loader import load_example_config, get_pipeline_config
+
+# Option 1: Use defaults from pipeline.yaml
+result = run_ebook_pipeline(
+    topic="Python para Análise",
+    audience="Data Scientists",
+    word_count_target=15000  # from pipeline.yaml default
+)
+
+# Option 2: Use pre-configured example
+config = load_example_config('tech_guide')
+result = run_ebook_pipeline(**config['input'])
+
+# Option 3: Custom overrides
+config = load_example_config('academic_book')
+config['input']['word_count_target'] = 50000
+config['stage_overrides']['stage_5_review']['threshold_score'] = 0.85
+result = run_ebook_pipeline(**config['input'], **config['stage_overrides'])
+```
 - Author personal data encrypted
 - Compliance validated in Compliance Agent
 - Retention policy: 6 months (customizable)

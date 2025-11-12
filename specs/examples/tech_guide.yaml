@@ -1,0 +1,79 @@
+# Exemplo de Configuração: Guia Técnico
+# Para desenvolvedores aprendendo nova tecnologia
+
+project_name: "Go Concorrência - Do Zero ao Avançado"
+project_type: "tech_guide"
+
+input:
+  topic: "Programação concorrente em Go"
+  target_audience: "Desenvolvedores com experiência em outras linguagens"
+  word_count_target: 25000
+  transformation_promise: "Implementar sistemas concorrentes escaláveis com Go"
+  reading_level: "intermediary"
+
+stage_overrides:
+  stage_1_ideation:
+    reading_level: "intermediary"
+    
+  stage_2_title:
+    seo_keywords: ["Go", "concorrência", "goroutines", "channels", "programação"]
+    market_category: "Computers & Technology"
+    
+  stage_3_structure:
+    outline_depth: 3
+    chapter_count: 8
+    didactic_progression: true
+    section_weights:
+      introduction: 8
+      fundamentals: 20
+      core_concepts: 35
+      advanced_patterns: 25
+      conclusion: 12
+    
+  stage_4a_deep_research:
+    query_types: ["research", "best_practices", "case_studies"]
+    research_depth: "standard"
+    source_limit: 5
+    credibility_threshold: 0.75
+    
+  stage_4b_chapter_writing:
+    chapter_template: "tutorial"
+    rag_context_limit: 3
+    author_voice_weight: 0.6
+    example_count: 4
+    include_exercises: true
+    
+  stage_5_review:
+    active_personas: ["technical", "editorial", "code_reviewer"]
+    feedback_aggregation: "weighted"
+    threshold_score: 0.8
+    
+  stage_6_critical_reading:
+    iteration_cycles: 3
+    active_virtual_readers: ["technical_professional", "curious_beginner", "didactic_educator"]
+    cycle_focus: ["clarity", "accuracy", "examples"]
+    refinement_threshold: 0.75
+    
+  stage_7_editing:
+    markdown_standard: "github"
+    line_length_max: 100
+    
+  stage_8_finalization:
+    cover_style: "modern"
+    include_toc: true
+    include_glossary: false
+    
+  stage_9_publication:
+    export_formats: ["epub", "pdf", "docx"]
+    kdp_compliance_strict: true
+
+# Configurações específicas de guia técnico
+tech_settings:
+  include_code_examples: true
+  code_syntax_highlight: true
+  code_languages: ["go", "bash", "json"]
+  include_github_links: true
+  github_repo_structure: "per_chapter"
+  include_performance_notes: true
+  include_benchmarks: true
+  supported_versions: ["1.21", "1.22"]

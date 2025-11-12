@@ -1,0 +1,81 @@
+# Exemplo de Configuração: Livro de Bem-estar e Saúde
+# Para leitores buscando orientações práticas
+
+project_name: "Nutrição Intuitiva - Transforme sua Relação com Comida"
+project_type: "health_wellness_book"
+
+input:
+  topic: "Nutrição intuitiva e bem-estar mental"
+  target_audience: "Adultos com dúvidas sobre hábitos alimentares e saúde mental"
+  word_count_target: 20000
+  transformation_promise: "Reconstruir uma relação saudável e intuitiva com a comida"
+  reading_level: "beginner"
+
+stage_overrides:
+  stage_1_ideation:
+    reading_level: "beginner"
+    
+  stage_2_title:
+    seo_keywords: ["nutrição", "bem-estar", "saúde mental", "hábitos"]
+    market_category: "Health & Fitness"
+    
+  stage_3_structure:
+    outline_depth: 2
+    chapter_count: 6
+    didactic_progression: true
+    section_weights:
+      introduction: 10
+      mindset: 20
+      practical_strategies: 45
+      recipes_examples: 15
+      conclusion: 10
+    
+  stage_4a_deep_research:
+    query_types: ["research", "trends", "expert_perspectives"]
+    research_depth: "standard"
+    source_limit: 4
+    credibility_threshold: 0.8
+    
+  stage_4b_chapter_writing:
+    chapter_template: "narrative"
+    rag_context_limit: 2
+    author_voice_weight: 0.8
+    example_count: 2
+    include_exercises: true
+    
+  stage_5_review:
+    active_personas: ["editorial", "ethics", "author_stories"]
+    feedback_aggregation: "weighted"
+    threshold_score: 0.75
+    
+  stage_6_critical_reading:
+    iteration_cycles: 3
+    active_virtual_readers: ["curious_beginner", "reflective_reader"]
+    cycle_focus: ["clarity", "engagement", "accessibility"]
+    refinement_threshold: 0.7
+    
+  stage_7_editing:
+    markdown_standard: "commonmark"
+    line_length_max: 90
+    
+  stage_8_finalization:
+    cover_style: "vibrant"
+    include_toc: true
+    include_glossary: true
+    
+  stage_9_publication:
+    export_formats: ["epub", "docx"]
+    kdp_compliance_strict: true
+
+# Configurações específicas de saúde
+health_settings:
+  include_medical_disclaimer: true
+  medical_disclaimer_prominent: true
+  include_author_credentials: true
+  include_recipes: true
+  include_meal_plans: true
+  include_testimonials: true
+  avoid_medical_claims: true
+  validate_health_info: true
+  hipaa_compliant: true
+  lgpd_compliant: true

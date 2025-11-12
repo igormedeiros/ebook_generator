@@ -87,19 +87,28 @@ Build an automated ebook generation system integrating Python, LangChain 1.0, Go
 ## 3. Macro Flow
 
 1. **Input** - Manual or via `.md` file
-2. **Parsing** - Adaptation of global configurations
+2. **Parsing** - Adaptation of global configurations from `specs/`
 3. **Central Idea** - Idea generation and promised transformation
 4. **Market Research** - Optimized title/subtitle
 5. **Structuring** - Automated book structure
 6. **Deep Research** - External RAG + internal RAG (author stories and opinions)
-7. **Specialized Review** - Multi-persona review (10 reviewers)
-8. **Critical Reading & Iteration** - 3 cycles of virtual reader feedback and revision
+7. **Chapter Writing** - Content generation with research integration
+8. **Specialized Review** - Multi-persona review (10 reviewers)
+9. **Critical Reading & Iteration** - 3 cycles of virtual reader feedback and revision
    - Iteration 1: Initial feedback and critical issue resolution
-   - Iteration 2: Secondary improvements and engagement enhancement
+   - Iteration 2: Secondary improvements and engagement
    - Iteration 3: Final polish and publication readiness validation
-9. **Final Adjustments** - Code validation, formatting, and aesthetics
-10. **Visual Generation** - Summary and cover
-11. **Export** - Desired formats and KDP preparation
+10. **Final Adjustments** - Code validation, formatting, and aesthetics
+11. **Visual Generation** - Summary and cover
+12. **Export** - Desired formats and KDP preparation
+
+All parameters are managed in `specs/` folder:
+- `pipeline.yaml` - 9-stage parameters
+- `config.yaml` - Portuguese strings and messages
+- `models.yaml` - AI model configuration
+- `personas.yaml` - Persona and reader specifications
+- `tools.yaml` - Tool definitions
+- `examples/` - Pre-configured templates
 
 ---
 
@@ -198,6 +207,26 @@ Build an automated ebook generation system integrating Python, LangChain 1.0, Go
 ---
 
 ## 6. Special Requirements
+
+### Configuration-Driven Architecture
+- All parameters stored in `specs/` YAML files (pipeline.yaml, config.yaml, models.yaml, personas.yaml, tools.yaml)
+- Zero hardcoded values in code
+- Support for custom overrides per project via `stage_overrides` in project config
+- Pre-configured examples for common ebook types (academic, tech, health, business)
+
+### String Localization and Messaging
+- All Portuguese strings in `specs/config.yaml` (100+ messages, labels, prompts)
+- Messages centralized by category: pipeline events, agent operations, persona names, validation results
+- Labels parameterized for UI and reporting
+- Icons and formatting defined in config
+- Use `get_message(key)` for retrieval in code
+
+#### Logging and Output Standards
+- Use `logging` module with Rich formatting (no `print()` statements)
+- All agent output logged at appropriate levels (debug, info, warning, error)
+- Structured output with `print_panel()` for cards, `print_table()` for data, `print_progress()` for progress bars
+- Console output using Rich library for professional formatting
+- File logging optional via `setup_logging(log_file="...")`
 
 ### Code Examples and Exercises
 - All code examples executed and tested before book publication

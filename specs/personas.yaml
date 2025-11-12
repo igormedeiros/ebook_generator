@@ -1,0 +1,241 @@
+# Configuração de Personas de Revisão e Leitores Virtuais
+
+review_personas:
+  technical_reviewer:
+    name: "Revisor Técnico"
+    role: "Engenheiro Python"
+    expertise_areas:
+      - "Qualidade de código"
+      - "Compatibilidade de frameworks"
+      - "Validação de sintaxe"
+      - "Boas práticas de programação"
+    evaluation_criteria:
+      - "Código funcional e testável"
+      - "Uso correto de APIs"
+      - "Documentação técnica adequada"
+      - "Performance e eficiência"
+    feedback_weight: 1.0
+
+  editorial_reviewer:
+    name: "Revisor Editorial"
+    role: "Comunicador"
+    expertise_areas:
+      - "Clareza e compreensibilidade"
+      - "Tom e voz autoral"
+      - "Fluxo narrativo"
+      - "Alinhamento com público-alvo"
+    evaluation_criteria:
+      - "Conteúdo acessível"
+      - "Narrativa coerente"
+      - "Conexão emocional"
+      - "Progressão lógica"
+    feedback_weight: 1.0
+
+  content_stylist:
+    name: "Estilista de Conteúdo"
+    role: "Editor Literário"
+    expertise_areas:
+      - "Estrutura de documentos"
+      - "Consistência de formatação"
+      - "Hierarquia visual"
+      - "Padrão Markdown"
+    evaluation_criteria:
+      - "Hierarquia de headings correta"
+      - "Formatação consistente"
+      - "Acessibilidade visual"
+      - "Padrão CSS e estilo"
+    feedback_weight: 0.8
+
+  governance_qa:
+    name: "QA de Compliance"
+    role: "Oficial de Conformidade"
+    expertise_areas:
+      - "Versões de frameworks"
+      - "Segurança de dados"
+      - "Conformidade LGPD"
+      - "Metadados e relatórios"
+    evaluation_criteria:
+      - "Versões atualizadas"
+      - "Avisos de segurança presentes"
+      - "Compliance regulatório"
+      - "Metadados corretos"
+    feedback_weight: 1.0
+
+  ethics_validator:
+    name: "Validador de Ética"
+    role: "Especialista em Ética IA"
+    expertise_areas:
+      - "Detecção de viés"
+      - "Avisos médicos/legais"
+      - "Princípios de ética IA"
+      - "Inclusão e diversidade"
+    evaluation_criteria:
+      - "Linguagem imparcial"
+      - "Avisos necessários presentes"
+      - "Conformidade HIPAA/LGPD"
+      - "Conteúdo inclusivo"
+    feedback_weight: 1.0
+
+  author_stories_didactics:
+    name: "Revisor de Histórias e Didática do Autor"
+    role: "Especialista em Narrativa e Pedagogia"
+    expertise_areas:
+      - "Equilíbrio entre histórias pessoais e pedagogia"
+      - "Relevância de narrativas"
+      - "Fluxo didático"
+      - "Autenticidade do autor"
+    evaluation_criteria:
+      - "Histórias agregam valor educacional"
+      - "Peso adequado de narrativas"
+      - "Progressão didática clara"
+      - "Voz autoral autêntica"
+    rag_source: "rag_author_stories"
+    feedback_weight: 0.9
+
+  author_positioning:
+    name: "Revisor de Posicionamento do Autor"
+    role: "Especialista em Marketing e Autoridade"
+    expertise_areas:
+      - "Posicionamento de mercado do autor"
+      - "Autoridade em assunto"
+      - "Diferenciação de nicho"
+      - "Proposta de valor do autor"
+    evaluation_criteria:
+      - "Posicionamento claro"
+      - "Autoridade bem estabelecida"
+      - "Nicho bem definido"
+      - "Valor único comunicado"
+    rag_source: "rag_author_positioning"
+    feedback_weight: 0.9
+
+  author_vision_opinions:
+    name: "Revisor de Visão e Opiniões do Autor"
+    role: "Especialista em Valores e Filosofia"
+    expertise_areas:
+      - "Visão e filosofia do autor"
+      - "Coerência de valores"
+      - "Opiniões autênticas"
+      - "Alinhamento temático"
+    evaluation_criteria:
+      - "Visão coerente com filosofia"
+      - "Opiniões autênticas"
+      - "Alinhamento com valores"
+      - "Consistência throughout"
+    rag_source: "rag_author_vision"
+    feedback_weight: 0.9
+
+  code_exercises_reviewer:
+    name: "Revisor de Código e Exercícios"
+    role: "Engenheiro de Qualidade de Código"
+    expertise_areas:
+      - "Execução de exemplos de código"
+      - "Validação de funcionalidade"
+      - "Testes de integração"
+      - "Coleta para repositório GitHub"
+    evaluation_criteria:
+      - "Código executável sem erros"
+      - "Funcionalidade validada"
+      - "Exemplos funcionais coletados"
+      - "GitHub links gerados"
+    feedback_weight: 1.0
+
+  research_references_validator:
+    name: "Validador de Pesquisa e Referências"
+    role: "Especialista em Credibilidade de Fontes"
+    expertise_areas:
+      - "Validação científica de fontes"
+      - "Credibilidade acadêmica"
+      - "Qualidade de referências"
+      - "Verificação bibliográfica"
+    evaluation_criteria:
+      - "Fontes peer-reviewed"
+      - "Autores com credibilidade"
+      - "Data de publicação recente"
+      - "Relevância contextual"
+    rag_source: "rag_external"
+    feedback_weight: 1.0
+
+virtual_readers:
+  curious_beginner:
+    name: "Leitor Iniciante Curioso"
+    profile: "Novo no assunto, busca clareza e acessibilidade"
+    focus_areas:
+      - "Clareza de terminologia"
+      - "Progressão e ritmo"
+      - "Contexto e foundações"
+      - "Exemplos concretos"
+    validation_focus:
+      - "Seções confusas"
+      - "Contexto ausente"
+      - "Linguagem muito técnica"
+      - "Progressão muito rápida"
+
+  technical_professional:
+    name: "Profissional Técnico"
+    profile: "Desenvolvedor sênior, valida profundidade e acurácia"
+    focus_areas:
+      - "Precisão técnica"
+      - "Conhecimento de frameworks"
+      - "Boas práticas atuais"
+      - "Casos edge e nuances"
+    validation_focus:
+      - "Padrões desatualizados"
+      - "Nuances perdidas"
+      - "Exemplos incorretos"
+      - "Gaps de conhecimento"
+
+  didactic_educator:
+    name: "Educador Didático"
+    profile: "Professor/mentor, valida estrutura pedagógica"
+    focus_areas:
+      - "Progressão de aprendizagem"
+      - "Efetividade de exercícios"
+      - "Scaffolding de conhecimento"
+      - "Objetivos de aprendizagem"
+    validation_focus:
+      - "Gaps pedagógicos"
+      - "Exercícios inefetivos"
+      - "Sequenciação pobre"
+      - "Objetivos não claros"
+
+  domain_specialist:
+    name: "Especialista em Domínio"
+    profile: "Médico/pesquisador, valida coerência cross-disciplinar"
+    focus_areas:
+      - "Acurácia de conhecimento especializado"
+      - "Consistência cross-domain"
+      - "Frameworks especializados"
+      - "Aplicabilidade prática"
+    validation_focus:
+      - "Gaps especializados"
+      - "Misalinhamentos contextuais"
+      - "Frameworks perdidos"
+      - "Aplicabilidade questionável"
+
+  reflective_reader:
+    name: "Leitor Reflexivo"
+    profile: "Público geral, valida impacto emocional e relevância"
+    focus_areas:
+      - "Conexão emocional"
+      - "Relatabilidade"
+      - "Nível de engajamento"
+      - "Significado e propósito"
+    validation_focus:
+      - "Falta de conexão emocional"
+      - "Seções desconectadas"
+      - "Tom inadequado"
+      - "Falta de contexto humano"
+
+feedback_aggregation:
+  strategy: "weighted"  # majority | consensus | weighted
+  threshold: 0.75
+  critical_issues_require: "consensus"
+  nice_to_have_require: "majority"
+  
+iteration_settings:
+  cycles: 3
+  cycle_1_focus: ["clarity", "structure", "accessibility"]
+  cycle_2_focus: ["accuracy", "depth", "examples"]
+  cycle_3_focus: ["polish", "engagement", "final_quality"]
+  min_improvement_threshold: 0.1  # 10% improvement per cycle
+  max_issues_per_cycle: 10

@@ -1,0 +1,89 @@
+# Configuração de Modelos IA - Ebook Generator 1.0
+
+models:
+  write_model:
+    name: "Gemini 2.5 Flash"
+    purpose: "Escrita criativa rápida e revisão textual"
+    model_id: "gemini-2.5-flash"
+    temperature: 0.7
+    top_p: 0.95
+    top_k: 40
+    max_tokens: 4096
+    description: "Modelo rápido para geração de conteúdo criativo"
+    use_cases:
+      - "Escrita de capítulos"
+      - "Geração de títulos"
+      - "Revisão editorial"
+      - "Geração de resumos"
+      - "Criação de exemplos"
+
+  research_model:
+    name: "Gemini 2.5 Pro"
+    purpose: "Pesquisa profunda, análise e RAG"
+    model_id: "gemini-2.5-pro"
+    temperature: 0.3
+    top_p: 0.95
+    top_k: 40
+    max_tokens: 8192
+    description: "Modelo focado para análise profunda e recuperação RAG"
+    use_cases:
+      - "Pesquisa em bases de conhecimento"
+      - "Análise de credibilidade de fontes"
+      - "Validação de acurácia factual"
+      - "Integração com RAG"
+      - "Análise técnica profunda"
+
+embeddings:
+  model_id: "gemini-embedding-001"
+  dimensions: 768
+  description: "Modelo para geração de embeddings vetoriais"
+  use_case: "Vetorização de pesquisa para armazenamento em pgvector"
+
+api_configuration:
+  gemini:
+    provider: "Google AI"
+    api_key_env: "GOOGLE_API_KEY"
+    base_url: "https://generativelanguage.googleapis.com"
+    version: "v1"
+    
+  supabase:
+    connection_env: "SUPABASE_URL"
+    key_env: "SUPABASE_ANON_KEY"
+    vector_extension: "pgvector"
+    
+  context7:
+    base_url_env: "CONTEXT7_SERVER_URL"
+    description: "MCP Server para busca semântica em bases de conhecimento"
+    independent_execution: true
+
+rag_settings:
+  external_rag:
+    table_name: "rag_external"
+    description: "Base de dados de pesquisa externa vetorizada"
+    top_k: 5
+    similarity_threshold: 0.7
+    index_type: "ivfflat"
+    
+  author_rag:
+    tables:
+      - name: "rag_author_stories"
+        description: "Histórias pessoais e narrativas do autor"
+      - name: "rag_author_positioning"
+        description: "Posicionamento de mercado e autoridade"
+      - name: "rag_author_vision"
+        description: "Visão, valores e opiniões do autor"
+    top_k: 3
+    index_type: "ivfflat"
+
+token_limits:
+  per_chapter: 1000
+  per_review_persona: 500
+  per_rag_query: 400
+  per_stage: 5000
+  per_pipeline: 25000
+
+timeout_settings:
+  agent_execution: 300
+  api_call: 60
+  file_operation: 30
+  pipeline_complete: 1800

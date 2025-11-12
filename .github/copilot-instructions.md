@@ -181,66 +181,95 @@ Output Format:
 
 ## Pipeline Stages
 
-The Ebook Generator follows this 8-stage pipeline:
+The Ebook Generator follows this 9-stage pipeline:
 
 ### Stage 1: Ideation
 - Agent: `create_ideation_agent()`
 - Tools: Ideation-specific tools
+- Config: `specs/pipeline.yaml` > `stage_1_ideation`
 - Output: Central idea, problem definition, target audience
 
 ### Stage 2: Title Generation
 - Agent: `create_title_agent()`
 - Tools: Title generation tools
+- Config: `specs/pipeline.yaml` > `stage_2_title`
 - Output: 3 Amazon-optimized title options
 
 ### Stage 3: Structure
 - Agent: `create_structure_agent()`
 - Tools: Structure and outline tools
+- Config: `specs/pipeline.yaml` > `stage_3_structure`
 - Output: Hierarchical table of contents in Markdown
 
-### Stage 4: Chapter Writing
+### Stage 4A: Deep Research
+- Agent: `create_deep_research_agent()`
+- Tools: Context7 MCP, vectorization, RAG storage
+- Config: `specs/pipeline.yaml` > `stage_4a_deep_research`
+- Output: Vectorized research in rag_external
+
+### Stage 4B: Chapter Writing
 - Agent: `create_chapter_agent()`
 - Tools: Writing tools + RAG integration
+- Config: `specs/pipeline.yaml` > `stage_4b_chapter_writing`
 - Output: Didactic content chapters
 
-### Stage 5: Review (with 8 Specialized Personas)
-- **Technical Reviewer**: Code quality and framework versions
-- **Editorial Reviewer**: Clarity, tone, and flow
-- **Content Stylist**: Formatting and structure consistency
-- **Governance QA**: Compliance and metadata validation
-- **Ethics Validator**: Bias detection and medical disclaimers
-- **Author Stories & Didactics**: Balances personal narratives with pedagogical clarity (RAG Author Stories)
-- **Author Positioning**: Validates market positioning and subject matter authority (RAG Author Positioning)
-- **Author Vision & Opinions**: Ensures alignment with author's philosophy and values (RAG Author Vision & Opinions)
-- Function: `execute_review_personas(model, content) -> dict` with 8 personas
+### Stage 5: Review (with 10 Specialized Personas)
+- Function: `execute_review_personas(model, content) -> dict`
+- Config: `specs/personas.yaml` + `specs/pipeline.yaml` > `stage_5_review`
+- Personas: Technical, Editorial, Stylist, Governance, Ethics, Author Stories, Author Positioning, Author Vision, Code Reviewer, Research Validator
+- Output: Structured feedback by persona (10 perspectives)
 
-### Stage 6: Editing
+### Stage 6: Critical Reading & Iteration (3 Cycles)
+- Function: `execute_critical_reading_iterations(model, content)`
+- Config: `specs/personas.yaml` + `specs/pipeline.yaml` > `stage_6_critical_reading`
+- Virtual Readers: Curious Beginner, Technical Professional, Educator, Specialist, Reflective
+- Output: Refined content with reader validation
+
+### Stage 7: Editing
 - Agent: `create_editing_agent()`
 - Tools: Editing and formatting tools
+- Config: `specs/pipeline.yaml` > `stage_7_editing`
 - Output: Validated and formatted document
 
-### Stage 7: Finalization
+### Stage 8: Finalization
 - Agent: `create_finalization_agent()`
 - Tools: Cover and metadata tools
+- Config: `specs/pipeline.yaml` > `stage_8_finalization`
 - Output: Cover concept and validated metadata
 
-### Stage 8: Publication
+### Stage 9: Publication
 - Agent: `create_publication_agent()`
 - Tools: Export tools (DOCX, EPUB, PDF, JSON)
+- Config: `specs/pipeline.yaml` > `stage_9_publication`
 - Output: Publication-ready package
 
 ## File Organization
 
 ```
 src/
-├── main.py           # Pipeline orchestration (8 stages)
-├── agents.py         # All agent definitions (8 + 1 coordinator + 5 reviewers)
-├── tools.py          # All tool definitions (30+ tools)
-├── config.py         # Model initialization and config
-└── __init__.py       # Package initialization
+├── main.py               # Pipeline orchestration (9 stages)
+├── agents.py             # All agent definitions (25 agents)
+├── tools.py              # All tool definitions (30+ tools)
+├── config.py             # Model initialization and config
+├── config_loader.py      # Configuration and logging with Rich
+└── __init__.py           # Package initialization
+
+specs/
+├── pipeline.yaml         # 9-stage pipeline parameters
+├── config.yaml           # Portuguese strings and messages (centralized)
+├── models.yaml           # Gemini model configuration
+├── personas.yaml         # 10 review personas + 5 virtual readers
+├── tools.yaml            # Tool specifications (30+)
+├── README.md             # Specs documentation
+└── examples/             # Pre-configured examples
+    ├── academic_book.yaml
+    ├── tech_guide.yaml
+    ├── health_wellness.yaml
+    └── business_book.yaml
 
 docs/
-└── prd.md            # Product Requirements Document (PRD v1.0)
+├── PRD.md                # Product Requirements Document (v1.0)
+└── ARCHITECTURE.md       # Technical Architecture (v1.0)
 ```
 
 ### Package Initialization
@@ -256,6 +285,13 @@ docs/
    Ebook Generator 1.0 - Multi-agent editorial automation platform.
    """
    from config import get_model, get_research_model
+   from config_loader import (
+       get_logger, 
+       get_config, 
+       get_pipeline_config,
+       load_example_config,
+       console
+   )
    from agents import create_ideation_agent, ...
    from main import run_ebook_pipeline
 
@@ -263,6 +299,8 @@ docs/
    __all__ = [
        "get_model",
        "get_research_model",
+       "get_logger",
+       "console",
        "create_ideation_agent",
        "run_ebook_pipeline",
    ]
@@ -270,6 +308,108 @@ docs/
 
 3. **Never**: Leave `__init__.py` blank or with only comments
 4. **Rationale**: Clear API surface, better IDE support, explicit exports
+
+### Logging and Output Standards
+
+**All output must use logging and Rich, NOT print()**:
+
+```python
+from src.config_loader import get_logger, console, print_panel
+import logging
+
+logger = get_logger(__name__)
+
+# ✅ Logging with levels
+logger.info("Pipeline iniciado")           # ✓ Info level
+logger.warning("Aviso importante")         # ⚠️ Warning level
+logger.error("Erro na execução")           # ❌ Error level
+logger.debug("Detalhes técnicos")          # Apenas em modo DEBUG
+
+# ✅ Rich output for panels
+print_panel(
+    title="Resultado da Revisão",
+    content="Feedback consolidado de personas",
+    style="cyan"
+)
+
+# ❌ NEVER use print()
+print("Resultado")  # Incorreto
+
+# ❌ NEVER use console.print() para logs
+console.print("Iniciando...")  # Apenas para output estruturado
+```
+
+**Logging Levels**:
+- `logger.debug()` - Detalhes técnicos e rastreamento
+- `logger.info()` - Informações normais de progresso
+- `logger.warning()` - Avisos (ex: versões desatualizadas)
+- `logger.error()` - Erros na execução
+- `logger.critical()` - Falhas críticas que impedem continuação
+
+**Rich Output**:
+- `console.print()` - Saída estruturada (tabelas, painéis, etc)
+- `print_panel()` - Exibir conteúdo em painel
+- `print_table()` - Exibir tabela formatada
+- `print_progress()` - Barra de progresso
+
+### Configuration Management
+
+All configurable elements are in `specs/`:
+
+```python
+from src.config_loader import (
+    get_pipeline_config,
+    get_models_config,
+    get_personas_config,
+    get_tools_config,
+    load_example_config,
+    get_message
+)
+
+# Load pipeline configuration
+pipeline_cfg = get_pipeline_config()
+stage_1_params = pipeline_cfg['stages']['stage_1_ideation']['parameters']
+
+# Load Portuguese messages
+msg = get_message('pipeline_start')  # "🚀 Iniciando pipeline..."
+
+# Load pre-configured example
+example = load_example_config('tech_guide')
+
+# Load model configuration
+models_cfg = get_models_config()
+gemini_flash = models_cfg['models']['write_model']
+```
+
+**String Management**:
+- **All Portuguese strings go in `specs/config.yaml`**
+- No hardcoded strings in code
+- Use `get_message(key)` for retrieval
+- Exception: Comments and docstrings in English remain in code
+
+### Parameter-Driven Architecture
+
+Pipeline execution is parameter-driven from specs/:
+
+```python
+from src.main import run_ebook_pipeline
+from src.config_loader import load_example_config
+
+# Option 1: Use defaults
+result = run_ebook_pipeline(
+    topic="Python para Análise",
+    audience="Data Scientists"
+)
+
+# Option 2: Use pre-configured example
+config = load_example_config("tech_guide")
+result = run_ebook_pipeline(**config['input'])
+
+# Option 3: Custom overrides
+config = load_example_config("academic_book")
+config['input']['word_count_target'] = 50000
+result = run_ebook_pipeline(**config['input'])
+```
 
 ### Documentation Standards
 

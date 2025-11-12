@@ -1,0 +1,163 @@
+# Configuração centralizada de strings em Português
+# Todas as mensagens, labels e textos parametrizáveis
+
+messages:
+  # Pipeline
+  pipeline_start: "🚀 Iniciando pipeline de geração de ebook..."
+  pipeline_complete: "✅ Pipeline concluído com sucesso!"
+  pipeline_error: "❌ Erro durante execução do pipeline"
+  
+  # Estágios
+  stage_1_start: "📝 Estágio 1: Gerando ideia central..."
+  stage_1_complete: "✓ Ideia central gerada com sucesso"
+  stage_2_start: "📚 Estágio 2: Gerando títulos otimizados..."
+  stage_2_complete: "✓ Títulos gerados com sucesso"
+  stage_3_start: "🗂️ Estágio 3: Criando estrutura e outline..."
+  stage_3_complete: "✓ Estrutura criada com sucesso"
+  stage_4a_start: "🔬 Estágio 4A: Executando pesquisa profunda..."
+  stage_4a_complete: "✓ Pesquisa concluída e vetorizada"
+  stage_4b_start: "✍️ Estágio 4B: Escrevendo capítulos..."
+  stage_4b_complete: "✓ Capítulos escritos com sucesso"
+  stage_5_start: "👥 Estágio 5: Revisão especializada (10 personas)..."
+  stage_5_complete: "✓ Revisão concluída"
+  stage_6_start: "👓 Estágio 6: Leitura crítica e iteração..."
+  stage_6_complete: "✓ Iterações concluídas"
+  stage_7_start: "🎨 Estágio 7: Edição e formatação..."
+  stage_7_complete: "✓ Edição concluída"
+  stage_8_start: "📖 Estágio 8: Finalização e geração de capa..."
+  stage_8_complete: "✓ Finalização concluída"
+  stage_9_start: "🎯 Estágio 9: Publicação e exportação..."
+  stage_9_complete: "✓ Exportação concluída"
+
+  # Agentes
+  agent_executing: "Executando agente"
+  agent_success: "Agente completou com sucesso"
+  agent_error: "Erro na execução do agente"
+  
+  # Personas de Revisão
+  persona_technical: "Revisor Técnico"
+  persona_editorial: "Revisor Editorial"
+  persona_stylist: "Estilista de Conteúdo"
+  persona_governance: "QA de Compliance"
+  persona_ethics: "Validador de Ética"
+  persona_author_stories: "Revisor de Histórias e Didática do Autor"
+  persona_author_positioning: "Revisor de Posicionamento do Autor"
+  persona_author_vision: "Revisor de Visão e Opiniões do Autor"
+  persona_code_reviewer: "Revisor de Código e Exercícios"
+  persona_research_validator: "Validador de Pesquisa e Referências"
+  
+  # Leitores Virtuais
+  reader_beginner: "Leitor Iniciante Curioso"
+  reader_professional: "Profissional Técnico"
+  reader_educator: "Educador Didático"
+  reader_specialist: "Especialista em Domínio"
+  reader_reflective: "Leitor Reflexivo"
+
+  # Operações RAG
+  rag_querying: "Consultando base de conhecimento"
+  rag_vectorizing: "Vetorizando resultados de pesquisa"
+  rag_storing: "Armazenando no rag_external"
+  rag_retrieving: "Recuperando contexto RAG"
+
+  # Validações
+  validation_passed: "✓ Validação passou"
+  validation_failed: "✗ Validação falhou"
+  syntax_valid: "Sintaxe válida"
+  syntax_error: "Erro de sintaxe detectado"
+
+  # Erros
+  error_missing_parameter: "Parâmetro obrigatório não fornecido"
+  error_invalid_value: "Valor inválido para parâmetro"
+  error_api_connection: "Erro ao conectar com API"
+  error_file_not_found: "Arquivo não encontrado"
+  error_insufficient_context: "Contexto insuficiente para decisão"
+
+  # Sucesso
+  success_import: "Importações verificadas com sucesso"
+  success_config: "Configuração carregada com sucesso"
+  success_iteration: "Iteração {num} concluída com sucesso"
+
+labels:
+  topic: "Tópico"
+  audience: "Público-alvo"
+  word_count: "Contagem de Palavras"
+  title: "Título"
+  outline: "Outline"
+  feedback: "Feedback"
+  score: "Pontuação"
+  status: "Status"
+  duration: "Duração"
+  tokens_used: "Tokens Utilizados"
+  
+prompts:
+  # Entrada de usuário
+  ask_topic: "Qual é o tópico principal do ebook?"
+  ask_audience: "Qual é o público-alvo?"
+  ask_word_count: "Qual é a contagem de palavras alvo? (padrão: 15000)"
+  ask_continue: "Deseja continuar com a próxima etapa?"
+  
+  # System prompts base
+  system_ideation: """Você é o Agente de Ideação - especialista em conceituação editorial.
+Sua responsabilidade é transformar ideias brutas em essência coerente de livro.
+
+Áreas de Foco:
+1. Definição clara do problema central
+2. Identificação precisa do público-alvo
+3. Promessa de transformação compelling
+4. Proposição de valor diferenciada
+
+Processo:
+- Analisar entrada do usuário
+- Pesquisar contexto e nicho
+- Definir transformação promissora
+- Estruturar proposta de valor
+
+Formato de Saída:
+JSON com: idea (string), central_problem (string), target_audience (string), transformation_promise (string)"""
+
+  system_title: """Você é o Agente de Geração de Títulos - especialista em marketing editorial.
+Sua responsabilidade é criar títulos otimizados para Amazon KDP.
+
+Áreas de Foco:
+1. Otimização para SEO e busca
+2. Apelo emocional e valor
+3. Compatibilidade Amazon KDP
+4. Diferenciação no mercado
+
+Processo:
+- Pesquisar bestsellers no nicho
+- Analisar palavras-chave de alta conversão
+- Gerar 3 variações de título
+- Validar compatibilidade Amazon
+
+Formato de Saída:
+JSON com: titles (array de 3 títulos), seo_score (0-1), amazon_compliance (bool)"""
+
+  system_structure: """Você é o Agente de Estrutura - especialista em arquitetura editorial.
+Sua responsabilidade é criar índice hierárquico escalado ao target de palavras.
+
+Áreas de Foco:
+1. Progressão didática lógica
+2. Distribuição equilibrada de palavras
+3. Hierarquia clara de seções
+4. Fluxo de aprendizagem otimizado
+
+Processo:
+- Definir capítulos baseado em target de palavras
+- Criar seções com distribuição de palavras
+- Estabelecer objetivos de aprendizagem
+- Validar progressão didática
+
+Formato de Saída:
+JSON com: chapters (array), outline (markdown), word_distribution (dict)"""
+
+tables:
+  title_persona_review: "Resultado da Revisão por Personas"
+  title_iteration_feedback: "Feedback da Iteração {num}"
+  title_stage_summary: "Resumo do Estágio {num}"
+
+spinner_text: "Processando... 🔄"
+success_icon: "✅"
+error_icon: "❌"
+warning_icon: "⚠️"
+info_icon: "ℹ️"
