@@ -1,0 +1,3 @@
+<!-- instructions/INSTRUCTIONS-AVISO_LEGAL.md -->
+Aviso Legal
+Este livro e seu conteúdo são fornecidos “como estão”, sem garantias de qualquer tipo, expressas ou implícitas. O autor e o editor não se responsabilizam por quaisquer erros ou omissões, ou por quaisquer danos resultantes do uso das informações contidas neste livro. Os exemplos de código são fornecidos para fins educacionais e podem exigir modificação para uso em produção. A execução dos códigos e a utilização das chaves de API são de inteira responsabilidade do leitor.

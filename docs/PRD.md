@@ -138,12 +138,15 @@ Construir um sistema automatizado de geração de eBooks, integrando Python, Lan
 - **Armazenamento**: Supabase com vetorização via pgvector
 - **Retriever**: LangChain para busca semântica
 
-### Personas de Revisão (5)
+### Personas de Revisão (8)
 1. **Editorial** - Clareza, tom, fluxo
 2. **Técnica** - Qualidade de código, precisão conceitual
 3. **Empatia** - Acessibilidade, conexão emocional
 4. **Engajamento** - Leveza, interesse, humor
 5. **Compliance** - LGPD, HIPAA, KDP
+6. **Author Stories & Didactics** - Equilibra histórias pessoais com pedagogia clara (RAG autoral)
+7. **Author Positioning** - Valida posicionamento de marketing e autoridade (RAG posicionamento)
+8. **Author Vision & Opinions** - Revisa visões e opiniões do autor sobre o tema (RAG visão)
 
 ### Conversor/Finalizador
 - Exportação nos formatos definidos (HTML, DOCX, EPUB)
@@ -358,10 +361,32 @@ Review Personas:
    - Validates: Language bias, required disclaimers, HIPAA compliance
    - Output: Ethics feedback and required disclaimers
 
+6. **Author Stories & Didactics Reviewer** (`create_author_stories_reviewer_agent()`)
+   - Focus: Balance between author personal stories and pedagogical clarity
+   - Validates: Story relevance, narrative weight, didactic flow
+   - Checks: Not too many personal stories, stories enhance learning
+   - Integration: Uses RAG Author Stories knowledge base
+   - Output: Balance feedback between narrative and education
+
+7. **Author Positioning Reviewer** (`create_author_positioning_reviewer_agent()`)
+   - Focus: Author's market positioning and subject matter authority
+   - Validates: Clear positioning in target industry/theme
+   - Checks: Author's expertise prominence, market credibility, niche clarity
+   - Integration: Uses RAG Author Positioning knowledge base
+   - Output: Positioning clarity and authority validation
+
+8. **Author Vision & Opinions Reviewer** (`create_author_vision_opinions_reviewer_agent()`)
+   - Focus: Author's worldview, core values, and thematic opinions
+   - Validates: Alignment with author's philosophy and principles
+   - Checks: Vision coherence, opinion authenticity, value alignment
+   - Integration: Uses RAG Author Vision & Opinions knowledge base
+   - Output: Vision consistency and opinion authenticity feedback
+
 Success Criteria:
-- All 5 reviews completed
+- All 8 reviews completed
 - Feedback structured and actionable
 - Critical issues flagged for resolution
+- Author's voice and positioning clearly represented
 
 #### Stage 6: Critical Reading (5 Virtual Readers)
 **Input**: Revised content  
@@ -442,18 +467,21 @@ Success Criteria:
 7. `create_finalization_agent()` - Stage 8
 8. `create_publication_agent()` - Stage 9
 
-#### Specialized Review Agents (5)
+#### Specialized Review Agents (8)
 1. `create_technical_reviewer_agent()`
 2. `create_editorial_reviewer_agent()`
 3. `create_content_stylist_agent()`
 4. `create_governance_agent()`
 5. `create_ethics_validator_agent()`
+6. `create_author_stories_reviewer_agent()`
+7. `create_author_positioning_reviewer_agent()`
+8. `create_author_vision_opinions_reviewer_agent()`
 
 #### Orchestration Agents (2)
 1. `create_coordinator_superagent()` - Full pipeline orchestration
 2. Execution function: `execute_review_personas()` - Manage 5 reviewers
 
-**Total Agents**: 14 (8 main + 5 review + 1 coordinator)
+**Total Agents**: 17 (8 main + 8 review + 1 coordinator)
 
 ### 3.3 Tool System (30+ Specialized Tools)
 

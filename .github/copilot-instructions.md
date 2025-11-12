@@ -203,13 +203,16 @@ The Ebook Generator follows this 8-stage pipeline:
 - Tools: Writing tools + RAG integration
 - Output: Didactic content chapters
 
-### Stage 5: Review (with 5 Specialized Personas)
+### Stage 5: Review (with 8 Specialized Personas)
 - **Technical Reviewer**: Code quality and framework versions
 - **Editorial Reviewer**: Clarity, tone, and flow
 - **Content Stylist**: Formatting and structure consistency
 - **Governance QA**: Compliance and metadata validation
 - **Ethics Validator**: Bias detection and medical disclaimers
-- Function: `execute_review_personas(model, content) -> dict`
+- **Author Stories & Didactics**: Balances personal narratives with pedagogical clarity (RAG Author Stories)
+- **Author Positioning**: Validates market positioning and subject matter authority (RAG Author Positioning)
+- **Author Vision & Opinions**: Ensures alignment with author's philosophy and values (RAG Author Vision & Opinions)
+- Function: `execute_review_personas(model, content) -> dict` with 8 personas
 
 ### Stage 6: Editing
 - Agent: `create_editing_agent()`
@@ -458,7 +461,7 @@ class HumanInTheLoopMiddleware:
 
 ## Review Personas Specialization
 
-The system integrates **5 specialized review personas** that form the core of textual refinement:
+The system integrates **8 specialized review personas** that form the core of textual refinement:
 
 ### Technical Reviewer
 - **Role**: Python Engineer
@@ -484,6 +487,24 @@ The system integrates **5 specialized review personas** that form the core of te
 - **Role**: AI Ethics Expert
 - **Focus**: Bias detection, medical disclaimers, AI ethics principles
 - **Checks**: Language bias, required disclaimers, HIPAA/LGPD compliance
+
+### Author Stories & Didactics Reviewer (NEW)
+- **Role**: Narrative & Pedagogy Expert
+- **Focus**: Balance between author personal stories and learning objectives
+- **Checks**: Story relevance, narrative weight, didactic flow, authenticity
+- **RAG Integration**: Author Stories knowledge base for context
+
+### Author Positioning Reviewer (NEW)
+- **Role**: Marketing & Authority Expert
+- **Focus**: Author's market positioning and subject matter expertise
+- **Checks**: Positioning clarity, authority prominence, niche distinctiveness
+- **RAG Integration**: Author Positioning knowledge base for positioning framework
+
+### Author Vision & Opinions Reviewer (NEW)
+- **Role**: Values & Philosophy Expert
+- **Focus**: Alignment with author's worldview and core principles
+- **Checks**: Vision coherence, opinion authenticity, value alignment
+- **RAG Integration**: Author Vision & Opinions knowledge base for philosophical framework
 
 ---
 

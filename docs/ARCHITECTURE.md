@@ -75,16 +75,23 @@ Responsabilidade: Propagar configurações para todo o pipeline
   - Validação de qualidade
 
 #### 5. Agent: Revisão Múltipla
-- **Responsabilidade**: Simular personas de revisão
+- **Responsabilidade**: Simular personas de revisão especializada (8 personas)
 - **Personas**:
   - Editorial: Clareza, tom, fluxo
   - Técnica: Qualidade de código, precisão conceitual
   - Empatia: Acessibilidade, conexão emocional
   - Humor/Engajamento: Leveza, interesse
   - Compliance: LGPD, HIPAA, KDP
+  - Histórias & Didática: Equilibra narrativas autorais com pedagogia
+  - Posicionamento: Valida autoridade e posicionamento de mercado do autor
+  - Visão & Opiniões: Revisa coerência com visão e opiniões do autor
 - **Entrada**: Capítulos brutos
-- **Saída**: Feedback estruturado por persona
-- **Loop**: Crítico de revisão baseado em público-alvo e estilo
+- **Saída**: Feedback estruturado por persona (8 perspectivas)
+- **RAG Integration**:
+  - RAG Histórias do Autor (para avaliação de equilíbrio narrativo)
+  - RAG Posicionamento (para validação de autoridade)
+  - RAG Visão & Opiniões (para coerência filosófica)
+- **Loop**: Crítico de revisão baseado em público-alvo, estilo e identidade do autor
 
 #### 6. Agent: Código
 - **Responsabilidade**: Validar blocos Python do livro
@@ -120,7 +127,24 @@ Fluxo: Redator → Gemini 2.5 Pro → Query Supabase → Retriever
 - Resultados alimentam contexto da escrita
 ```
 
-### 3.2 RAG Autoral (Histórias e Opiniões)
+### 3.2 RAG Autoral - Author Knowledge Integration (Histórias, Posicionamento, Visão)
+```
+Fluxo: Input Autoral → Ingestão → Vetorização → Supabase (3 categorias) → Retriever
+- Ingestão de 3 tipos de conhecimento autoral:
+  1. Histórias Pessoais (narrativas, experiências, memórias do autor)
+  2. Posicionamento de Mercado (autoridade, nicho, diferenciação)
+  3. Visão & Opiniões (valores, filosofia, worldview do autor)
+- Vetorização de cada categoria com metadata de contexto
+- Armazenamento em tabelas separadas em Supabase (rag_author_stories, rag_author_positioning, rag_author_vision)
+- Retriever integrado em:
+  - Redator: Para incorporar narrativas autorais de forma orgânica
+  - Autor Stories Reviewer: Para validar equilíbrio narrativo
+  - Autor Positioning Reviewer: Para validar clareza de posicionamento
+  - Autor Vision Reviewer: Para validar coerência filosófica
+- Garantia de rastreabilidade: Cada insumo RAG autoral é marcado no documento final
+```
+
+### 3.3 RAG Externo
 ```
 Fluxo: Input Autoral → Ingestão → Vetorização → Supabase → Retriever
 - Ingestão de histórias pessoais do autor
@@ -130,7 +154,7 @@ Fluxo: Input Autoral → Ingestão → Vetorização → Supabase → Retriever
 - Garantia de rastreabilidade no documento final
 ```
 
-### 3.3 Configuração Supabase
+### 3.4 Configuração Supabase
 ```sql
 -- Tabela: rag_external
 CREATE TABLE rag_external (
@@ -141,19 +165,43 @@ CREATE TABLE rag_external (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Tabela: rag_author
-CREATE TABLE rag_author (
+-- Tabela: rag_author_stories
+CREATE TABLE rag_author_stories (
   id BIGSERIAL PRIMARY KEY,
-  story_or_opinion TEXT NOT NULL,
+  story TEXT NOT NULL,
   embedding vector(1536),
-  category VARCHAR(50),
+  category VARCHAR(100),
+  tags TEXT[],
   author_name VARCHAR(255),
   created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Índice para busca vetorial
+-- Tabela: rag_author_positioning
+CREATE TABLE rag_author_positioning (
+  id BIGSERIAL PRIMARY KEY,
+  positioning_statement TEXT NOT NULL,
+  embedding vector(1536),
+  aspect VARCHAR(100),
+  author_name VARCHAR(255),
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Tabela: rag_author_vision
+CREATE TABLE rag_author_vision (
+  id BIGSERIAL PRIMARY KEY,
+  vision_or_opinion TEXT NOT NULL,
+  embedding vector(1536),
+  category VARCHAR(100),
+  principle VARCHAR(255),
+  author_name VARCHAR(255),
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Índices para busca vetorial
 CREATE INDEX ON rag_external USING ivfflat (embedding vector_cosine_ops);
-CREATE INDEX ON rag_author USING ivfflat (embedding vector_cosine_ops);
+CREATE INDEX ON rag_author_stories USING ivfflat (embedding vector_cosine_ops);
+CREATE INDEX ON rag_author_positioning USING ivfflat (embedding vector_cosine_ops);
+CREATE INDEX ON rag_author_vision USING ivfflat (embedding vector_cosine_ops);
 ```
 
 ---
@@ -177,12 +225,15 @@ Redator (capítulos com RAG)
   ├→ RAGOpinioesAutorais (opiniões do autor)
   └→ Redator (síntese de insumos)
   ↓
-RevisaoMultipla (5 personas)
+RevisaoMultipla (8 personas)
   ├→ Editorial
   ├→ Técnica
   ├→ Empatia
   ├→ Engajamento
-  └→ Compliance
+  ├→ Compliance
+  ├→ Histórias & Didática (RAG Histórias)
+  ├→ Posicionamento (RAG Posicionamento)
+  └→ Visão & Opiniões (RAG Visão)
   ↓
 CodigoAgente (validação de blocos Python)
   ↓
@@ -338,15 +389,18 @@ AGENT LAYER (8 Agentes)
 ├── Título/Subtítulo
 ├── Estruturador
 ├── Redator
-├── Revisão Múltipla (5 personas)
+├── Revisão Múltipla (8 personas especializadas)
 ├── Código
 ├── Editor Estético
 └── Sumário/Capa
 
 RAG LAYER
 ├── RAG Externo (Gemini 2.5 Pro)
-├── RAG Autoral (histórias/opiniões)
-├── Supabase Storage
+├── RAG Autoral - 3 Conhecimentos:
+│   ├── Histórias Pessoais (rag_author_stories)
+│   ├── Posicionamento Marketing (rag_author_positioning)
+│   └── Visão & Opiniões (rag_author_vision)
+├── Supabase Storage (4 tabelas vetorizadas)
 └── LangChain Retriever
 
 EXPORT LAYER
@@ -387,13 +441,16 @@ USER INPUT (topic, audience, word_count)
 ├─→ STAGE 4: CHAPTER AGENT
 │   └─ Write didactic content with RAG
 │
-├─→ STAGE 5: REVIEW (5 SPECIALIZED PERSONAS)
+├─→ STAGE 5: REVIEW (8 SPECIALIZED PERSONAS)
 │   ├─→ TECHNICAL REVIEWER (code quality, versions)
 │   ├─→ EDITORIAL REVIEWER (clarity, tone, flow)
 │   ├─→ CONTENT STYLIST (formatting, structure)
 │   ├─→ GOVERNANCE QA (compliance, metadata)
-│   └─→ ETHICS VALIDATOR (bias, disclaimers)
-│       └─ Aggregated feedback dict
+│   ├─→ ETHICS VALIDATOR (bias, disclaimers)
+│   ├─→ AUTHOR STORIES & DIDACTICS (narrative balance, RAG Stories)
+│   ├─→ AUTHOR POSITIONING (marketing authority, RAG Positioning)
+│   └─→ AUTHOR VISION & OPINIONS (values alignment, RAG Vision)
+│       └─ Aggregated feedback dict (8 perspectives)
 │
 ├─→ STAGE 6: EDITING AGENT
 │   └─ Final formatting and validation
@@ -500,13 +557,49 @@ OUTPUT (results dictionary with all stage outputs)
 - **Output:** Compliance validation report
 
 #### **Ethics Validator Agent**
-- **Focus:** Bias detection, medical disclaimers, AI ethics
+- **Focus:** Bias detection, medical disclaimers, AI ethics principles
 - **Checks:**
   - Language bias detection
   - Medical disclaimer requirements
   - AI ethics principles
   - HIPAA/LGPD compliance
 - **Output:** Ethics validation and recommendations
+
+#### **Author Stories & Didactics Reviewer Agent** (NEW)
+- **Focus:** Balance between author's personal narratives and pedagogical clarity
+- **Responsibility:** Ensure author stories enhance (not overshadow) learning objectives
+- **Checks:**
+  - Story relevance to chapter topic
+  - Narrative weight vs. content balance
+  - Educational value and didactic flow
+  - Avoid excessive personal details or off-topic anecdotes
+  - Stories serve as teaching tools or relatable examples
+- **RAG Integration:** Consults RAG Author Stories knowledge base
+- **Output:** Balance feedback and narrative optimization suggestions
+
+#### **Author Positioning Reviewer Agent** (NEW)
+- **Focus:** Author's market positioning and subject matter authority
+- **Responsibility:** Validate clear positioning in target industry/theme and expertise prominence
+- **Checks:**
+  - Author's authority and credibility are evident
+  - Positioning in target market/industry is clear
+  - Niche expertise and specialization shine through
+  - Marketing positioning is authentic and compelling
+  - Author's unique perspective/angle is distinctive
+- **RAG Integration:** Consults RAG Author Positioning knowledge base
+- **Output:** Positioning clarity and authority validation
+
+#### **Author Vision & Opinions Reviewer Agent** (NEW)
+- **Focus:** Author's worldview, core values, and thematic opinions
+- **Responsibility:** Ensure content aligns with author's philosophy and authentic voice
+- **Checks:**
+  - Content reflects author's stated values and principles
+  - Opinions are authentic and consistent
+  - Philosophical stance is clear and coherent
+  - Author's vision for impact permeates the work
+  - No contradictions with stated worldview
+- **RAG Integration:** Consults RAG Author Vision & Opinions knowledge base
+- **Output:** Vision consistency and authenticity feedback
 
 - **Output:** Aggregated feedback from 5 perspectives:
   ```python
