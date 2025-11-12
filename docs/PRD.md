@@ -92,10 +92,14 @@ Build an automated ebook generation system integrating Python, LangChain 1.0, Go
 4. **Market Research** - Optimized title/subtitle
 5. **Structuring** - Automated book structure
 6. **Deep Research** - External RAG + internal RAG (author stories and opinions)
-7. **Guided Writing** - Multi-persona reviews
-8. **Final Adjustments** - Code validation and aesthetics
-9. **Visual Generation** - Summary and cover
-10. **Export** - Desired formats and KDP preparation
+7. **Specialized Review** - Multi-persona review (10 reviewers)
+8. **Critical Reading & Iteration** - 3 cycles of virtual reader feedback and revision
+   - Iteration 1: Initial feedback and critical issue resolution
+   - Iteration 2: Secondary improvements and engagement enhancement
+   - Iteration 3: Final polish and publication readiness validation
+9. **Final Adjustments** - Code validation, formatting, and aesthetics
+10. **Visual Generation** - Summary and cover
+11. **Export** - Desired formats and KDP preparation
 
 ---
 
@@ -506,23 +510,108 @@ Success Criteria:
 - All code examples execute successfully and collected for GitHub
 - All sources verified for academic credibility and scientific validity
 
-#### Stage 6: Critical Reading (5 Virtual Readers)
-**Input**: Revised content  
-**Output**: Independent feedback from 5 reader perspectives  
-**Process**: 3 complete iteration cycles
+#### Stage 6: Critical Reading & Iterative Revision (3 Cycles)
+**Input**: Content after Stage 5 review completion  
+**Output**: Polished content with reader-validated improvements  
+**Process**: 3 complete iteration cycles with critical reading feedback and revision
+
+**Critical Reading Process - Each Iteration**:
+
+**Phase 1: Virtual Reader Analysis** (Independent Reading)
+- 5 virtual reader personas analyze content independently
+- Each reader generates detailed feedback from their perspective:
 
 Virtual Reader Personas:
 
 1. **Curious Beginner**: New to topic, seeks clarity and accessibility
+   - Feedback on: Terminology clarity, progression speed, foundational assumptions
+   - Identifies: Confusing sections, missing context, overly technical language
+
 2. **Technical Professional**: Senior practitioner, validates depth and accuracy
+   - Feedback on: Technical correctness, framework knowledge, best practices
+   - Identifies: Outdated patterns, missing nuances, incorrect examples
+
 3. **Didactic Educator**: Teacher/mentor perspective, pedagogical structure
+   - Feedback on: Learning progression, exercise effectiveness, knowledge scaffolding
+   - Identifies: Pedagogical gaps, ineffective examples, poor sequencing
+
 4. **Domain Specialist**: Expert perspective, cross-disciplinary coherence
+   - Feedback on: Specialized knowledge accuracy, cross-domain consistency
+   - Identifies: Domain-specific gaps, contextual misalignments, missing frameworks
+
 5. **Reflective Reader**: General audience, emotional impact and empathy
+   - Feedback on: Emotional connection, relatability, engagement level
+   - Identifies: Tone issues, missing human context, disconnected sections
+
+**Phase 2: Feedback Aggregation & Prioritization**
+- Consolidate feedback from all 5 readers
+- Prioritize by frequency and impact:
+  - Critical issues (blocking comprehension or accuracy)
+  - Important improvements (enhance learning or engagement)
+  - Nice-to-have refinements (polish and presentation)
+- Identify conflicts/consensus between readers
+
+**Phase 3: Revision Based on Feedback**
+- Execute targeted revisions based on consolidated feedback
+- Focus on high-impact improvements from Phase 2
+- Maintain author's voice and positioning
+- Update sections that failed reader validation
+
+**Phase 4: Coordination Validation**
+- Coordinator Super Agent validates revision quality
+- Ensures all critical feedback has been addressed
+- Checks for unintended regressions
+- Confirms improvement trajectory
+
+**Iteration Cycle Flow**:
+```
+ITERATION 1:
+Input: Initial reviewed content (after Stage 5)
+  ↓
+Critical Reading: 5 virtual readers analyze independently
+  ↓
+Feedback Aggregation: Consolidate and prioritize findings
+  ↓
+Revision: Address critical issues and important improvements
+  ↓
+Validation: Coordinator confirms quality improvement
+  ↓
+Output: Improved content (Iteration 1)
+
+ITERATION 2:
+Input: Revised content from Iteration 1
+  ↓
+Critical Reading: 5 virtual readers analyze updated content
+  ↓
+Feedback Aggregation: Identify remaining issues and refinements
+  ↓
+Revision: Address secondary issues and enhance engagement
+  ↓
+Validation: Coordinator confirms further improvement
+  ↓
+Output: Further improved content (Iteration 2)
+
+ITERATION 3:
+Input: Revised content from Iteration 2
+  ↓
+Critical Reading: 5 virtual readers validate final improvements
+  ↓
+Feedback Aggregation: Final polish and verification
+  ↓
+Revision: Address remaining refinements and final polish
+  ↓
+Validation: Coordinator approves final version for publication
+  ↓
+Output: Publication-ready content (Iteration 3)
+```
 
 Success Criteria:
-- Each reader provides independent feedback
-- 3 iteration cycles completed
-- Content improves measurably each iteration
+- All 5 readers provide independent, detailed feedback each iteration
+- 3 complete iteration cycles executed sequentially
+- Content measurably improves each cycle (tracked by issue resolution rate)
+- Critical issues resolved by Iteration 2
+- All issues resolved or accepted by Iteration 3
+- Final version receives coordinator approval for publication
 
 #### Stage 7: Editing & Formatting
 **Input**: Iterated content  

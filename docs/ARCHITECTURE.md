@@ -279,6 +279,7 @@ CREATE INDEX ON rag_author_vision USING ivfflat (embedding vector_cosine_ops);
 ## 4. Execution Sequence (Flowchart)
 
 ```
+```
 InputMD 
   ↓
 MD Parser (validation and configuration propagation)
@@ -312,8 +313,47 @@ Multiple Review (10 personas)
   ├─ Author Stories & Didactics (narrative balance)
   ├─ Author Positioning (authority, positioning)
   ├─ Author Vision & Opinions (values, philosophy)
-  ├─ Examples & Exercises Code Reviewer (NEW - executes and collects code)
-  └─ Research & References Validator (NEW - validates source credibility)
+  ├─ Examples & Exercises Code Reviewer (executes and collects code)
+  └─ Research & References Validator (validates source credibility)
+  ↓
+═══════════════════════════════════════════════════════════
+  CRITICAL READING & ITERATIVE REVISION (3 Cycles)
+═══════════════════════════════════════════════════════════
+  ↓
+ITERATION 1: Critical Reading & Initial Revisions
+  ├─ Curious Beginner (clarity, accessibility feedback)
+  ├─ Technical Professional (technical accuracy feedback)
+  ├─ Didactic Educator (pedagogical structure feedback)
+  ├─ Domain Specialist (cross-disciplinary coherence feedback)
+  ├─ Reflective Reader (emotional impact feedback)
+  ├─ Feedback Aggregation & Prioritization (critical → nice-to-have)
+  ├─ Revision: Address critical issues (comprehension, accuracy)
+  ├─ Coordinator Validation: Confirm improvement quality
+  └─ Output: Improved content (Iteration 1)
+  ↓
+ITERATION 2: Validation & Secondary Improvements
+  ├─ Curious Beginner (verify clarity improvements)
+  ├─ Technical Professional (confirm technical fixes)
+  ├─ Didactic Educator (validate pedagogy enhancements)
+  ├─ Domain Specialist (check domain coherence)
+  ├─ Reflective Reader (assess engagement improvements)
+  ├─ Feedback Aggregation: Secondary issues and refinements
+  ├─ Revision: Address engagement and secondary improvements
+  ├─ Coordinator Validation: Confirm progressive improvement
+  └─ Output: Further improved content (Iteration 2)
+  ↓
+ITERATION 3: Final Polish & Publication Readiness
+  ├─ Curious Beginner (final clarity validation)
+  ├─ Technical Professional (final accuracy verification)
+  ├─ Didactic Educator (final pedagogical validation)
+  ├─ Domain Specialist (final coherence check)
+  ├─ Reflective Reader (final engagement validation)
+  ├─ Feedback Aggregation: Final polish and verification
+  ├─ Revision: Address remaining refinements
+  ├─ Coordinator Validation: Approve for publication
+  └─ Output: Publication-ready content (Iteration 3)
+  ↓
+═══════════════════════════════════════════════════════════
   ↓
 Code Agent (Python code block validation)
   ↓
@@ -327,7 +367,7 @@ Final Converter (format export)
   ├─ EPUB
   └─ JSON (metadata)
   ↓
-Publication Agent (KDP compilation)
+Publication Agent (KDP compilation)```
   ├─ Metadata
   ├─ Synopsis
   ├─ Catalog sheet
@@ -510,19 +550,21 @@ INPUT LAYER
 ├── InputMD Parser
 └── Config Validator
 
-AGENT LAYER (8 Agents)
+AGENT LAYER (9 Main + 10 Review + 5 Virtual Readers + 1 Coordinator)
 ├── Central Idea
 ├── Title/Subtitle
 ├── Structurer
-├── Writer
-├── Multiple Review (8 specialized personas)
+├── Deep Research (Stage 4A)
+├── Writer (Stage 4B)
+├── Multiple Review (10 specialized personas)
+├── Critical Reading (5 virtual readers - 3 iterations)
 ├── Code
 ├── Style Editor
 └── Summary/Cover
 
 RAG LAYER
-├── External RAG (Gemini 2.5 Pro)
-├── Author RAG - 3 Knowledge Types:
+├── External RAG (Gemini 2.5 Pro) - Research knowledge (generated)
+├── Author RAG - 3 Knowledge Types (pre-loaded):
 │   ├── Personal Stories (rag_author_stories)
 │   ├── Market Positioning (rag_author_positioning)
 │   └── Vision & Opinions (rag_author_vision)
@@ -540,7 +582,7 @@ PUBLICATION LAYER
 
 LLM LAYER
 ├── Gemini 2.5 Flash (writing)
-└── Gemini 2.5 Pro (research)
+└── Gemini 2.5 Pro (research & analysis)
 ```
 
 ---
@@ -562,12 +604,15 @@ USER INPUT (topic, audience, word_count)
 │   └─ Generate 3 Amazon-optimized title options
 │
 ├─→ STAGE 3: STRUCTURE AGENT
-│   └─ Create hierarchical outline
+│   └─ Create hierarchical outline with chapter definitions
 │
-├─→ STAGE 4: CHAPTER AGENT
-│   └─ Write didactic content with RAG
+├─→ STAGE 4A: DEEP RESEARCH AGENT
+│   └─ Query Context7 MCP Server, vectorize research, store in rag_external
 │
-├─→ STAGE 5: REVIEW (8 SPECIALIZED PERSONAS)
+├─→ STAGE 4B: WRITER AGENT
+│   └─ Write chapters with research-backed content (uses rag_external)
+│
+├─→ STAGE 5: SPECIALIZED REVIEW (10 PERSONAS)
 │   ├─→ TECHNICAL REVIEWER (code quality, versions)
 │   ├─→ EDITORIAL REVIEWER (clarity, tone, flow)
 │   ├─→ CONTENT STYLIST (formatting, structure)
@@ -575,16 +620,34 @@ USER INPUT (topic, audience, word_count)
 │   ├─→ ETHICS VALIDATOR (bias, disclaimers)
 │   ├─→ AUTHOR STORIES & DIDACTICS (narrative balance, RAG Stories)
 │   ├─→ AUTHOR POSITIONING (marketing authority, RAG Positioning)
-│   └─→ AUTHOR VISION & OPINIONS (values alignment, RAG Vision)
-│       └─ Aggregated feedback dict (8 perspectives)
+│   ├─→ AUTHOR VISION & OPINIONS (values alignment, RAG Vision)
+│   ├─→ EXAMPLES & EXERCISES CODE REVIEWER (executes code, collects for GitHub)
+│   └─→ RESEARCH & REFERENCES VALIDATOR (source credibility validation)
+│       └─ Aggregated feedback dict (10 perspectives)
 │
-├─→ STAGE 6: EDITING AGENT
+├─→ STAGE 6: CRITICAL READING & ITERATIVE REVISION (3 CYCLES)
+│   ├─→ ITERATION 1: Initial critical reading feedback & revision
+│   │   ├─→ 5 virtual readers analyze independently
+│   │   ├─→ Feedback aggregation & prioritization
+│   │   ├─→ Revision addressing critical issues
+│   │   └─→ Coordinator validation
+│   ├─→ ITERATION 2: Secondary improvements & engagement enhancement
+│   │   ├─→ 5 virtual readers re-analyze
+│   │   ├─→ Identify secondary improvements
+│   │   ├─→ Targeted revision
+│   │   └─→ Coordinator confirmation
+│   └─→ ITERATION 3: Final polish & publication readiness
+│       ├─→ 5 virtual readers validate final state
+│       ├─→ Final refinements
+│       └─→ Coordinator approval for publication
+│
+├─→ STAGE 7: EDITING AGENT
 │   └─ Final formatting and validation
 │
-├─→ STAGE 7: FINALIZATION AGENT
+├─→ STAGE 8: FINALIZATION AGENT
 │   └─ Cover generation and metadata
 │
-└─→ STAGE 8: PUBLICATION AGENT
+└─→ STAGE 9: PUBLICATION AGENT
     └─ DOCX, EPUB, PDF, JSON exports
 
 OUTPUT (results dictionary with all stage outputs)
@@ -592,7 +655,7 @@ OUTPUT (results dictionary with all stage outputs)
 
 ---
 
-## 🎯 The 8 Main Pipeline Stages
+## 🎯 The 9 Main Pipeline Stages
 
 ### 1️⃣ **Stage 1: Ideation Agent**
 - **Purpose:** Transform raw input into coherent business idea
@@ -738,7 +801,68 @@ OUTPUT (results dictionary with all stage outputs)
   }
   ```
 
-### 6️⃣ **Stage 6: Editing Agent**
+### 6️⃣ **Stage 6: Critical Reading & Iterative Revision (3 Cycles)**
+- **Purpose:** Validate content quality through diverse reader perspectives and improve through iterative feedback
+- **Responsibility:** Execute 3 complete cycles of critical reading feedback and revision
+- **Process:**
+  
+#### **Virtual Reader Personas** (execute independently each iteration):
+  
+1. **Curious Beginner Reader**
+   - Perspective: New to topic, seeks clarity and accessibility
+   - Feedback Focus: Terminology clarity, progression speed, foundational assumptions
+   - Identifies: Confusing sections, missing context, overly technical language
+   
+2. **Technical Professional Reader**
+   - Perspective: Senior practitioner, validates depth and accuracy
+   - Feedback Focus: Technical correctness, framework knowledge, best practices
+   - Identifies: Outdated patterns, missing nuances, incorrect examples
+   
+3. **Didactic Educator Reader**
+   - Perspective: Teacher/mentor with pedagogical expertise
+   - Feedback Focus: Learning progression, exercise effectiveness, knowledge scaffolding
+   - Identifies: Pedagogical gaps, ineffective examples, poor sequencing
+   
+4. **Domain Specialist Reader**
+   - Perspective: Expert in specific domain, cross-disciplinary perspective
+   - Feedback Focus: Specialized knowledge accuracy, cross-domain consistency
+   - Identifies: Domain-specific gaps, contextual misalignments, missing frameworks
+   
+5. **Reflective Reader**
+   - Perspective: General audience, evaluates emotional impact
+   - Feedback Focus: Emotional connection, relatability, engagement level
+   - Identifies: Tone issues, missing human context, disconnected sections
+
+#### **Iteration 1: Critical Issues & Initial Improvements**
+- **Phase 1:** 5 virtual readers analyze content independently
+- **Phase 2:** Feedback aggregation and prioritization (critical → nice-to-have)
+- **Phase 3:** Targeted revision addressing critical comprehension and accuracy issues
+- **Phase 4:** Coordinator validation of improvement quality
+- **Output:** Improved content with critical issues resolved
+
+#### **Iteration 2: Secondary Improvements & Engagement Enhancement**
+- **Phase 1:** 5 virtual readers re-analyze updated content
+- **Phase 2:** Identify remaining issues and refinement opportunities
+- **Phase 3:** Revision addressing engagement and secondary improvements
+- **Phase 4:** Coordinator confirms progressive improvement trajectory
+- **Output:** Further polished content with majority of issues resolved
+
+#### **Iteration 3: Final Polish & Publication Readiness**
+- **Phase 1:** 5 virtual readers validate final improvements
+- **Phase 2:** Final polish and verification feedback
+- **Phase 3:** Address remaining refinements and final enhancements
+- **Phase 4:** Coordinator approves content as publication-ready
+- **Output:** Publication-ready content with coordinator sign-off
+
+- **Success Criteria:**
+  - All 5 readers provide independent, detailed feedback each iteration
+  - 3 complete cycles executed sequentially
+  - Critical issues resolved by Iteration 2
+  - All identified issues addressed by Iteration 3
+  - Content measurably improves each cycle (tracked by resolution rate)
+  - Final version receives coordinator approval for publication
+
+### 7️⃣ **Stage 7: Editing Agent**
 - **Purpose:** Final formatting validation and consistency check
 - **Responsibility:** Ensure document meets publishing standards
 - **Tools:**
@@ -746,13 +870,13 @@ OUTPUT (results dictionary with all stage outputs)
   - `validate_markdown_format()` - Format validation
 - **Output:** Publication-ready formatted document
 
-### 7️⃣ **Stage 7: Finalization Agent**
+### 8️⃣ **Stage 8: Finalization Agent**
 - **Purpose:** Generate cover and validate all metadata
 - **Responsibility:** Create cover concept and complete metadata
 - **Tools:**
   - `generate_cover()` - AI cover design
   - `generate_kdp_metadata()` - Metadata generation
-### 8️⃣ **Stage 8: Publication Agent**
+### 9️⃣ **Stage 9: Publication Agent**
 - **Purpose:** Export to multiple formats for KDP
 - **Responsibility:** Generate publication-ready packages
 - **Tools:**
@@ -772,8 +896,8 @@ OUTPUT (results dictionary with all stage outputs)
 
 ```
 src/
-├── main.py           # Pipeline orchestration (8 stages)
-├── agents.py         # 8 agents + 1 coordinator + 5 specialized reviewers
+├── main.py           # Pipeline orchestration (9 stages)
+├── agents.py         # 9 main agents + 1 coordinator + 10 specialized reviewers + 5 virtual readers
 ├── tools.py          # 30+ specialized tools
 ├── config.py         # Model initialization and config
 └── __init__.py       # Package initialization
