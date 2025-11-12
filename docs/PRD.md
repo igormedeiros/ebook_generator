@@ -43,11 +43,12 @@ Build an automated ebook generation system integrating Python, LangChain 1.0, Go
 
 ### Automatic Research with Gemini 2.5 Pro and Context7 (RAG)
 - For each chapter (after chapter definitions): Query Context7 MCP Server
-- Retrieve relevant knowledge bases via semantic search
+- Retrieve scientific data, academic studies, book references, and authoritative sources
 - Perform deep research using Gemini 2.5 Pro
 - Vectorize research results with Gemini embeddings model
 - Store in Supabase rag_external table for Writer Agent
-- Context7 runs independently (not dependent on VS Code)
+- Research & References Validator persona ensures source quality and credibility
+- Context7 runs independently (not dependent on VS Code, git hub copilot or any other agentic coder)
 
 ### Author Knowledge Base (Pre-loaded in Supabase)
 - Author stories, positioning, and opinions already available
@@ -60,9 +61,17 @@ Build an automated ebook generation system integrating Python, LangChain 1.0, Go
 - Review loops (editorial, technical, empathy, humor, etc.)
 - Based on styles and critical feedback
 
+### Examples & Exercises Management
+- All code examples and exercises executed, tested, and collected
+- Examples saved to GitHub repository structure (one per chapter)
+- Full source code integrated into book with GitHub references
+- Examples & Exercises Code Reviewer validates all code execution
+- Automatic GitHub repository integration for readers
+
 ### Code Validation
 - Python code blocks in the book are validated by a specific agent
 - Integrated execution and testing tools
+- Code verified through Examples & Exercises Code Reviewer
 
 ### Editing & Aesthetics
 - Adjustment of headings, links, styles, Markdown template
@@ -96,7 +105,7 @@ Build an automated ebook generation system integrating Python, LangChain 1.0, Go
 
 | Component | Technology | Version |
 |-----------|-----------|---------|
-| **Backend** | Python | 3.11+ |
+| **Backend** | Python | 3.12.9 |
 | **AI Orchestration** | LangChain | 1.0+ |
 | **Writing Model** | Gemini 2.5 Flash | Latest |
 | **Research Model** | Gemini 2.5 Pro | Latest |
@@ -138,6 +147,10 @@ Build an automated ebook generation system integrating Python, LangChain 1.0, Go
 8. **Agent: Style Editor** - Style refinement and Markdown template
 9. **Agent: Summary/Cover** - Dynamic generation with API insertion
 
+**Support Agents** (integrated into pipeline):
+- **Examples & Exercises Code Reviewer** - Executes, tests, and collects code examples for GitHub
+- **Research & References Validator** - Validates scientific sources, academic credibility, and reference quality
+
 ### RAG Architecture
 - **Author Knowledge (Pre-loaded)**: Stories, positioning, vision stored in Supabase
   - Retrieved directly during review phases
@@ -156,7 +169,7 @@ Build an automated ebook generation system integrating Python, LangChain 1.0, Go
   - Provides semantic search across knowledge bases
   - Returns top-k relevant documents per chapter topic
 
-### Review Personas (8)
+### Review Personas (10)
 1. **Editorial** - Clarity, tone, flow
 2. **Technical** - Code quality, conceptual precision
 3. **Empathy** - Accessibility, emotional connection
@@ -165,6 +178,8 @@ Build an automated ebook generation system integrating Python, LangChain 1.0, Go
 6. **Author Stories & Didactics** - Balances personal stories with clear pedagogy (Author RAG)
 7. **Author Positioning** - Validates marketing positioning and authority (Positioning RAG)
 8. **Author Vision & Opinions** - Reviews author's views and opinions on the topic (Vision RAG)
+9. **Examples & Exercises Code Reviewer** - Executes code examples, validates functionality, collects for GitHub (NEW)
+10. **Research & References Validator** - Validates scientific sources, academic studies, book references, credibility (NEW)
 
 ### Converter/Finalizer
 - Export in defined formats (HTML, DOCX, EPUB)
@@ -180,6 +195,36 @@ Build an automated ebook generation system integrating Python, LangChain 1.0, Go
 
 ## 6. Special Requirements
 
+### Code Examples and Exercises
+- All code examples executed and tested before book publication
+- Examples & Exercises Code Reviewer validates Python code execution
+- All working code collected and organized in GitHub repository
+- GitHub structure mirrors book chapter organization:
+  ```
+  github_repo/
+  ├── README.md (with ebook information and setup)
+  ├── chapter_01/
+  │   ├── example_1.py
+  │   ├── example_2.py
+  │   └── exercise_1.py
+  ├── chapter_02/
+  │   └── ...
+  └── requirements.txt (all dependencies)
+  ```
+- Book contains GitHub links to examples for reader reference
+
+### Research and References Management
+- All chapters backed by scientific data, academic studies, and authoritative sources
+- Research & References Validator ensures source credibility
+- Sources include:
+  - Peer-reviewed academic papers
+  - Published books and research studies
+  - Industry reports and frameworks
+  - Verified scientific findings
+- Source attribution throughout content (citations in footnotes)
+- Full bibliography included in final ebook
+
+### Content Quality
 - **Clear separation** between external inputs (Gemini Pro), author-owned internal inputs (stories and opinions), and multi-agent review
 - **Full traceability** of all sources and inputs in final document
 - **Radical personalization** ensuring author content merges with universal editorial result
@@ -422,11 +467,44 @@ Review Personas:
    - Integration: Uses RAG Author Vision & Opinions knowledge base
    - Output: Vision consistency and opinion authenticity feedback
 
+9. **Examples & Exercises Code Reviewer** (`create_examples_exercises_reviewer_agent()`) (NEW)
+   - Focus: Code example execution, testing, and collection for GitHub
+   - Validates: All code examples execute without errors
+   - Checks: Code quality, completeness, educational value
+   - Process:
+     - Executes each code example in the book
+     - Tests for runtime errors and syntax issues
+     - Collects working code to organized GitHub repository
+     - Mirrors chapter structure in repository
+     - Generates GitHub links for book references
+   - Integration: Outputs structured code collection for publication
+   - Output: Validated code examples, GitHub links, and collected source files
+
+10. **Research & References Validator** (`create_research_references_validator_agent()`) (NEW)
+   - Focus: Scientific credibility and reference quality
+   - Validates: Accuracy of sources, academic rigor, factual correctness
+   - Checks:
+     - Academic paper citations and peer-review status
+     - Book references and publication credibility
+     - Research framework validity and methodology
+     - Current scientific consensus alignment
+     - Medical/clinical claims validation
+   - Process:
+     - Cross-references all cited sources
+     - Validates citations against original sources
+     - Checks publication dates and content relevance
+     - Flags outdated or non-credible sources
+     - Suggests alternative authoritative sources if needed
+   - Integration: Ensures chapter content backed by credible research
+   - Output: Credibility validation report, source corrections, bibliography
+
 Success Criteria:
-- All 8 reviews completed
+- All 10 reviews completed
 - Feedback structured and actionable
 - Critical issues flagged for resolution
 - Author's voice and positioning clearly represented
+- All code examples execute successfully and collected for GitHub
+- All sources verified for academic credibility and scientific validity
 
 #### Stage 6: Critical Reading (5 Virtual Readers)
 **Input**: Revised content  
@@ -497,17 +575,18 @@ Success Criteria:
 
 ### 3.2 Multi-Agent System
 
-#### 8 Main Pipeline Agents
+#### 9 Main Pipeline Agents
 1. `create_ideation_agent()` - Stage 1
 2. `create_title_agent()` - Stage 2
 3. `create_structure_agent()` - Stage 3
-4. `create_chapter_agent()` - Stage 4
-5. `create_review_agent()` - Stage 5 orchestration
-6. `create_editing_agent()` - Stage 7
-7. `create_finalization_agent()` - Stage 8
-8. `create_publication_agent()` - Stage 9
+4. `create_deep_research_agent()` - Stage 4A (NEW)
+5. `create_chapter_agent()` - Stage 4B
+6. `create_review_agent()` - Stage 5 orchestration
+7. `create_editing_agent()` - Stage 7
+8. `create_finalization_agent()` - Stage 8
+9. `create_publication_agent()` - Stage 9
 
-#### Specialized Review Agents (8)
+#### Specialized Review Agents (10)
 1. `create_technical_reviewer_agent()`
 2. `create_editorial_reviewer_agent()`
 3. `create_content_stylist_agent()`
@@ -516,12 +595,20 @@ Success Criteria:
 6. `create_author_stories_reviewer_agent()`
 7. `create_author_positioning_reviewer_agent()`
 8. `create_author_vision_opinions_reviewer_agent()`
+9. `create_examples_exercises_reviewer_agent()` (NEW)
+10. `create_research_references_validator_agent()` (NEW)
 
-#### Orchestration Agents (2)
-1. `create_coordinator_superagent()` - Full pipeline orchestration
-2. Execution function: `execute_review_personas()` - Manage 8 reviewers
+#### Virtual Reader Agents (5)
+1. `create_curious_beginner_reader()` - New to topic perspective
+2. `create_technical_professional_reader()` - Expert validation perspective
+3. `create_didactic_educator_reader()` - Teaching methodology perspective
+4. `create_domain_specialist_reader()` - Cross-disciplinary perspective
+5. `create_reflective_reader()` - General audience perspective
 
-**Total Agents**: 18 (8 main + 1 deep research + 8 review + 1 coordinator)
+#### Orchestration Agents (1)
+1. `create_coordinator_superagent()` - Full pipeline orchestration and execution management
+
+**Total Agents**: 25 (9 main + 10 review + 5 virtual readers + 1 coordinator)
 
 ### 3.3 Tool System (30+ Specialized Tools)
 
@@ -601,7 +688,7 @@ Purpose: Deep analysis, RAG retrieval, semantic search, fact-checking
 
 ### 4.3 RAG Integration Architecture
 
-**Two-Tier RAG System**:
+**Two-Tier RAG System with Scientific Research**:
 
 **Tier 1: Author Knowledge (Pre-loaded)**
 - Location: Supabase (rag_author_stories, rag_author_positioning, rag_author_vision)
@@ -610,12 +697,29 @@ Purpose: Deep analysis, RAG retrieval, semantic search, fact-checking
 - Retrieval: Direct table queries (no vectorization)
 
 **Tier 2: External Research (Generated During Pipeline)**
-- Source: Context7 MCP Server (independent semantic search)
+- Source: Context7 MCP Server (independent semantic search across knowledge bases)
+- Research Types Retrieved:
+  - Academic papers and peer-reviewed studies
+  - Scientific data and research findings
+  - Published books and authoritative texts
+  - Industry reports and frameworks
+  - Historical references and case studies
 - Process: Deep Research Agent (Stage 4A) performs semantic queries
-- Vectorization: Using Gemini embeddings model
-- Storage: Supabase rag_external table with chapter_id and topic tags
-- Accessed: By Writer Agent (Stage 4B) to enrich chapters with research
-- Traceability: All sources marked in final document
+- Vectorization: Using Gemini embeddings model on all research content
+- Storage: Supabase rag_external table with chapter_id, topic, source, credibility tags
+- Accessed: By Writer Agent (Stage 4B) to enrich chapters with research-backed content
+- Validation: Research & References Validator (Stage 5) verifies source credibility and accuracy
+- Traceability: All sources marked with citations in final document
+
+**Research Quality Assurance**:
+- Context7 retrieves from vetted knowledge bases with academic rigor
+- Research & References Validator cross-checks:
+  - Source credibility and publication status
+  - Peer-review status for academic papers
+  - Author credentials and expertise
+  - Data freshness and current relevance
+  - Alignment with scientific consensus
+- Failed sources flagged and replaced with authoritative alternatives
 
 **Context7 MCP Server Integration**:
 - Runs independently from VS Code and Copilot
@@ -623,27 +727,48 @@ Purpose: Deep analysis, RAG retrieval, semantic search, fact-checking
 - Provides semantic search across multiple knowledge bases
 - Called during Stage 4A (Deep Research)
 - Returns top-k relevant documents per chapter topic
+- Includes source metadata (type, credibility, publication date)
 
 **Implementation Pattern**:
 ```python
-# Stage 4A: Deep Research
+# Stage 4A: Deep Research with Scientific Sources
 for chapter in chapters:
-    # Query Context7 MCP Server
-    research_results = query_context7(chapter.topic)
+    # Query Context7 MCP Server for research
+    # Retrieves academic papers, books, studies, etc.
+    research_results = query_context7(
+        topic=chapter.topic,
+        research_types=['academic', 'books', 'data', 'frameworks']
+    )
     
     # Vectorize with Gemini embeddings
     embeddings = generate_embeddings(research_results)
     
-    # Store in rag_external
-    store_in_rag_external(embeddings, chapter_id=chapter.id)
+    # Store in rag_external with source metadata
+    store_in_rag_external(
+        embeddings=embeddings,
+        chapter_id=chapter.id,
+        sources=research_results.sources,
+        credibility_tags=research_results.credibility
+    )
 
-# Stage 4B: Writer
+# Stage 4B: Writer (uses research from Stage 4A)
 for chapter in chapters:
     # Retrieve vectorized research
     research_context = retrieve_rag_external(chapter.id)
     
-    # Write with research context
-    chapter_content = write_chapter(chapter, research_context)
+    # Write chapter with research-backed content
+    chapter_content = write_chapter(
+        chapter, 
+        research_context=research_context,
+        maintain_citations=True
+    )
+
+# Stage 5: Research & References Validator
+validation_results = validate_research_references(
+    content=chapter_content,
+    sources=research_results.sources,
+    checks=['credibility', 'accuracy', 'relevance', 'consensus']
+)
 ```
 
 ### 4.4 LangChain 1.0+ Standards

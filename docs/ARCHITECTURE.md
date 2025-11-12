@@ -44,7 +44,7 @@ Output: Validated global configurations
 Responsibility: Propagate configurations throughout the pipeline
 ```
 
-### 2.2 Main Agents (8)
+### 2.2 Main Agents (9 + 10 Reviewers + 5 Virtual Readers + 1 Coordinator)
 
 #### 1. Agent: Central Idea
 - **Responsibility**: Generate book essence according to input/parameters
@@ -94,7 +94,7 @@ Responsibility: Propagate configurations throughout the pipeline
 - **Execution**: Runs sequentially before Writer Agent in Stage 4
 
 #### 5. Agent: Multiple Review
-- **Responsibility**: Simulate specialized review personas (8 personas)
+- **Responsibility**: Simulate specialized review personas (10 personas)
 - **Personas**:
   - Editorial: Clarity, tone, flow
   - Technical: Code quality, conceptual precision
@@ -104,13 +104,25 @@ Responsibility: Propagate configurations throughout the pipeline
   - Stories & Didactics: Balances author narratives with pedagogy
   - Positioning: Validates author authority and market positioning
   - Vision & Opinions: Reviews author vision and opinions coherence
-- **Input**: Raw chapters
-- **Output**: Structured feedback by persona (8 perspectives)
+  - Examples & Exercises Code Reviewer (NEW): Executes and collects code for GitHub
+  - Research & References Validator (NEW): Validates scientific credibility of sources
+- **Input**: Raw chapters with embedded code examples and citations
+- **Output**: Structured feedback by persona (10 perspectives)
 - **RAG Integration**:
   - RAG Author Stories (for narrative balance evaluation)
   - RAG Positioning (for authority validation)
   - RAG Vision & Opinions (for philosophical coherence)
-- **Loop**: Review cycle critical based on target audience, style and author identity
+- **Code Review Process**:
+  - Examples & Exercises Code Reviewer executes all code examples
+  - Tests for errors and validates functionality
+  - Collects working code to GitHub repository structure
+  - Generates GitHub links for book references
+- **Research Validation Process**:
+  - Research & References Validator cross-checks all cited sources
+  - Validates academic credibility and peer-review status
+  - Checks data freshness and scientific consensus alignment
+  - Flags and replaces non-credible sources
+- **Loop**: Review cycle critical based on target audience, style, author identity, code execution, and research credibility
 
 #### 6. Agent: Code
 - **Responsibility**: Validate Python blocks in the book
@@ -151,7 +163,7 @@ These tables contain pre-ingested author knowledge and are referenced by:
 - Author Vision Reviewer: To validate philosophical coherence
 ```
 
-### 3.2 External RAG - Deep Research Pipeline
+### 3.2 External RAG - Deep Research Pipeline with Scientific Sources
 ```
 Execution Flow:
 1. Stage 3: Structure Agent creates hierarchical outline
@@ -159,23 +171,35 @@ Execution Flow:
 
 2. Stage 4A: Deep Research Agent (NEW - runs BEFORE writing)
    ├─ For each chapter: Query Context7 MCP Server
-   ├─ Retrieve relevant knowledge bases via semantic search
+   ├─ Retrieve academic papers, books, studies, frameworks
+   ├─ Sources include: peer-reviewed research, scientific data, authoritative texts
    ├─ Perform deep research using Gemini 2.5 Pro
-   └─ Vectorize research results with Gemini embeddings model
+   ├─ Vectorize research results with Gemini embeddings model
+   └─ Tag with source metadata (credibility, publication date, author expertise)
 
-3. Stage 4B: Vector Storage
+3. Stage 4B: Vector Storage & Validation
    ├─ Store vectorized research in rag_external table
-   └─ Tag with chapter_id, topic, source for traceability
+   ├─ Tag with chapter_id, topic, source, credibility metrics
+   └─ Research & References Validator (Stage 5) verifies source quality
 
 4. Stage 4C: Chapter Writing
    ├─ Writer Agent queries rag_external (vectorized research)
-   ├─ Integrates RAG context naturally into chapters
-   ├─ Cites sources for all RAG-sourced information
-   └─ Maintains author's voice while enhancing with research
+   ├─ Integrates research-backed content naturally into chapters
+   ├─ Includes citations for all sources
+   └─ Maintains author's voice while enhancing with verified research
+
+5. Stage 5: Research & References Validator Review
+   ├─ Cross-validates all cited sources
+   ├─ Checks academic credibility and peer-review status
+   ├─ Verifies scientific consensus alignment
+   ├─ Flags outdated or non-credible sources
+   └─ Suggests replacements for failed sources
 
 Context7 MCP Server Integration:
-- Provides semantic search across multiple knowledge bases
-- Returns top-k relevant documents for each chapter topic
+- Provides semantic search across multiple vetted knowledge bases
+- Returns top-k relevant documents with source metadata per chapter topic
+- Retrieves: academic papers, books, data, industry reports, case studies
+- Includes: author credentials, publication status, peer-review indicators
 - Runs independently (not dependent on VS Code or Copilot)
 - Executed directly by the Ebook Generator pipeline
 ```
@@ -188,11 +212,14 @@ AUTHOR RAG (rag_author_stories, rag_author_positioning, rag_author_vision)
 - Usage: By reviewers to validate author authenticity
 - Retrieved by: Direct table queries (no vectorization needed)
 
-EXTERNAL RESEARCH RAG (rag_external)
+EXTERNAL RESEARCH RAG (rag_external with scientific sources)
 - Generated: During pipeline execution (Stage 4A)
-- Content: Knowledge base research results, academic sources, frameworks
-- Usage: By Writer to enrich chapter content with facts
+- Content: Academic papers, books, studies, scientific data, frameworks
+- Sources: Peer-reviewed research, authoritative texts, verified data
+- Validation: Research & References Validator ensures credibility
 - Retrieved by: Semantic vector search (vectorized with Gemini embeddings)
+- Usage: By Writer Agent to enrich chapters with research-backed content
+- Traceability: All sources cited in document with credibility indicators
 ```
 
 ### 3.4 Supabase Configuration
@@ -262,28 +289,31 @@ Title Subtitle (research + 3 options)
   ↓
 Structurer (outline + word distribution + chapter definitions)
   ↓
-Deep Research Agent (NEW - Stage 4A)
+Deep Research Agent (Stage 4A)
   ├─ For each chapter: Query Context7 MCP Server
-  ├─ Retrieve knowledge bases via semantic search
+  ├─ Retrieve academic papers, books, studies, scientific data
   ├─ Deep research using Gemini 2.5 Pro
   ├─ Vectorize results with Gemini embeddings model
-  └─ Store in rag_external table
+  └─ Store in rag_external table with source metadata
   ↓
-Writer (Stage 4B - chapters with RAG)
+Writer (Stage 4B - chapters with research-backed content)
   ├─ Query rag_external (vectorized research)
   ├─ Integrate author narratives from rag_author_* tables
+  ├─ Include citations for all sources
   ├─ Markdown formatting
-  └─ Synthesis of all inputs
+  └─ Synthesis of research + author voice
   ↓
-Multiple Review (8 personas)
-  ├─ Editorial
-  ├─ Technical
-  ├─ Empathy
-  ├─ Engagement
-  ├─ Compliance
-  ├─ Stories & Didactics (queries rag_author_stories)
-  ├─ Positioning (queries rag_author_positioning)
-  └─ Vision & Opinions (queries rag_author_vision)
+Multiple Review (10 personas)
+  ├─ Editorial (clarity, tone, flow)
+  ├─ Technical (code quality, precision)
+  ├─ Empathy (accessibility, connection)
+  ├─ Engagement (lightness, interest)
+  ├─ Compliance (LGPD, HIPAA, KDP)
+  ├─ Author Stories & Didactics (narrative balance)
+  ├─ Author Positioning (authority, positioning)
+  ├─ Author Vision & Opinions (values, philosophy)
+  ├─ Examples & Exercises Code Reviewer (NEW - executes and collects code)
+  └─ Research & References Validator (NEW - validates source credibility)
   ↓
 Code Agent (Python code block validation)
   ↓
@@ -372,18 +402,51 @@ OUTPUT (eBook ready for KDP)
 - **Google Gemini API**: For LLMs (Flash + Pro) and embeddings
 - **Supabase API**: For storage and vector operations
 - **Context7 MCP Server**: For semantic knowledge base retrieval (independent execution)
+- **GitHub API** (optional): For automated repository creation and file management
 - **Banana API** (or similar): For AI cover generation (optional)
 - **Pandoc**: For format conversion (local installation)
 
 ### Context7 MCP Server
-- **Purpose**: Provide semantic search across multiple knowledge bases
+- **Purpose**: Provide semantic search across multiple knowledge bases for academic and scientific research
 - **Execution**: Runs independently from VS Code and Copilot
 - **Integration**: Called directly by Deep Research Agent in pipeline
+- **Knowledge Bases**: Academic papers, books, studies, data repositories, industry reports
 - **Functionality**:
   - Query multiple knowledge bases by topic
-  - Return top-k relevant documents for chapter research
+  - Return top-k relevant documents with source metadata
+  - Include credibility indicators (peer-review status, author expertise, publication date)
   - Support for semantic similarity search
   - Used only during Stage 4A (Deep Research)
+
+### GitHub Integration (Examples & Exercises Repository)
+- **Purpose**: Manage code examples and exercises collected by Examples & Exercises Code Reviewer
+- **Structure**:
+  ```
+  github_repo/
+  ├── README.md (book info, setup instructions, prerequisites)
+  ├── chapter_01/
+  │   ├── example_1.py
+  │   ├── example_2.py
+  │   ├── example_3.py
+  │   └── exercise_1.py
+  ├── chapter_02/
+  │   ├── example_1.py
+  │   └── exercise_1.py
+  ├── chapter_n/
+  │   └── ...
+  ├── requirements.txt (all Python dependencies)
+  ├── setup.py (optional package setup)
+  └── .gitignore
+  ```
+- **Automation**:
+  - Examples & Exercises Code Reviewer collects tested code during review
+  - Organize into chapter structure automatically
+  - Generate README with setup instructions
+  - Create GitHub links for book references
+- **Purpose in Book**:
+  - Links to complete runnable code examples
+  - Readers can clone and experiment locally
+  - Maintains code freshness and testability
 
 ### Environment Configuration
 ```bash
@@ -391,6 +454,7 @@ export GOOGLE_API_KEY="your-gemini-api-key"
 export NEXT_PUBLIC_SUPABASE_URL="https://your-project.supabase.co"
 export NEXT_PUBLIC_SUPABASE_ANON_KEY="your-supabase-key"
 export CONTEXT7_SERVER_URL="http://localhost:8000"  # or production URL
+export GITHUB_TOKEN="your-github-token"  # optional for repo automation
 export BANANA_API_KEY="your-key"  # optional for cover
 ```
 
