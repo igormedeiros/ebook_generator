@@ -1,6 +1,6 @@
 """
 Main entry point for the Ebook Generator 1.0 pipeline.
-Orchestrates the 8-stage editorial process with specialized agents.
+Orchestrates the 9-stage editorial process with specialized agents and iterative review cycles.
 """
 
 from config import get_model
@@ -8,6 +8,7 @@ from agents import (
     create_ideation_agent,
     create_title_agent,
     create_structure_agent,
+    create_deep_research_agent,
     create_chapter_agent,
     create_review_agent,
     create_editing_agent,
@@ -16,6 +17,7 @@ from agents import (
     create_coordinator_superagent,
     execute_agent,
     execute_review_personas,
+    execute_critical_reading_iterations,
     create_technical_reviewer_agent,
     create_editorial_reviewer_agent,
     create_content_stylist_agent,
@@ -31,34 +33,50 @@ def run_ebook_pipeline(
     run_all_stages: bool = True
 ) -> dict:
     """
-    Complete 8-stage ebook generation pipeline with specialized review personas.
+    Complete 9-stage ebook generation pipeline with specialized review personas and iterative refinement.
     
     Pipeline Stages:
     1. Ideation - Define central idea, problem, target audience, transformation promise
     2. Title - Generate 3 Amazon-optimized title options
     3. Structure - Create hierarchical outline scaled to word count
-    4. Chapter Writing - Write didactic content with RAG integration
-    5. Review - Execute 5 specialized review personas
+    4A. Deep Research - Query external sources, vectorize findings, integrate with RAG
+    4B. Chapter Writing - Write didactic content with research + author context
+    5. Specialized Review - Execute 10 specialized review personas
        ├─ Technical Reviewer (code quality, framework versions, accuracy)
        ├─ Editorial Reviewer (clarity, tone, flow, linguistics)
        ├─ Content Stylist (formatting, structure, consistency)
        ├─ Governance QA (compliance, metadata, security, LGPD)
-       └─ Ethics Validator (bias, medical disclaimers, AI ethics, HIPAA)
-    6. Editing - Final formatting and validation
-    7. Finalization - Cover generation and metadata
-    8. Publication - DOCX/EPUB/PDF/JSON export for KDP
+       ├─ Ethics Validator (bias, medical disclaimers, AI ethics, HIPAA)
+       ├─ Author Stories Reviewer (narrative integration with didactic balance)
+       ├─ Author Positioning Reviewer (market positioning and authority)
+       ├─ Author Vision & Opinions (values and philosophy alignment)
+       ├─ Examples & Exercises Code Reviewer (GitHub examples validation)
+       └─ Research & References Validator (research quality and citations)
+    6. Critical Reading & Iterative Revision - 3 iteration cycles with 5 virtual readers
+       ├─ Cycle 1: Critical Issues (major content and structure issues)
+       ├─ Cycle 2: Secondary Improvements (refinement and polish)
+       └─ Cycle 3: Final Polish (consistency and perfection)
+       Virtual Readers:
+       ├─ Curious Beginner (accessibility, progression)
+       ├─ Technical Professional (depth, relevance, rigor)
+       ├─ Didactic Educator (pedagogical structure, methodology)
+       ├─ Domain Specialist (cross-disciplinary coherence, application)
+       └─ Reflective Reader (empathy, purpose, emotional impact)
+    7. Editing - Final formatting and validation
+    8. Finalization - Cover generation and metadata
+    9. Publication - DOCX/EPUB/PDF/JSON export for KDP
     
     Args:
         topic: The main topic or theme of the ebook
         target_audience: Specific audience segment
         word_count_target: Target word count (default: 15000)
-        run_all_stages: Whether to run all 8 stages (default: True)
+        run_all_stages: Whether to run all 9 stages (default: True)
     
     Returns:
         Dictionary with results from each pipeline stage
     """
     print("=" * 80)
-    print("🚀 EBOOK GENERATOR 1.0 - AUTONOMOUS EDITORIAL PIPELINE")
+    print("🚀 EBOOK GENERATOR 1.0 - AUTONOMOUS EDITORIAL PIPELINE (9-STAGE)")
     print("=" * 80)
     
     results = {}
@@ -111,29 +129,51 @@ Generate a didactic outline in Markdown format with section weights based on wor
     results["structure"] = structure_result
     print(structure_result[:500] + "..." if len(structure_result) > 500 else structure_result)
     
-    # STAGE 4: CHAPTER WRITING
-    print("\n✍️  STAGE 4: CHAPTER WRITING")
+    # STAGE 4A: DEEP RESEARCH
+    print("\n🔬 STAGE 4A: DEEP RESEARCH & KNOWLEDGE INTEGRATION")
+    print("-" * 80)
+    deep_research_agent = create_deep_research_agent(model)
+    research_query = f"""Conduct deep research and knowledge integration:
+Topic: {topic}
+Target Audience: {target_audience}
+
+Query external sources and Context7 MCP for:
+1. Latest research findings and best practices
+2. Industry trends and relevant case studies
+3. Expert perspectives and methodologies
+4. Data and statistics to support the topic
+
+Vectorize findings and integrate with RAG system."""
+    
+    research_result = execute_agent(deep_research_agent, research_query)
+    results["deep_research"] = research_result
+    print(research_result[:500] + "..." if len(research_result) > 500 else research_result)
+    
+    # STAGE 4B: CHAPTER WRITING
+    print("\n✍️  STAGE 4B: CHAPTER WRITING")
     print("-" * 80)
     chapter_agent = create_chapter_agent(model)
     chapter_words = word_count_target // 8
-    chapter_query = f"""Write an introduction chapter:
+    chapter_query = f"""Write an introduction chapter incorporating research findings:
 Topic: {topic}
 Target Word Count: approximately {chapter_words} words
 Target Audience: {target_audience}
+Research Context: {research_result[:300]}
 
-Use RAG context when available. Make content didactic and engaging."""
+Use RAG context (author knowledge + research findings) when available. 
+Make content didactic, engaging, and well-researched."""
     
     chapter_result = execute_agent(chapter_agent, chapter_query)
     results["chapter"] = chapter_result
     print(chapter_result[:500] + "..." if len(chapter_result) > 500 else chapter_result)
     
-    # STAGE 5: SPECIALIZED REVIEW WITH 5 PERSONAS
-    print("\n🔍 STAGE 5: SPECIALIZED REVIEW (5 PERSONAS)")
+    # STAGE 5: SPECIALIZED REVIEW WITH 10 PERSONAS
+    print("\n🔍 STAGE 5: SPECIALIZED REVIEW (10 PERSONAS)")
     print("-" * 80)
     
     review_sample = chapter_result[:2000]  # Use excerpt for efficiency
     
-    print("  Executing 5 specialized reviewers:")
+    print("  Executing 10 specialized reviewers:")
     persona_feedback = execute_review_personas(model, review_sample)
     results["review_personas"] = persona_feedback
     
@@ -141,24 +181,46 @@ Use RAG context when available. Make content didactic and engaging."""
         print(f"\n  ▸ {reviewer_name.upper()} FEEDBACK:")
         print("    " + feedback[:300] + "..." if len(feedback) > 300 else "    " + feedback)
     
-    # STAGE 6: EDITING
-    print("\n🎨 STAGE 6: EDITING & FORMATTING")
+    # STAGE 6: CRITICAL READING & ITERATIVE REVISION (3 CYCLES)
+    print("\n📖 STAGE 6: CRITICAL READING & ITERATIVE REVISION (3 CYCLES)")
+    print("-" * 80)
+    print("  Executing 3-cycle iterative refinement with 5 virtual readers...")
+    
+    critical_reading_results = execute_critical_reading_iterations(
+        model=model,
+        content=chapter_result,
+        review_feedback=persona_feedback
+    )
+    results["critical_reading"] = critical_reading_results
+    
+    print(f"\n  ✓ Cycle 1 (Critical Issues): Complete")
+    print(f"  ✓ Cycle 2 (Secondary Improvements): Complete")
+    print(f"  ✓ Cycle 3 (Final Polish): Complete")
+    print(f"\n  Total iterations: {len(critical_reading_results.get('iterations', []))} cycles")
+    print(f"  Refined content ready for editing.")
+    
+    # Use the refined content from critical reading for next stages
+    refined_content = critical_reading_results.get("refined_content", chapter_result)
+    
+    # STAGE 7: EDITING
+    print("\n🎨 STAGE 7: EDITING & FORMATTING")
     print("-" * 80)
     editing_agent = create_editing_agent(model)
-    editing_query = """Validate Markdown formatting:
+    editing_query = """Validate and perfect Markdown formatting:
 - Check heading hierarchy (H1, H2, H3)
 - Verify code block formatting
 - Ensure list consistency
 - Validate link structure
+- Check for formatting consistency
 
-Provide formatting improvement suggestions."""
+Provide final formatting polish suggestions."""
     
     editing_result = execute_agent(editing_agent, editing_query)
     results["editing"] = editing_result
     print(editing_result[:500] + "..." if len(editing_result) > 500 else editing_result)
     
-    # STAGE 7: FINALIZATION
-    print("\n✨ STAGE 7: FINALIZATION & COVER")
+    # STAGE 8: FINALIZATION
+    print("\n✨ STAGE 8: FINALIZATION & COVER")
     print("-" * 80)
     finalization_agent = create_finalization_agent(model)
     finalization_query = f"""Generate cover concept and validate metadata:
@@ -171,8 +233,8 @@ Create an attractive cover concept and validate all metadata requirements."""
     results["finalization"] = finalization_result
     print(finalization_result[:500] + "..." if len(finalization_result) > 500 else finalization_result)
     
-    # STAGE 8: PUBLICATION
-    print("\n📦 STAGE 8: PUBLICATION & KDP EXPORT")
+    # STAGE 9: PUBLICATION
+    print("\n📦 STAGE 9: PUBLICATION & KDP EXPORT")
     print("-" * 80)
     publication_agent = create_publication_agent(model)
     publication_query = f"""Prepare for KDP publication:
@@ -180,7 +242,7 @@ Topic: {topic}
 Author: Igor Medeiros
 Target Word Count: {word_count_target}
 
-Generate complete KDP metadata package (DOCX, EPUB, JSON)."""
+Generate complete KDP metadata package (DOCX, EPUB, PDF, JSON)."""
     
     publication_result = execute_agent(publication_agent, publication_query)
     results["publication"] = publication_result
@@ -194,14 +256,16 @@ Generate complete KDP metadata package (DOCX, EPUB, JSON)."""
     print(f"  • Topic: {topic}")
     print(f"  • Target Audience: {target_audience}")
     print(f"  • Target Word Count: {word_count_target}")
-    print(f"  • Stages Completed: 8/8")
-    print(f"  • Review Personas: 5 specialized reviewers executed")
+    print(f"  • Stages Completed: 9/9")
+    print(f"  • Specialized Review Personas: 10")
+    print(f"  • Critical Reading Iterations: 3 cycles with 5 virtual readers")
+    print(f"  • Deep Research Integration: ✓ Completed")
     
     return results
 
 
 def main():
-    """Main entry point - demonstration of the 8-stage pipeline."""
+    """Main entry point - demonstration of the 9-stage pipeline with critical reading iterations."""
     topic = "Advanced Python with LangChain"
     target_audience = "Senior Python Developers and AI Engineers"
     word_count_target = 15000

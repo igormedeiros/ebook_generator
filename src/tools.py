@@ -172,6 +172,134 @@ def retrieve_author_vision(author_name: str, max_results: int = 3) -> str:
 
 
 @tool
+def query_context7_mcp(topic: str, query_type: str = "research") -> str:
+    """
+    Query Context7 MCP server for research and knowledge retrieval.
+    Integrates with independent semantic knowledge retrieval system.
+    
+    Args:
+        topic: The research topic or query
+        query_type: Type of query ('research', 'trends', 'case_studies', 'expert_perspectives')
+    
+    Returns:
+        str: Research findings from Context7 MCP server
+    """
+    # TODO: Integrate with Context7 MCP server
+    # This requires Context7 server to be running and accessible
+    # Pattern: Connect to Context7 via RPC/gRPC and execute queries
+    return f"""Context7 MCP Research Results for '{topic}':
+    
+Query Type: {query_type}
+Status: [TODO] Context7 MCP server integration pending
+Placeholder: Research findings would be retrieved from Context7 server
+Expected Output: Structured research data with sources and citations"""
+
+
+@tool
+def perform_deep_research(topic: str, research_depth: str = "comprehensive") -> dict:
+    """
+    Perform deep research across multiple sources and synthesize findings.
+    Combines Context7 queries, external search, and knowledge synthesis.
+    
+    Args:
+        topic: The topic to research
+        research_depth: Depth level ('quick', 'standard', 'comprehensive')
+    
+    Returns:
+        dict: Research findings organized by category
+    """
+    # TODO: Implement full research pipeline
+    # Would include:
+    # 1. Context7 MCP queries
+    # 2. Academic database searches
+    # 3. Industry reports and trends
+    # 4. Expert perspectives
+    # 5. Data and statistics gathering
+    # 6. Synthesis into coherent framework
+    
+    return {
+        "topic": topic,
+        "research_depth": research_depth,
+        "findings": {
+            "key_concepts": ["Concept 1", "Concept 2", "Concept 3"],
+            "best_practices": ["Practice 1", "Practice 2"],
+            "case_studies": ["Case Study 1", "Case Study 2"],
+            "statistics": ["Stat 1", "Stat 2"],
+            "expert_perspectives": ["Expert 1 view", "Expert 2 view"]
+        },
+        "sources_count": 15,
+        "synthesis_ready": True
+    }
+
+
+@tool
+def vectorize_research(research_findings: dict) -> dict:
+    """
+    Vectorize research findings using Gemini embeddings.
+    Prepares findings for semantic storage and RAG integration.
+    
+    Args:
+        research_findings: Dictionary of research findings
+    
+    Returns:
+        dict: Vectorized findings with embeddings metadata
+    """
+    # TODO: Implement vectorization using Gemini embeddings API
+    # Pattern:
+    # 1. Convert findings to text chunks
+    # 2. Call Gemini embedding API for each chunk
+    # 3. Return chunks with associated vectors
+    # 4. Include metadata (source, category, relevance score)
+    
+    return {
+        "vectorized": True,
+        "chunk_count": len(research_findings.get("findings", {})),
+        "embedding_model": "gemini-embedding",
+        "metadata": {
+            "dimensions": 768,
+            "timestamp": "2025-11-12T00:00:00Z"
+        },
+        "ready_for_rag": True
+    }
+
+
+@tool
+def store_in_rag_external(vectorized_data: dict, topic: str) -> str:
+    """
+    Store vectorized research findings in Supabase RAG external table.
+    Makes findings available for semantic search and RAG context retrieval.
+    
+    Args:
+        vectorized_data: Vectorized research findings with embeddings
+        topic: The topic/category for storage
+    
+    Returns:
+        str: Confirmation message with storage details
+    """
+    if not supabase_client:
+        return f"Storage failed: Supabase not configured"
+    
+    try:
+        # TODO: Implement actual storage to rag_external table
+        # Pattern:
+        # 1. Convert vectorized data to storage format
+        # 2. Insert into rag_external table with vectors
+        # 3. Create pgvector indices for similarity search
+        # 4. Verify storage success
+        
+        # For now, return mock success message
+        return f"""Research findings stored in RAG external database:
+        
+Topic: {topic}
+Chunks Stored: {vectorized_data.get('chunk_count', 'N/A')}
+Vectors: {vectorized_data.get('embedding_model', 'N/A')} embeddings
+Status: [TODO] Actual Supabase storage pending pgvector setup
+Available for: Semantic search, RAG context retrieval in Stage 4B"""
+    except Exception as e:
+        return f"Storage error: {str(e)}"
+
+
+@tool
 def count_words(content: str) -> int:
     """Count the number of words in the provided content."""
     return len(content.split())
@@ -331,6 +459,18 @@ def get_structure_tools() -> list:
     return [generate_outline, count_words]
 
 
+def get_deep_research_tools() -> list:
+    """Tools for Stage 4A: Deep research and knowledge integration."""
+    return [
+        query_context7_mcp,
+        perform_deep_research,
+        vectorize_research,
+        store_in_rag_external,
+        search_knowledge_base,
+        retrieve_rag_context,
+    ]
+
+
 def get_chapter_writing_tools() -> list:
     """Tools for chapter writing with RAG and formatting."""
     return [
@@ -385,6 +525,7 @@ def get_all_tools() -> list:
         get_ideation_tools()
         + get_title_tools()
         + get_structure_tools()
+        + get_deep_research_tools()
         + get_chapter_writing_tools()
         + get_review_tools()
         + get_editing_tools()

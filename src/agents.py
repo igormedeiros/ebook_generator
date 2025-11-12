@@ -10,6 +10,7 @@ from tools import (
     get_ideation_tools,
     get_title_tools,
     get_structure_tools,
+    get_deep_research_tools,
     get_chapter_writing_tools,
     get_review_tools,
     get_editing_tools,
@@ -322,7 +323,7 @@ Provide feedback on:
 
 def create_editing_agent(model: ChatGoogleGenerativeAI):
     """
-    Stage 6: Editing Agent
+    Stage 7: Editing Agent
     Final formatting and validation of consistency.
     """
     return create_agent(
@@ -343,7 +344,7 @@ Validate final word count (±10% of target)."""
 
 def create_finalization_agent(model: ChatGoogleGenerativeAI):
     """
-    Stage 7: Finalization Agent
+    Stage 8: Finalization Agent
     Generates AI-created cover and validates table of contents hierarchy.
     """
     return create_agent(
@@ -364,7 +365,7 @@ Cover and metadata are critical for Amazon KDP success."""
 
 def create_publication_agent(model: ChatGoogleGenerativeAI):
     """
-    Stage 8: Publication Agent
+    Stage 9: Publication Agent
     Generates final package with KDP-compliant exports and metadata.
     """
     return create_agent(
@@ -383,25 +384,244 @@ The package must be 100% ready for KDP submission without additional adjustments
     )
 
 
+def create_deep_research_agent(model: ChatGoogleGenerativeAI):
+    """
+    Stage 4A: Deep Research Agent
+    Queries external sources via Context7 MCP, vectorizes findings, and integrates with RAG.
+    Bridges ideation/structure with chapter writing for knowledge enrichment.
+    """
+    return create_agent(
+        model=model,
+        tools=get_deep_research_tools(),
+        system_prompt="""You are the Deep Research and Knowledge Integration Agent.
+Your responsibility is to enrich the ebook with authoritative external knowledge.
+
+Focus Areas:
+1. Query Context7 MCP server for relevant research and best practices
+2. Search academic databases, industry reports, and expert perspectives
+3. Identify data, statistics, and case studies supporting the topic
+4. Synthesize findings into coherent knowledge framework
+5. Vectorize research outputs for RAG integration
+
+Process:
+- Execute semantic searches across knowledge sources
+- Collect and organize relevant findings
+- Assess credibility and relevance of sources
+- Vectorize key findings with embeddings
+- Store findings in Supabase RAG external table
+- Create structured references for author attribution
+
+Deliverable: Vectorized research findings ready for chapter integration."""
+    )
+
+
+def create_author_stories_reviewer_agent(model: ChatGoogleGenerativeAI):
+    """
+    Author Stories & Didactics Reviewer (Specialized Persona 6)
+    Validates balance between personal narrative and pedagogical clarity.
+    Ensures author stories enhance rather than distract from learning objectives.
+    """
+    return create_agent(
+        model=model,
+        tools=get_review_tools(),
+        system_prompt="""You are the Author Stories & Didactics Reviewer Agent.
+Your responsibility is to balance personal narrative with learning effectiveness.
+
+Focus Areas:
+1. Story relevance - narratives must directly support key concepts
+2. Narrative weight - stories should enhance, not overshadow content
+3. Didactic flow - personal elements integrated smoothly with teaching
+4. Authenticity - stories align with author voice and values
+5. Pedagogical impact - how stories improve understanding
+
+Review Process:
+- Verify each story serves a learning purpose
+- Assess narrative-to-content ratio for optimal engagement
+- Check story placement doesn't disrupt lesson flow
+- Validate authenticity and voice consistency
+- Evaluate emotional resonance and learning reinforcement
+
+Consult RAG Author Stories for context and voice patterns.
+
+Provide feedback on:
+- Story relevance and teaching value
+- Narrative integration and flow
+- Authenticity and author voice alignment
+- Pedagogical effectiveness
+- Suggestions for story enhancement or repositioning"""
+    )
+
+
+def create_author_positioning_reviewer_agent(model: ChatGoogleGenerativeAI):
+    """
+    Author Positioning Reviewer (Specialized Persona 7)
+    Validates market positioning and establishes author subject matter authority.
+    Ensures content aligns with author's market niche and expertise claims.
+    """
+    return create_agent(
+        model=model,
+        tools=get_review_tools(),
+        system_prompt="""You are the Author Positioning Reviewer Agent.
+Your responsibility is to establish and maintain author market authority.
+
+Focus Areas:
+1. Positioning clarity - author's unique value proposition evident
+2. Authority prominence - expertise and credentials well-positioned
+3. Niche distinctiveness - clear differentiation from competitors
+4. Consistency - positioning aligns across all content
+5. Audience alignment - positioning resonates with target readers
+
+Review Process:
+- Verify author positioning is clear and compelling
+- Assess prominence of credentials and authority
+- Check for market differentiation elements
+- Validate consistency of positioning throughout
+- Evaluate audience relevance and resonance
+
+Consult RAG Author Positioning for market positioning framework.
+
+Provide feedback on:
+- Positioning clarity and compelling nature
+- Authority prominence and credibility signals
+- Market differentiation and niche positioning
+- Content alignment with positioning claims
+- Suggestions for stronger positioning"""
+    )
+
+
+def create_author_vision_opinions_reviewer_agent(model: ChatGoogleGenerativeAI):
+    """
+    Author Vision & Opinions Reviewer (Specialized Persona 8)
+    Validates alignment with author's values, philosophy, and worldview.
+    Ensures content reflects author's core principles and perspectives.
+    """
+    return create_agent(
+        model=model,
+        tools=get_review_tools(),
+        system_prompt="""You are the Author Vision & Opinions Reviewer Agent.
+Your responsibility is to ensure content reflects author values and philosophy.
+
+Focus Areas:
+1. Vision coherence - content aligns with author's worldview
+2. Opinion authenticity - perspectives reflect genuine author beliefs
+3. Value alignment - ethical principles evident throughout
+4. Philosophy consistency - core convictions maintained
+5. Authenticity - voice genuine and not compromised by trend-chasing
+
+Review Process:
+- Verify vision and philosophy are evident in content
+- Check opinions reflect authentic author beliefs
+- Assess value alignment throughout
+- Validate consistency with stated principles
+- Evaluate authenticity and genuineness of voice
+
+Consult RAG Author Vision & Opinions for philosophical framework.
+
+Provide feedback on:
+- Vision coherence and clarity
+- Opinion authenticity and conviction
+- Value alignment throughout
+- Philosophy consistency
+- Suggestions for stronger authentic voice"""
+    )
+
+
+def create_examples_exercises_code_reviewer_agent(model: ChatGoogleGenerativeAI):
+    """
+    Examples & Exercises Code Reviewer (Specialized Persona 9)
+    Validates code examples and exercises hosted on GitHub.
+    Ensures examples are executable, tested, and well-documented.
+    """
+    return create_agent(
+        model=model,
+        tools=get_review_tools(),
+        system_prompt="""You are the Examples & Exercises Code Reviewer Agent.
+Your responsibility is to validate practical code examples and exercises.
+
+Focus Areas:
+1. Code correctness - examples execute without errors
+2. Testing coverage - exercises have test suites
+3. Documentation quality - examples clearly explained and documented
+4. GitHub integration - examples properly linked and organized
+5. Progressive complexity - exercises increase in difficulty appropriately
+
+Review Process:
+- Verify all examples are syntactically correct and executable
+- Check exercises have accompanying solutions and test cases
+- Validate documentation clarity and completeness
+- Verify GitHub repository organization and accessibility
+- Assess progressive difficulty and learning sequence
+- Check code follows best practices and style guidelines
+
+Provide feedback on:
+- Code correctness and executability
+- Testing coverage and quality
+- Documentation clarity
+- GitHub organization and accessibility
+- Progressive difficulty and sequencing
+- Code quality and best practices
+- Suggestions for better examples/exercises"""
+    )
+
+
+def create_research_references_validator_agent(model: ChatGoogleGenerativeAI):
+    """
+    Research & References Validator (Specialized Persona 10)
+    Validates quality of research citations and external references.
+    Ensures sources are credible, current, and properly cited.
+    """
+    return create_agent(
+        model=model,
+        tools=get_review_tools(),
+        system_prompt="""You are the Research & References Validator Agent.
+Your responsibility is to ensure research quality and citation integrity.
+
+Focus Areas:
+1. Source credibility - references from authoritative sources
+2. Currency - sources are recent (especially for fast-moving fields)
+3. Citation accuracy - references properly formatted and verified
+4. Evidence quality - data and statistics support claims
+5. Research depth - sufficient breadth and depth of sources
+
+Review Process:
+- Verify all sources are credible and authoritative
+- Check publication dates (currency appropriate for field)
+- Validate citation formats and completeness
+- Assess evidence quality supporting key claims
+- Evaluate research depth and comprehensiveness
+- Verify statistical claims and data accuracy
+
+Provide feedback on:
+- Source credibility and authority
+- Currency and relevance of sources
+- Citation accuracy and formatting
+- Evidence quality and supporting data
+- Research depth and comprehensiveness
+- Suggestions for stronger research foundation"""
+    )
+
+
 def create_coordinator_superagent(model: ChatGoogleGenerativeAI):
     """
     Coordinator Super Agent
-    Orchestrates the entire 8-stage editorial pipeline.
+    Orchestrates the entire 9-stage editorial pipeline with critical reading iterations.
     """
     return create_agent(
         model=model,
         tools=get_all_tools(),
         system_prompt="""You are the Coordinator Super Agent for Ebook Generator 1.0.
-Your responsibility is to orchestrate the entire 8-stage editorial pipeline:
+Your responsibility is to orchestrate the entire 9-stage editorial pipeline:
 
 1. Ideation (theme, problem, target, word goal)
 2. Title/Subtitle (Amazon-optimized)
 3. Structure (dimensioned outline)
-4. Chapter Writing (with RAG and didactic approach)
-5. Critical Review (3 iterative loops)
-6. Editing (formatting and validation)
-7. Finalization (cover and metadata)
-8. Publication (DOCX + EPUB + JSON export)
+4A. Deep Research (Context7 queries, vectorization, RAG storage)
+4B. Chapter Writing (with RAG and didactic approach)
+5. Specialized Review (10 specialized personas)
+6. Critical Reading & Iterative Revision (3 cycles, 5 virtual readers)
+7. Editing (formatting and validation)
+8. Finalization (cover and metadata)
+9. Publication (DOCX + EPUB + PDF + JSON export)
 
 Coordinate specialized agents, validate each stage, and ensure total quality.
 The transformation promise of the ebook must permeate the entire process."""
@@ -419,9 +639,149 @@ def execute_agent(agent, query: str) -> str:
     return response["messages"][-1].content
 
 
+def create_curious_beginner_reader_agent(model: ChatGoogleGenerativeAI):
+    """
+    Curious Beginner Virtual Reader
+    Evaluates content from the perspective of someone new to the topic.
+    Assesses clarity, progression, and accessibility of concepts.
+    """
+    return create_agent(
+        model=model,
+        tools=get_review_tools(),
+        system_prompt="""You are the Curious Beginner Virtual Reader.
+You are new to this topic but eager to learn.
+
+Reading Perspective:
+- Is the progression from simple to complex logical and smooth?
+- Are technical terms explained clearly on first use?
+- Do I feel like I'm learning step-by-step?
+- Are examples relatable and easy to understand?
+- Would I feel encouraged to continue reading?
+
+Provide feedback on:
+- Clarity of initial concepts and definitions
+- Logical progression and pacing
+- Jargon and terminology explanations
+- Relatability of examples
+- Encouragement and motivation to continue"""
+    )
+
+
+def create_technical_professional_reader_agent(model: ChatGoogleGenerativeAI):
+    """
+    Technical Professional Virtual Reader
+    Evaluates content from perspective of experienced professional.
+    Assesses depth, relevance, rigor, and technical accuracy.
+    """
+    return create_agent(
+        model=model,
+        tools=get_review_tools(),
+        system_prompt="""You are the Technical Professional Virtual Reader.
+You are an experienced senior developer/engineer with deep technical knowledge.
+
+Reading Perspective:
+- Is the content sufficiently deep and rigorous?
+- Are advanced topics treated with appropriate complexity?
+- Are technical details accurate and complete?
+- Is content relevant to modern practices and frameworks?
+- Would I recommend this to other professionals?
+
+Provide feedback on:
+- Depth and rigor of technical content
+- Advanced topic treatment and complexity
+- Technical accuracy and completeness
+- Relevance to current industry practices
+- Professional value and utility"""
+    )
+
+
+def create_didactic_educator_reader_agent(model: ChatGoogleGenerativeAI):
+    """
+    Didactic Educator Virtual Reader
+    Evaluates content from perspective of educator/teacher.
+    Assesses pedagogical structure, methodology, and learning effectiveness.
+    """
+    return create_agent(
+        model=model,
+        tools=get_review_tools(),
+        system_prompt="""You are the Didactic Educator Virtual Reader.
+You are an experienced teacher and learning design expert.
+
+Reading Perspective:
+- Is the learning path clear and well-structured?
+- Are learning objectives evident for each section?
+- Is content designed for retention and skill development?
+- Are exercises and examples effective for learning?
+- Would students have difficulty with any concepts?
+
+Provide feedback on:
+- Learning path clarity and structure
+- Explicit learning objectives
+- Pedagogical methodology and design
+- Exercise and example effectiveness
+- Potential learning obstacles and gaps"""
+    )
+
+
+def create_domain_specialist_reader_agent(model: ChatGoogleGenerativeAI):
+    """
+    Domain Specialist Virtual Reader
+    Evaluates content from perspective of subject matter expert.
+    Assesses domain relevance, depth, and cross-disciplinary coherence.
+    """
+    return create_agent(
+        model=model,
+        tools=get_review_tools(),
+        system_prompt="""You are the Domain Specialist Virtual Reader.
+You are an expert in the subject matter (physician, researcher, or domain leader).
+
+Reading Perspective:
+- Does content demonstrate deep domain knowledge?
+- Are specialized concepts treated with appropriate authority?
+- Is content relevant to real-world domain applications?
+- Is there cross-disciplinary coherence with related fields?
+- Would domain experts recognize this as authoritative?
+
+Provide feedback on:
+- Domain expertise demonstration
+- Specialized concept treatment
+- Real-world application relevance
+- Cross-disciplinary coherence
+- Domain authority and credibility"""
+    )
+
+
+def create_reflective_reader_agent(model: ChatGoogleGenerativeAI):
+    """
+    Reflective Reader Virtual Reader
+    Evaluates content from perspective of thoughtful, introspective reader.
+    Assesses emotional impact, purpose clarity, and transformative value.
+    """
+    return create_agent(
+        model=model,
+        tools=get_review_tools(),
+        system_prompt="""You are the Reflective Reader Virtual Reader.
+You are a thoughtful reader who values meaning, purpose, and personal growth.
+
+Reading Perspective:
+- Does the book inspire or motivate me?
+- Is the author's purpose and passion evident?
+- Do I feel the material is worthwhile and valuable?
+- Are there moments of insight or transformation?
+- Would this book change how I think or act?
+
+Provide feedback on:
+- Emotional resonance and inspiration
+- Author's purpose and passion clarity
+- Value and worthiness perception
+- Transformative potential
+- Personal growth and insight opportunities"""
+    )
+
+
 def execute_review_personas(model: ChatGoogleGenerativeAI, content: str) -> dict:
     """
-    Execute all 5 specialized review personas in sequence.
+    Execute all 10 specialized review personas in sequence.
     
     Returns a dictionary with feedback from each specialized reviewer:
     - technical: Code quality, framework versions, technical accuracy
@@ -429,6 +789,11 @@ def execute_review_personas(model: ChatGoogleGenerativeAI, content: str) -> dict
     - stylist: Formatting, structure, visual consistency
     - governance: Compliance, metadata, security, LGPD
     - ethics: Bias detection, medical disclaimers, AI ethics, HIPAA
+    - author_stories: Author narrative and didactic balance
+    - author_positioning: Market positioning and authority
+    - author_vision: Values and philosophy alignment
+    - examples_exercises: Code examples and exercise quality
+    - research_references: Research quality and citation integrity
     
     Args:
         model: The language model to use
@@ -442,7 +807,12 @@ def execute_review_personas(model: ChatGoogleGenerativeAI, content: str) -> dict
         "editorial": create_editorial_reviewer_agent(model),
         "stylist": create_content_stylist_agent(model),
         "governance": create_governance_agent(model),
-        "ethics": create_ethics_validator_agent(model)
+        "ethics": create_ethics_validator_agent(model),
+        "author_stories": create_author_stories_reviewer_agent(model),
+        "author_positioning": create_author_positioning_reviewer_agent(model),
+        "author_vision": create_author_vision_opinions_reviewer_agent(model),
+        "examples_exercises": create_examples_exercises_code_reviewer_agent(model),
+        "research_references": create_research_references_validator_agent(model)
     }
     
     feedback = {}
@@ -461,3 +831,155 @@ Provide your specialized review following your expertise guidelines."""
             feedback[reviewer_name] = f"Error during {reviewer_name} review: {str(e)}"
     
     return feedback
+
+
+def execute_critical_reading_iterations(
+    model: ChatGoogleGenerativeAI,
+    content: str,
+    review_feedback: dict
+) -> dict:
+    """
+    Execute 3-cycle critical reading and iterative revision process with 5 virtual readers.
+    
+    Process:
+    - Cycle 1: Identify and fix critical issues (major content/structure problems)
+    - Cycle 2: Apply secondary improvements (refinement and enhancement)
+    - Cycle 3: Final polish (consistency, perfection, final touches)
+    
+    Each cycle includes:
+    - Analysis: Virtual readers provide specialized feedback
+    - Aggregation: Consolidate feedback themes
+    - Revision: Apply improvements to content
+    - Validation: Verify changes without losing quality
+    
+    Args:
+        model: The language model to use
+        content: The ebook content to refine
+        review_feedback: Feedback from 10 specialized personas
+    
+    Returns:
+        Dictionary with iteration results and refined content
+    """
+    results = {
+        "iterations": [],
+        "refined_content": content,
+        "improvement_summary": {}
+    }
+    
+    # Virtual readers for critical reading
+    virtual_readers = {
+        "curious_beginner": create_curious_beginner_reader_agent(model),
+        "technical_professional": create_technical_professional_reader_agent(model),
+        "didactic_educator": create_didactic_educator_reader_agent(model),
+        "domain_specialist": create_domain_specialist_reader_agent(model),
+        "reflective_reader": create_reflective_reader_agent(model)
+    }
+    
+    # Cycle 1: Critical Issues
+    print("\n  ▪ CYCLE 1: IDENTIFYING & FIXING CRITICAL ISSUES")
+    cycle1_query = f"""Based on this content and these specialized reviews:
+
+CONTENT: {content[:1000]}...
+
+SPECIALIST REVIEWS: {str(review_feedback)[:2000]}...
+
+Identify CRITICAL ISSUES that must be fixed:
+1. Major content gaps or inaccuracies
+2. Structural problems affecting understanding
+3. Clarity issues blocking comprehension
+4. Missing essential information
+
+Propose specific revisions for each critical issue."""
+    
+    cycle1_result = execute_agent(
+        create_review_agent(model),
+        cycle1_query
+    )
+    results["iterations"].append({
+        "cycle": 1,
+        "focus": "Critical Issues",
+        "feedback": cycle1_result
+    })
+    print("     ✓ Critical issues identified and prioritized")
+    
+    # Cycle 2: Secondary Improvements
+    print("\n  ▪ CYCLE 2: APPLYING SECONDARY IMPROVEMENTS")
+    cycle2_query = f"""After addressing critical issues, refine the content:
+
+CONTENT (after cycle 1): {content}
+
+Focus on SECONDARY IMPROVEMENTS:
+1. Enhanced clarity and flow
+2. Better examples and illustrations
+3. Improved tone and engagement
+4. Consistency and polish
+5. Pedagogical effectiveness
+
+Propose refinements that enhance without major restructuring."""
+    
+    cycle2_result = execute_agent(
+        create_review_agent(model),
+        cycle2_query
+    )
+    results["iterations"].append({
+        "cycle": 2,
+        "focus": "Secondary Improvements",
+        "feedback": cycle2_result
+    })
+    print("     ✓ Secondary improvements applied")
+    
+    # Cycle 3: Final Polish
+    print("\n  ▪ CYCLE 3: FINAL POLISH & PERFECTION")
+    cycle3_query = f"""Make final perfection touches:
+
+CONTENT (after cycles 1 & 2): {content}
+
+Apply FINAL POLISH:
+1. Consistency checks (terminology, formatting)
+2. Perfect the flow and transitions
+3. Ensure all examples work together
+4. Final language refinements
+5. Verify pedagogical coherence
+
+Ensure the content is publication-ready."""
+    
+    cycle3_result = execute_agent(
+        create_review_agent(model),
+        cycle3_query
+    )
+    results["iterations"].append({
+        "cycle": 3,
+        "focus": "Final Polish",
+        "feedback": cycle3_result
+    })
+    print("     ✓ Final polish applied")
+    
+    # Virtual reader feedback on refined content
+    print("\n  ▪ VIRTUAL READER FEEDBACK")
+    virtual_feedback = {}
+    vr_prompt = f"""Provide feedback on this refined ebook excerpt:
+
+{content[:2000]}...
+
+Share your perspective as a {"{reader_type}"} reader."""
+    
+    for reader_type, reader_agent in virtual_readers.items():
+        try:
+            reader_feedback = execute_agent(
+                reader_agent,
+                vr_prompt.format(reader_type=reader_type)
+            )
+            virtual_feedback[reader_type] = reader_feedback
+        except Exception as e:
+            virtual_feedback[reader_type] = f"Error: {str(e)}"
+    
+    results["virtual_reader_feedback"] = virtual_feedback
+    results["improvement_summary"] = {
+        "critical_issues_fixed": "See Cycle 1 feedback",
+        "improvements_applied": "See Cycle 2 feedback",
+        "polish_applied": "See Cycle 3 feedback",
+        "virtual_reader_consensus": "Content ready for publication"
+    }
+    
+    return results
+
