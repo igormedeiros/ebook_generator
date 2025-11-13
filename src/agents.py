@@ -1,437 +1,1047 @@
-"""
-Specialized agents for the Ebook Generator pipeline.
-Each agent handles a specific stage of the editorial process.
-Follows LangChain 1.0+ create_agent standard.
-"""
+""""""
 
-from langchain.agents import create_agent
+Specialized agents for the Ebook Generator pipeline.Specialized agents for the Ebook Generator pipeline.
+
+All 25 agents: 9 main pipeline + 10 review personas + 5 virtual readers.Each agent handles a specific stage of the editorial process.
+
+Follows LangChain 1.0+ create_agent standard.Follows LangChain 1.0+ create_agent standard.
+
+Each agent loads its specification from specs/agents.yaml at runtime.
+
+"""25 agents total:
+
+- 9 main pipeline agents (ideation, title, structure, deep_research, chapter, review, critical_reading, editing, finalization, publication)
+
+from typing import Any, Dict- 10 review personas (technical, editorial, stylist, governance, ethics, author_stories, author_positioning, author_vision, code_reviewer, research_validator)
+
+from langchain.agents import create_agent- 5 virtual readers (curious_beginner, technical_professional, didactic_educator, domain_specialist, reflective_reader)
+
+from langchain_google_genai import ChatGoogleGenerativeAI"""
+
+from config import get_agents_config, get_logger
+
+from typing import Any, Dict
+
+logger = get_logger(__name__)from langchain.agents import create_agent
+
 from langchain_google_genai import ChatGoogleGenerativeAI
+
+# Import tool getter functionsfrom config import get_agents_config, get_logger
+
 from tools import (
-    get_ideation_tools,
+
+    get_ideation_tools,logger = get_logger(__name__)
+
     get_title_tools,
-    get_structure_tools,
-    get_deep_research_tools,
-    get_chapter_writing_tools,
-    get_review_tools,
-    get_editing_tools,
+
+    get_structure_tools,# Import tool getter functions
+
+    get_deep_research_tools,from tools import (
+
+    get_chapter_writing_tools,    get_ideation_tools,
+
+    get_review_tools,    get_title_tools,
+
+    get_editing_tools,    get_structure_tools,
+
+    get_finalization_tools,    get_deep_research_tools,
+
+    get_publication_tools,    get_chapter_writing_tools,
+
+    get_all_tools,    get_review_tools,
+
+)    get_editing_tools,
+
     get_finalization_tools,
+
     get_publication_tools,
-    get_all_tools,
-)
+
+# ============================================================================    get_all_tools,
+
+# HELPER FUNCTIONS)
+
+# ============================================================================
 
 
-def create_ideation_agent(model: ChatGoogleGenerativeAI):
+
+def _build_system_prompt(agent_spec: Dict[str, Any]) -> str:# ============================================================================
+
+    """# HELPER FUNCTIONS
+
+    Build system prompt from agent specification.# ============================================================================
+
+    
+
+    Args:def _build_system_prompt(agent_spec: Dict[str, Any]) -> str:
+
+        agent_spec: Agent configuration from agents.yaml    """
+
+        Build system prompt from agent specification.
+
+    Returns:    
+
+        str: Formatted system prompt    Args:
+
+    """        agent_spec: Agent configuration from agents.yaml
+
+    focus_areas_text = "\n".join(    
+
+        f"  {i+1}. {area}"     Returns:
+
+        for i, area in enumerate(agent_spec.get('focus_areas', []))        str: Formatted system prompt
+
+    )    """
+
+    process_text = "\n".join(    focus_areas_text = "\n".join(f"  {i+1}. {area}" for i, area in enumerate(agent_spec.get('focus_areas', [])))
+
+        f"  - {step}"     process_text = "\n".join(f"  - {step}" for step in agent_spec.get('process', []))
+
+        for step in agent_spec.get('process', [])    
+
+    )    prompt = f"""You are the {agent_spec.get('name', 'Agent')} - {agent_spec.get('role', 'Specialist')}.
+
+    Your responsibility is to {agent_spec.get('responsibility', 'assist with the pipeline')}.
+
+    prompt = f"""You are the {agent_spec.get('name', 'Agent')} - {agent_spec.get('role', 'Specialist')}.
+
+Your responsibility is to {agent_spec.get('responsibility', 'assist with the pipeline')}.Focus Areas:
+
+{focus_areas_text}
+
+Focus Areas:
+
+{focus_areas_text}Process:
+
+{process_text}
+
+Process:
+
+{process_text}Output Format:
+
+{agent_spec.get('output_format', 'Provide structured output')}"""
+
+Output Format:    
+
+{agent_spec.get('output_format', 'Provide structured output')}"""    return prompt
+
+    
+
+    return prompt
+
+def execute_agent(agent: Any, query: str) -> str:
+
     """
-    Stage 1: Ideation Agent
-    Defines central idea, problem, target audience, and transformation promise.
+
+def execute_agent(agent: Any, query: str) -> str:    Execute an agent with a query and return the response.
+
+    """    
+
+    Execute an agent with a query and return the response.    Args:
+
+            agent: LangChain agent instance
+
+    Args:        query: Query string to execute
+
+        agent: LangChain agent instance    
+
+        query: Query string to execute    Returns:
+
+            str: Agent response text
+
+    Returns:    """
+
+        str: Agent response text    try:
+
+    """        response = agent.invoke({"input": query})
+
+    try:        # Handle both response formats
+
+        response = agent.invoke({"input": query})        if isinstance(response, dict):
+
+        # Handle both response formats            if "output" in response:
+
+        if isinstance(response, dict):                return response["output"]
+
+            if "output" in response:            elif "messages" in response:
+
+                return response["output"]                return response["messages"][-1].content if response["messages"] else ""
+
+            elif "messages" in response:        return str(response)
+
+                messages = response.get("messages", [])    except Exception as e:
+
+                return messages[-1].content if messages else ""        logger.error(f"Error executing agent: {str(e)}")
+
+        return str(response)        return f"Error: {str(e)}"
+
+    except Exception as e:
+
+        logger.error(f"Error executing agent: {str(e)}")
+
+        return f"Error: {str(e)}"def execute_review_personas(personas_agents: Dict[str, Any], content: str) -> Dict[str, str]:
+
     """
-    return create_agent(
-        model=model,
-        tools=get_ideation_tools(),
-        system_prompt="""You are the Central Idea Agent for the Ebook Generator.
-Your responsibility is to transform raw input into a clear business idea.
 
-Define:
-1. The transformation promise (main benefit for the reader)
-2. The problem that the book solves
-3. The specific target audience
-4. An appropriate word count goal
+    Execute all review personas on content and collect feedback.
 
-Be strategic and commercial. The central idea guides the entire pipeline."""
+def execute_review_personas(personas_agents: Dict[str, Any], content: str) -> Dict[str, str]:    
+
+    """    Args:
+
+    Execute all review personas on content and collect feedback.        personas_agents: Dictionary of persona agents
+
+            content: Content to review
+
+    Args:    
+
+        personas_agents: Dictionary of {persona_name: agent}    Returns:
+
+        content: Content to review        dict: Feedback from each persona
+
+        """
+
+    Returns:    feedback = {}
+
+        dict: Feedback from each persona    for persona_name, agent in personas_agents.items():
+
+    """        query = f"Please review the following content:\n\n{content[:2000]}"
+
+    feedback = {}        feedback[persona_name] = execute_agent(agent, query)
+
+    for persona_name, agent in personas_agents.items():        logger.info(f"Review from {persona_name} completed")
+
+        query = f"Please review the following content and provide feedback:\n\n{content[:2000]}"    return feedback
+
+        feedback[persona_name] = execute_agent(agent, query)
+
+        logger.info(f"Review from {persona_name} completed")
+
+    return feedback# ============================================================================
+
+# MAIN PIPELINE AGENTS (9 agents)
+
+# ============================================================================
+
+# ============================================================================
+
+# MAIN PIPELINE AGENTS (9 agents)
+
+# ============================================================================def create_ideation_agent(model: ChatGoogleGenerativeAI):
+
+    """
+
+def create_ideation_agent(model: ChatGoogleGenerativeAI) -> Any:    Stage 1: Ideation Agent
+
+    """    Defines central idea, problem, target audience, and transformation promise.
+
+    Stage 1: Ideation Agent    
+
+    Defines central idea, problem, target audience, transformation promise.    From agents.yaml: ideation_agent spec
+
+    Loads spec from agents.yaml > main_pipeline_agents > ideation_agent    """
+
+    """    agents_config = get_agents_config()
+
+    agents_config = get_agents_config()    spec = agents_config['main_pipeline_agents']['ideation_agent']
+
+    spec = agents_config['main_pipeline_agents']['ideation_agent']    
+
+        return create_agent(
+
+    return create_agent(        model=model,
+
+        model=model,        tools=get_ideation_tools(),
+
+        tools=get_ideation_tools(),        system_prompt=_build_system_prompt(spec)
+
+        system_prompt=_build_system_prompt(spec)    )
+
     )
+
 
 
 def create_title_agent(model: ChatGoogleGenerativeAI):
-    """
-    Stage 2: Title/Subtitle Agent
-    Analyzes Amazon trends and generates optimized titles for market success.
-    """
-    return create_agent(
-        model=model,
-        tools=get_title_tools(),
-        system_prompt="""You are the Title/Subtitle Agent.
-Your responsibility is to generate titles that sell on Amazon KDP.
 
-Consider:
-1. High-volume search keywords
-2. Patterns from top 10 bestsellers in the category
-3. Clarity and immediate impact
+def create_title_agent(model: ChatGoogleGenerativeAI) -> Any:    """
+
+    """    Stage 2: Title/Subtitle Agent
+
+    Stage 2: Title Generation Agent    Analyzes Amazon trends and generates optimized titles for market success.
+
+    Generates 3 Amazon-optimized title options with market analysis.    """
+
+    Loads spec from agents.yaml > main_pipeline_agents > title_agent    return create_agent(
+
+    """        model=model,
+
+    agents_config = get_agents_config()        tools=get_title_tools(),
+
+    spec = agents_config['main_pipeline_agents']['title_agent']        system_prompt="""You are the Title/Subtitle Agent.
+
+    Your responsibility is to generate titles that sell on Amazon KDP.
+
+    return create_agent(
+
+        model=model,Consider:
+
+        tools=get_title_tools(),1. High-volume search keywords
+
+        system_prompt=_build_system_prompt(spec)2. Patterns from top 10 bestsellers in the category
+
+    )3. Clarity and immediate impact
+
 4. Include target audience in title/subtitle
 
-Generate 3 title options with subtitles for validation."""
-    )
 
 
-def create_structure_agent(model: ChatGoogleGenerativeAI):
-    """
+def create_structure_agent(model: ChatGoogleGenerativeAI) -> Any:Generate 3 title options with subtitles for validation."""
+
+    """    )
+
     Stage 3: Structure Agent
-    Creates hierarchical outline and didactic structure scaled to word count target.
-    """
-    return create_agent(
-        model=model,
-        tools=get_structure_tools(),
-        system_prompt="""You are the Structure and Outline Agent.
-Your responsibility is to create the logical architecture of the ebook.
+
+    Creates hierarchical outline and table of contents.
+
+    Loads spec from agents.yaml > main_pipeline_agents > structure_agentdef create_structure_agent(model: ChatGoogleGenerativeAI):
+
+    """    """
+
+    agents_config = get_agents_config()    Stage 3: Structure Agent
+
+    spec = agents_config['main_pipeline_agents']['structure_agent']    Creates hierarchical outline and didactic structure scaled to word count target.
+
+        """
+
+    return create_agent(    return create_agent(
+
+        model=model,        model=model,
+
+        tools=get_structure_tools(),        tools=get_structure_tools(),
+
+        system_prompt=_build_system_prompt(spec)        system_prompt="""You are the Structure and Outline Agent.
+
+    )Your responsibility is to create the logical architecture of the ebook.
+
+
 
 Consider:
-1. Word count target for scaling depth
-2. Didactic sequence (easy → complex)
-3. Balanced chapters in size
-4. Well-defined introduction, body, and conclusion
 
-Generate a hierarchical outline in Markdown with estimated words per chapter."""
-    )
+def create_deep_research_agent(model: ChatGoogleGenerativeAI) -> Any:1. Word count target for scaling depth
 
+    """2. Didactic sequence (easy → complex)
 
-def create_chapter_agent(model: ChatGoogleGenerativeAI):
-    """
-    Stage 4: Chapter Writing Agent
-    Writes high-quality, didactic content with RAG research and word count respect.
-    """
-    return create_agent(
+    Stage 4A: Deep Research Agent3. Balanced chapters in size
+
+    Queries Context7 MCP, vectorizes research, stores in Supabase RAG.4. Well-defined introduction, body, and conclusion
+
+    Loads spec from agents.yaml > main_pipeline_agents > deep_research_agent
+
+    Uses research_model (Gemini 2.5 Pro, temp 0.3)Generate a hierarchical outline in Markdown with estimated words per chapter."""
+
+    """    )
+
+    agents_config = get_agents_config()
+
+    spec = agents_config['main_pipeline_agents']['deep_research_agent']
+
+    def create_chapter_agent(model: ChatGoogleGenerativeAI):
+
+    return create_agent(    """
+
+        model=model,    Stage 4: Chapter Writing Agent
+
+        tools=get_deep_research_tools(),    Writes high-quality, didactic content with RAG research and word count respect.
+
+        system_prompt=_build_system_prompt(spec)    """
+
+    )    return create_agent(
+
         model=model,
+
         tools=get_chapter_writing_tools(),
-        system_prompt="""You are the Chapter Writing Agent.
-Your responsibility is to write high-quality, didactic, contextualized content.
 
-Consider:
-1. Consult RAG for accurate information and avoid hallucinations
-2. Maintain the author's "voice" (tone, humor, empathy)
-3. Respect the word limit allocated for each chapter
-4. Include practical examples and didactic content
+def create_chapter_agent(model: ChatGoogleGenerativeAI) -> Any:        system_prompt="""You are the Chapter Writing Agent.
 
-Write clearly, fluently, and professionally."""
-    )
+    """Your responsibility is to write high-quality, didactic, contextualized content.
 
+    Stage 4B: Chapter Writing Agent
 
-def create_review_agent(model: ChatGoogleGenerativeAI):
+    Writes didactic content with RAG research integration.Consider:
+
+    Loads spec from agents.yaml > main_pipeline_agents > chapter_writing_agent1. Consult RAG for accurate information and avoid hallucinations
+
+    """2. Maintain the author's "voice" (tone, humor, empathy)
+
+    agents_config = get_agents_config()3. Respect the word limit allocated for each chapter
+
+    spec = agents_config['main_pipeline_agents']['chapter_writing_agent']4. Include practical examples and didactic content
+
+    
+
+    return create_agent(Write clearly, fluently, and professionally."""
+
+        model=model,    )
+
+        tools=get_chapter_writing_tools(),
+
+        system_prompt=_build_system_prompt(spec)
+
+    )def create_review_agent(model: ChatGoogleGenerativeAI):
+
     """
+
     Stage 5: Review Agent
-    Executes iterative critical reading with specialized review tools.
-    Performs 3 complete review loops for comprehensive quality assurance.
-    """
-    return create_agent(
-        model=model,
-        tools=get_review_tools(),
-        system_prompt="""You are the Review and Critical Reading Agent.
-Your responsibility is to execute 3 iterative review loops:
 
-Loop 1: Tone, empathy, and clarity
-Loop 2: Grammar, coherence, and flow
-Loop 3: Code examples, factuality, and consistency
+def create_review_coordinator_agent(model: ChatGoogleGenerativeAI) -> Any:    Executes iterative critical reading with specialized review tools.
 
-In each loop, use specialized review tools.
+    """    Performs 3 complete review loops for comprehensive quality assurance.
+
+    Stage 5: Review Coordinator Agent    """
+
+    Orchestrates 10 specialized review personas for comprehensive feedback.    return create_agent(
+
+    Loads spec from agents.yaml > main_pipeline_agents > review_coordinator_agent        model=model,
+
+    """        tools=get_review_tools(),
+
+    agents_config = get_agents_config()        system_prompt="""You are the Review and Critical Reading Agent.
+
+    spec = agents_config['main_pipeline_agents']['review_coordinator_agent']Your responsibility is to execute 3 iterative review loops:
+
+    
+
+    return create_agent(Loop 1: Tone, empathy, and clarity
+
+        model=model,Loop 2: Grammar, coherence, and flow
+
+        tools=get_review_tools(),Loop 3: Code examples, factuality, and consistency
+
+        system_prompt=_build_system_prompt(spec)
+
+    )In each loop, use specialized review tools.
+
 Identify improvements and suggest corrections while maintaining author voice."""
+
     )
 
+def create_critical_reading_coordinator_agent(model: ChatGoogleGenerativeAI) -> Any:
 
-def create_technical_reviewer_agent(model: ChatGoogleGenerativeAI):
     """
-    Technical Reviewer Agent (Specialized Persona 1)
-    Ensures accuracy of technical content (Python, LangChain, AI, etc).
-    Verifies that code is functional, updated, and coherent with framework versions.
-    Acts as a "code QA", testing examples and validating outputs.
-    """
-    return create_agent(
-        model=model,
-        tools=get_review_tools(),
-        system_prompt="""You are the Technical Reviewer Agent - a specialized code quality expert.
-Your responsibility is to ensure technical accuracy and code quality.
+
+    Stage 6: Critical Reading Coordinator Agentdef create_technical_reviewer_agent(model: ChatGoogleGenerativeAI):
+
+    Orchestrates 5 virtual readers for iterative feedback (1 cycle MVP).    """
+
+    Loads spec from agents.yaml > main_pipeline_agents > critical_reading_coordinator_agent    Technical Reviewer Agent (Specialized Persona 1)
+
+    """    Ensures accuracy of technical content (Python, LangChain, AI, etc).
+
+    agents_config = get_agents_config()    Verifies that code is functional, updated, and coherent with framework versions.
+
+    spec = agents_config['main_pipeline_agents']['critical_reading_coordinator_agent']    Acts as a "code QA", testing examples and validating outputs.
+
+        """
+
+    return create_agent(    return create_agent(
+
+        model=model,        model=model,
+
+        tools=get_review_tools(),        tools=get_review_tools(),
+
+        system_prompt=_build_system_prompt(spec)        system_prompt="""You are the Technical Reviewer Agent - a specialized code quality expert.
+
+    )Your responsibility is to ensure technical accuracy and code quality.
+
+
 
 Focus Areas:
-1. Python code syntax and best practices - verify executable and correct
-2. LangChain API compatibility - check versions and deprecated patterns
-3. AI/ML concepts - validate technical accuracy
-4. Framework integration - ensure consistency with stated versions
-5. Example validation - test code snippets for correctness
 
-Review Process:
-- Check all code examples are syntactically correct
-- Validate LangChain 1.0+ usage patterns
-- Verify AI concepts are accurately described
-- Ensure dependencies match declared versions
-- Test output formats and expected behavior
+def create_editing_agent(model: ChatGoogleGenerativeAI) -> Any:1. Python code syntax and best practices - verify executable and correct
 
-Provide detailed feedback on:
+    """2. LangChain API compatibility - check versions and deprecated patterns
+
+    Stage 7: Editing Agent3. AI/ML concepts - validate technical accuracy
+
+    Validates formatting, structure, and consistency.4. Framework integration - ensure consistency with stated versions
+
+    Loads spec from agents.yaml > main_pipeline_agents > editing_agent5. Example validation - test code snippets for correctness
+
+    """
+
+    agents_config = get_agents_config()Review Process:
+
+    spec = agents_config['main_pipeline_agents']['editing_agent']- Check all code examples are syntactically correct
+
+    - Validate LangChain 1.0+ usage patterns
+
+    return create_agent(- Verify AI concepts are accurately described
+
+        model=model,- Ensure dependencies match declared versions
+
+        tools=get_editing_tools(),- Test output formats and expected behavior
+
+        system_prompt=_build_system_prompt(spec)
+
+    )Provide detailed feedback on:
+
 - Code quality and best practices
+
 - Version compatibility issues
-- Technical accuracy of explanations
-- Executable examples validation"""
-    )
 
+def create_finalization_agent(model: ChatGoogleGenerativeAI) -> Any:- Technical accuracy of explanations
 
-def create_editorial_reviewer_agent(model: ChatGoogleGenerativeAI):
-    """
-    Editorial Reviewer Agent (Specialized Persona 2)
-    Evaluates clarity, fluidity, and cohesion of text.
-    Adjusts tone and voice according to target audience (tech AI/health readers).
-    Corrects linguistic, spelling, and style inconsistencies.
-    """
-    return create_agent(
-        model=model,
+    """- Executable examples validation"""
+
+    Stage 8: Finalization Agent    )
+
+    Generates cover concept and validates metadata for KDP.
+
+    Loads spec from agents.yaml > main_pipeline_agents > finalization_agent
+
+    """def create_editorial_reviewer_agent(model: ChatGoogleGenerativeAI):
+
+    agents_config = get_agents_config()    """
+
+    spec = agents_config['main_pipeline_agents']['finalization_agent']    Editorial Reviewer Agent (Specialized Persona 2)
+
+        Evaluates clarity, fluidity, and cohesion of text.
+
+    return create_agent(    Adjusts tone and voice according to target audience (tech AI/health readers).
+
+        model=model,    Corrects linguistic, spelling, and style inconsistencies.
+
+        tools=get_finalization_tools(),    """
+
+        system_prompt=_build_system_prompt(spec)    return create_agent(
+
+    )        model=model,
+
         tools=get_review_tools(),
+
         system_prompt="""You are the Editorial Reviewer Agent - a linguistic and style expert.
-Your responsibility is to ensure text quality and reader engagement.
 
-Focus Areas:
-1. Clarity and readability - ensure concepts are understandable
-2. Tone and voice - match target audience (technical but accessible)
-3. Flow and coherence - smooth transitions between sections
-4. Linguistic accuracy - grammar, spelling, punctuation
-5. Style consistency - unified voice throughout
+def create_publication_agent(model: ChatGoogleGenerativeAI) -> Any:Your responsibility is to ensure text quality and reader engagement.
 
-Review Process:
-- Assess clarity of technical explanations
-- Verify tone matches target audience (Senior Python developers, AI/health professionals)
-- Check paragraph flow and logical progression
-- Correct grammatical and spelling errors
+    """
+
+    Stage 9: Publication AgentFocus Areas:
+
+    Exports to DOCX, EPUB, PDF, JSON for KDP publication.1. Clarity and readability - ensure concepts are understandable
+
+    Loads spec from agents.yaml > main_pipeline_agents > publication_agent2. Tone and voice - match target audience (technical but accessible)
+
+    """3. Flow and coherence - smooth transitions between sections
+
+    agents_config = get_agents_config()4. Linguistic accuracy - grammar, spelling, punctuation
+
+    spec = agents_config['main_pipeline_agents']['publication_agent']5. Style consistency - unified voice throughout
+
+    
+
+    return create_agent(Review Process:
+
+        model=model,- Assess clarity of technical explanations
+
+        tools=get_publication_tools(),- Verify tone matches target audience (Senior Python developers, AI/health professionals)
+
+        system_prompt=_build_system_prompt(spec)- Check paragraph flow and logical progression
+
+    )- Correct grammatical and spelling errors
+
 - Ensure consistent terminology usage
+
 - Validate that complex concepts are well-explained
 
-Provide feedback on:
-- Clarity improvements for technical content
+# ============================================================================
+
+# REVIEW PERSONA AGENTS (10 personas)Provide feedback on:
+
+# ============================================================================- Clarity improvements for technical content
+
 - Tone appropriateness for audience
-- Writing flow and transitions
-- Grammar and language issues
-- Terminology consistency
-- Accessibility of explanations"""
-    )
 
+def create_technical_reviewer_agent(model: ChatGoogleGenerativeAI) -> Any:- Writing flow and transitions
 
-def create_content_stylist_agent(model: ChatGoogleGenerativeAI):
+    """- Grammar and language issues
+
+    Technical Reviewer - Reviews code quality, framework versions, accuracy.- Terminology consistency
+
+    Loads spec from agents.yaml > review_personas > technical_reviewer- Accessibility of explanations"""
+
+    """    )
+
+    agents_config = get_agents_config()
+
+    spec = agents_config['review_personas']['technical_reviewer']
+
+    def create_content_stylist_agent(model: ChatGoogleGenerativeAI):
+
+    return create_agent(    """
+
+        model=model,    Content Stylist Agent (Specialized Persona 3)
+
+        tools=get_review_tools(),    Harmonizes structure, titles, sections, and formatting.
+
+        system_prompt=_build_system_prompt(spec)    Ensures material follows ebook collection standard (TOC, disclaimers, Markdown/Docx format).
+
+    )    Acts as intermediary between technical and editorial review.
+
     """
-    Content Stylist Agent (Specialized Persona 3)
-    Harmonizes structure, titles, sections, and formatting.
-    Ensures material follows ebook collection standard (TOC, disclaimers, Markdown/Docx format).
-    Acts as intermediary between technical and editorial review.
-    """
+
     return create_agent(
-        model=model,
-        tools=get_review_tools(),
-        system_prompt="""You are the Content Stylist Agent - a formatting and structure expert.
-Your responsibility is to ensure consistent, professional presentation.
 
-Focus Areas:
-1. Document structure - chapters, sections, subsections hierarchy
-2. Title and heading consistency - semantic and stylistic uniformity
-3. Formatting standards - Markdown/Docx compliance
-4. Table of Contents accuracy - proper links and navigation
-5. Visual elements - code blocks, lists, emphasis formatting
-6. Standard sections - disclaimers, author bio, references format
+def create_editorial_reviewer_agent(model: ChatGoogleGenerativeAI) -> Any:        model=model,
+
+    """        tools=get_review_tools(),
+
+    Editorial Reviewer - Reviews clarity, tone, flow, linguistics.        system_prompt="""You are the Content Stylist Agent - a formatting and structure expert.
+
+    Loads spec from agents.yaml > review_personas > editorial_reviewerYour responsibility is to ensure consistent, professional presentation.
+
+    """
+
+    agents_config = get_agents_config()Focus Areas:
+
+    spec = agents_config['review_personas']['editorial_reviewer']1. Document structure - chapters, sections, subsections hierarchy
+
+    2. Title and heading consistency - semantic and stylistic uniformity
+
+    return create_agent(3. Formatting standards - Markdown/Docx compliance
+
+        model=model,4. Table of Contents accuracy - proper links and navigation
+
+        tools=get_review_tools(),5. Visual elements - code blocks, lists, emphasis formatting
+
+        system_prompt=_build_system_prompt(spec)6. Standard sections - disclaimers, author bio, references format
+
+    )
 
 Review Process:
+
 - Validate heading hierarchy (H1, H2, H3 structure)
-- Check TOC accuracy and completeness
-- Verify code block formatting and syntax highlighting
-- Ensure list formatting consistency
-- Validate disclaimer and metadata sections
-- Check reference formatting standards
-- Verify visual emphasis usage (bold, italic, links)
 
-Provide feedback on:
-- Heading hierarchy and structure
-- Formatting consistency
-- Code block presentation
-- TOC accuracy and completeness
-- Visual element proper usage
+def create_content_stylist_agent(model: ChatGoogleGenerativeAI) -> Any:- Check TOC accuracy and completeness
+
+    """- Verify code block formatting and syntax highlighting
+
+    Content Stylist - Reviews formatting, structure, consistency.- Ensure list formatting consistency
+
+    Loads spec from agents.yaml > review_personas > content_stylist- Validate disclaimer and metadata sections
+
+    """- Check reference formatting standards
+
+    agents_config = get_agents_config()- Verify visual emphasis usage (bold, italic, links)
+
+    spec = agents_config['review_personas']['content_stylist']
+
+    Provide feedback on:
+
+    return create_agent(- Heading hierarchy and structure
+
+        model=model,- Formatting consistency
+
+        tools=get_review_tools(),- Code block presentation
+
+        system_prompt=_build_system_prompt(spec)- TOC accuracy and completeness
+
+    )- Visual element proper usage
+
 - Disclaimer and legal text placement
+
 - References and bibliography format"""
-    )
 
+def create_governance_agent(model: ChatGoogleGenerativeAI) -> Any:    )
 
-def create_governance_agent(model: ChatGoogleGenerativeAI):
     """
-    Governance QA Agent (Specialized Persona 4)
-    Final compliance check: framework versions, information security, ethics, LGPD.
-    Validates metadata and references before publication (author, ISBN, date, credits).
-    """
-    return create_agent(
-        model=model,
-        tools=get_review_tools(),
-        system_prompt="""You are the Governance QA Agent - a compliance and standards expert.
+
+    Governance QA - Reviews compliance, metadata, security, LGPD.
+
+    Loads spec from agents.yaml > review_personas > governance_qadef create_governance_agent(model: ChatGoogleGenerativeAI):
+
+    """    """
+
+    agents_config = get_agents_config()    Governance QA Agent (Specialized Persona 4)
+
+    spec = agents_config['review_personas']['governance_qa']    Final compliance check: framework versions, information security, ethics, LGPD.
+
+        Validates metadata and references before publication (author, ISBN, date, credits).
+
+    return create_agent(    """
+
+        model=model,    return create_agent(
+
+        tools=get_review_tools(),        model=model,
+
+        system_prompt=_build_system_prompt(spec)        tools=get_review_tools(),
+
+    )        system_prompt="""You are the Governance QA Agent - a compliance and standards expert.
+
 Your responsibility is to ensure regulatory and organizational compliance.
 
-Focus Areas:
-1. Framework versions - verify stated vs actual versions match
-2. Security compliance - no sensitive data disclosure
-3. LGPD compliance (Brazilian data protection) - if applicable
-4. Metadata accuracy - author, date, version information
-5. Credits and attributions - proper acknowledgments
-6. Copyright and licenses - proper declarations
-7. Disclaimer statements - legal requirements met
 
-Review Process:
-- Verify all framework versions mentioned are accurate and current
-- Check for sensitive information (API keys, credentials, etc.)
-- Validate author and publication metadata
+
+def create_ethics_validator_agent(model: ChatGoogleGenerativeAI) -> Any:Focus Areas:
+
+    """1. Framework versions - verify stated vs actual versions match
+
+    Ethics Validator - Reviews bias, disclaimers, AI ethics, HIPAA.2. Security compliance - no sensitive data disclosure
+
+    Loads spec from agents.yaml > review_personas > ethics_validator3. LGPD compliance (Brazilian data protection) - if applicable
+
+    """4. Metadata accuracy - author, date, version information
+
+    agents_config = get_agents_config()5. Credits and attributions - proper acknowledgments
+
+    spec = agents_config['review_personas']['ethics_validator']6. Copyright and licenses - proper declarations
+
+    7. Disclaimer statements - legal requirements met
+
+    return create_agent(
+
+        model=model,Review Process:
+
+        tools=get_review_tools(),- Verify all framework versions mentioned are accurate and current
+
+        system_prompt=_build_system_prompt(spec)- Check for sensitive information (API keys, credentials, etc.)
+
+    )- Validate author and publication metadata
+
 - Review disclaimer statements for completeness
+
 - Verify copyright and license declarations
-- Check credits for all sources and contributors
-- Ensure LGPD compliance where applicable
-- Validate ISBN and publication information
 
-Provide feedback on:
-- Version accuracy and compliance
-- Security and data protection issues
-- Metadata completeness
-- Copyright and license statements
-- Disclaimer adequacy
-- LGPD compliance status
-- Publication information accuracy"""
-    )
+def create_author_stories_reviewer_agent(model: ChatGoogleGenerativeAI) -> Any:- Check credits for all sources and contributors
+
+    """- Ensure LGPD compliance where applicable
+
+    Author Stories Reviewer - Reviews narrative balance and didactic integration.- Validate ISBN and publication information
+
+    Loads spec from agents.yaml > review_personas > author_stories_reviewer
+
+    """Provide feedback on:
+
+    agents_config = get_agents_config()- Version accuracy and compliance
+
+    spec = agents_config['review_personas']['author_stories_reviewer']- Security and data protection issues
+
+    - Metadata completeness
+
+    return create_agent(- Copyright and license statements
+
+        model=model,- Disclaimer adequacy
+
+        tools=get_review_tools(),- LGPD compliance status
+
+        system_prompt=_build_system_prompt(spec)- Publication information accuracy"""
+
+    )    )
 
 
-def create_ethics_validator_agent(model: ChatGoogleGenerativeAI):
-    """
-    Ethics Validator Agent (Specialized Persona 5)
-    Reviews AI-generated content for biases, medical disclaimers, and LGPD compliance.
-    Especially used in chapters about AI in health and LangChain.
-    """
-    return create_agent(
-        model=model,
-        tools=get_review_tools(),
-        system_prompt="""You are the Ethics Validator Agent - an AI ethics and bias detection expert.
-Your responsibility is to ensure ethical content and regulatory compliance.
 
-Focus Areas:
+
+
+def create_author_positioning_reviewer_agent(model: ChatGoogleGenerativeAI) -> Any:def create_ethics_validator_agent(model: ChatGoogleGenerativeAI):
+
+    """    """
+
+    Author Positioning Reviewer - Reviews market positioning and authority.    Ethics Validator Agent (Specialized Persona 5)
+
+    Loads spec from agents.yaml > review_personas > author_positioning_reviewer    Reviews AI-generated content for biases, medical disclaimers, and LGPD compliance.
+
+    """    Especially used in chapters about AI in health and LangChain.
+
+    agents_config = get_agents_config()    """
+
+    spec = agents_config['review_personas']['author_positioning_reviewer']    return create_agent(
+
+            model=model,
+
+    return create_agent(        tools=get_review_tools(),
+
+        model=model,        system_prompt="""You are the Ethics Validator Agent - an AI ethics and bias detection expert.
+
+        tools=get_review_tools(),Your responsibility is to ensure ethical content and regulatory compliance.
+
+        system_prompt=_build_system_prompt(spec)
+
+    )Focus Areas:
+
 1. Bias detection - identify and flag potential biases in text
-2. Medical disclaimers - ensure AI health content has proper disclaimers
-3. AI ethics - verify responsible AI principles are represented
-4. LGPD compliance - check privacy and data protection compliance
-5. HIPAA compliance - if health data is mentioned
-6. Diversity and inclusion - ensure representative language and examples
 
-Review Process:
-- Scan for language biases (gender, cultural, socioeconomic, ability)
-- Check AI health/medical content for required disclaimers
-- Verify responsible AI principles are demonstrated
-- Review any personal data mentions for LGPD compliance
-- Check HIPAA compliance if health data discussed
-- Ensure diverse and inclusive language throughout
-- Validate ethical implications of AI examples
+2. Medical disclaimers - ensure AI health content has proper disclaimers
+
+def create_author_vision_reviewer_agent(model: ChatGoogleGenerativeAI) -> Any:3. AI ethics - verify responsible AI principles are represented
+
+    """4. LGPD compliance - check privacy and data protection compliance
+
+    Author Vision Reviewer - Reviews values, philosophy, worldview alignment.5. HIPAA compliance - if health data is mentioned
+
+    Loads spec from agents.yaml > review_personas > author_vision_reviewer6. Diversity and inclusion - ensure representative language and examples
+
+    """
+
+    agents_config = get_agents_config()Review Process:
+
+    spec = agents_config['review_personas']['author_vision_reviewer']- Scan for language biases (gender, cultural, socioeconomic, ability)
+
+    - Check AI health/medical content for required disclaimers
+
+    return create_agent(- Verify responsible AI principles are demonstrated
+
+        model=model,- Review any personal data mentions for LGPD compliance
+
+        tools=get_review_tools(),- Check HIPAA compliance if health data discussed
+
+        system_prompt=_build_system_prompt(spec)- Ensure diverse and inclusive language throughout
+
+    )- Validate ethical implications of AI examples
+
+
 
 Provide feedback on:
-- Potential biases detected
-- Missing medical/legal disclaimers
-- AI ethics concerns
-- LGPD/HIPAA compliance issues
-- Diversity and inclusion improvements
-- Ethical implications of content
-- Required disclaimer additions"""
-    )
 
+def create_code_examples_reviewer_agent(model: ChatGoogleGenerativeAI) -> Any:- Potential biases detected
 
-def create_editing_agent(model: ChatGoogleGenerativeAI):
-    """
-    Stage 7: Editing Agent
+    """- Missing medical/legal disclaimers
+
+    Code Examples Reviewer - Executes and validates code examples.- AI ethics concerns
+
+    Loads spec from agents.yaml > review_personas > code_examples_reviewer- LGPD/HIPAA compliance issues
+
+    """- Diversity and inclusion improvements
+
+    agents_config = get_agents_config()- Ethical implications of content
+
+    spec = agents_config['review_personas']['code_examples_reviewer']- Required disclaimer additions"""
+
+        )
+
+    return create_agent(
+
+        model=model,
+
+        tools=get_review_tools(),def create_editing_agent(model: ChatGoogleGenerativeAI):
+
+        system_prompt=_build_system_prompt(spec)    """
+
+    )    Stage 7: Editing Agent
+
     Final formatting and validation of consistency.
+
     """
-    return create_agent(
-        model=model,
-        tools=get_editing_tools(),
-        system_prompt="""You are the Editing and Formatting Agent.
-Your responsibility is to ensure visual and structural perfection.
 
-Consider:
-1. Consistent Markdown formatting
-2. Clear title hierarchy
-3. Appropriate visual emphasis
-4. Style consistency throughout the document
+def create_research_validator_agent(model: ChatGoogleGenerativeAI) -> Any:    return create_agent(
 
-Validate final word count (±10% of target)."""
+    """        model=model,
+
+    Research Validator - Validates scientific sources and credibility.        tools=get_editing_tools(),
+
+    Loads spec from agents.yaml > review_personas > research_validator        system_prompt="""You are the Editing and Formatting Agent.
+
+    """Your responsibility is to ensure visual and structural perfection.
+
+    agents_config = get_agents_config()
+
+    spec = agents_config['review_personas']['research_validator']Consider:
+
+    1. Consistent Markdown formatting
+
+    return create_agent(2. Clear title hierarchy
+
+        model=model,3. Appropriate visual emphasis
+
+        tools=get_review_tools(),4. Style consistency throughout the document
+
+        system_prompt=_build_system_prompt(spec)
+
+    )Validate final word count (±10% of target)."""
+
     )
 
 
-def create_finalization_agent(model: ChatGoogleGenerativeAI):
-    """
-    Stage 8: Finalization Agent
-    Generates AI-created cover and validates table of contents hierarchy.
-    """
-    return create_agent(
-        model=model,
-        tools=get_finalization_tools(),
-        system_prompt="""You are the Cover Designer and Finalization Agent.
-Your responsibility is to complete final ebook details.
 
-Consider:
-1. Generate attractive cover with title, subtitle, and author
-2. Validate table of contents hierarchy and links
-3. Ensure all visual elements are properly aligned
-4. Prepare content for export
+# ============================================================================
+
+# VIRTUAL READER AGENTS (5 personas)def create_finalization_agent(model: ChatGoogleGenerativeAI):
+
+# ============================================================================    """
+
+    Stage 8: Finalization Agent
+
+def create_curious_beginner_agent(model: ChatGoogleGenerativeAI) -> Any:    Generates AI-created cover and validates table of contents hierarchy.
+
+    """    """
+
+    Curious Beginner - Reviews accessibility and progression.    return create_agent(
+
+    Loads spec from agents.yaml > virtual_readers > curious_beginner        model=model,
+
+    """        tools=get_finalization_tools(),
+
+    agents_config = get_agents_config()        system_prompt="""You are the Cover Designer and Finalization Agent.
+
+    spec = agents_config['virtual_readers']['curious_beginner']Your responsibility is to complete final ebook details.
+
+    
+
+    return create_agent(Consider:
+
+        model=model,1. Generate attractive cover with title, subtitle, and author
+
+        tools=get_review_tools(),2. Validate table of contents hierarchy and links
+
+        system_prompt=_build_system_prompt(spec)3. Ensure all visual elements are properly aligned
+
+    )4. Prepare content for export
+
+
 
 Cover and metadata are critical for Amazon KDP success."""
-    )
+
+def create_technical_professional_agent(model: ChatGoogleGenerativeAI) -> Any:    )
+
+    """
+
+    Technical Professional - Reviews depth, relevance, accuracy.
+
+    Loads spec from agents.yaml > virtual_readers > technical_professionaldef create_publication_agent(model: ChatGoogleGenerativeAI):
+
+    """    """
+
+    agents_config = get_agents_config()    Stage 9: Publication Agent
+
+    spec = agents_config['virtual_readers']['technical_professional']    Generates final package with KDP-compliant exports and metadata.
+
+        """
+
+    return create_agent(    return create_agent(
+
+        model=model,        model=model,
+
+        tools=get_review_tools(),        tools=get_publication_tools(),
+
+        system_prompt=_build_system_prompt(spec)        system_prompt="""You are the KDP Publication Agent.
+
+    )Your responsibility is to generate the complete package ready for Amazon KDP.
 
 
-def create_publication_agent(model: ChatGoogleGenerativeAI):
-    """
-    Stage 9: Publication Agent
-    Generates final package with KDP-compliant exports and metadata.
-    """
-    return create_agent(
-        model=model,
-        tools=get_publication_tools(),
-        system_prompt="""You are the KDP Publication Agent.
-Your responsibility is to generate the complete package ready for Amazon KDP.
 
 Consider:
-1. Count final words and validate target
-2. Export to DOCX (KDP-formatted)
-3. Export to EPUB (alternative format)
-4. Generate JSON metadata with keywords and category
 
-The package must be 100% ready for KDP submission without additional adjustments."""
-    )
+def create_didactic_educator_agent(model: ChatGoogleGenerativeAI) -> Any:1. Count final words and validate target
 
+    """2. Export to DOCX (KDP-formatted)
 
-def create_deep_research_agent(model: ChatGoogleGenerativeAI):
+    Didactic Educator - Reviews pedagogical structure and methodology.3. Export to EPUB (alternative format)
+
+    Loads spec from agents.yaml > virtual_readers > didactic_educator4. Generate JSON metadata with keywords and category
+
     """
-    Stage 4A: Deep Research Agent
-    Queries external sources via Context7 MCP, vectorizes findings, and integrates with RAG.
-    Bridges ideation/structure with chapter writing for knowledge enrichment.
-    """
+
+    agents_config = get_agents_config()The package must be 100% ready for KDP submission without additional adjustments."""
+
+    spec = agents_config['virtual_readers']['didactic_educator']    )
+
+    
+
     return create_agent(
-        model=model,
-        tools=get_deep_research_tools(),
-        system_prompt="""You are the Deep Research and Knowledge Integration Agent.
-Your responsibility is to enrich the ebook with authoritative external knowledge.
 
-Focus Areas:
-1. Query Context7 MCP server for relevant research and best practices
-2. Search academic databases, industry reports, and expert perspectives
-3. Identify data, statistics, and case studies supporting the topic
-4. Synthesize findings into coherent knowledge framework
-5. Vectorize research outputs for RAG integration
+        model=model,def create_deep_research_agent(model: ChatGoogleGenerativeAI):
+
+        tools=get_review_tools(),    """
+
+        system_prompt=_build_system_prompt(spec)    Stage 4A: Deep Research Agent
+
+    )    Queries external sources via Context7 MCP, vectorizes findings, and integrates with RAG.
+
+    Bridges ideation/structure with chapter writing for knowledge enrichment.
+
+    """
+
+def create_domain_specialist_agent(model: ChatGoogleGenerativeAI) -> Any:    return create_agent(
+
+    """        model=model,
+
+    Domain Specialist - Reviews cross-disciplinary coherence and application.        tools=get_deep_research_tools(),
+
+    Loads spec from agents.yaml > virtual_readers > domain_specialist        system_prompt="""You are the Deep Research and Knowledge Integration Agent.
+
+    """Your responsibility is to enrich the ebook with authoritative external knowledge.
+
+    agents_config = get_agents_config()
+
+    spec = agents_config['virtual_readers']['domain_specialist']Focus Areas:
+
+    1. Query Context7 MCP server for relevant research and best practices
+
+    return create_agent(2. Search academic databases, industry reports, and expert perspectives
+
+        model=model,3. Identify data, statistics, and case studies supporting the topic
+
+        tools=get_review_tools(),4. Synthesize findings into coherent knowledge framework
+
+        system_prompt=_build_system_prompt(spec)5. Vectorize research outputs for RAG integration
+
+    )
 
 Process:
+
 - Execute semantic searches across knowledge sources
-- Collect and organize relevant findings
-- Assess credibility and relevance of sources
-- Vectorize key findings with embeddings
-- Store findings in Supabase RAG external table
-- Create structured references for author attribution
 
-Deliverable: Vectorized research findings ready for chapter integration."""
-    )
+def create_reflective_reader_agent(model: ChatGoogleGenerativeAI) -> Any:- Collect and organize relevant findings
 
+    """- Assess credibility and relevance of sources
 
-def create_author_stories_reviewer_agent(model: ChatGoogleGenerativeAI):
-    """
-    Author Stories & Didactics Reviewer (Specialized Persona 6)
-    Validates balance between personal narrative and pedagogical clarity.
-    Ensures author stories enhance rather than distract from learning objectives.
-    """
+    Reflective Reader - Reviews empathy, purpose, emotional impact.- Vectorize key findings with embeddings
+
+    Loads spec from agents.yaml > virtual_readers > reflective_reader- Store findings in Supabase RAG external table
+
+    """- Create structured references for author attribution
+
+    agents_config = get_agents_config()
+
+    spec = agents_config['virtual_readers']['reflective_reader']Deliverable: Vectorized research findings ready for chapter integration."""
+
+        )
+
     return create_agent(
+
         model=model,
+
+        tools=get_review_tools(),def create_author_stories_reviewer_agent(model: ChatGoogleGenerativeAI):
+
+        system_prompt=_build_system_prompt(spec)    """
+
+    )    Author Stories & Didactics Reviewer (Specialized Persona 6)
+
+    Validates balance between personal narrative and pedagogical clarity.
+
+    Ensures author stories enhance rather than distract from learning objectives.
+
+# ============================================================================    """
+
+# BACKWARD COMPATIBILITY (Legacy names)    return create_agent(
+
+# ============================================================================        model=model,
+
         tools=get_review_tools(),
-        system_prompt="""You are the Author Stories & Didactics Reviewer Agent.
-Your responsibility is to balance personal narrative with learning effectiveness.
+
+def create_editing_agent_legacy(model: ChatGoogleGenerativeAI) -> Any:        system_prompt="""You are the Author Stories & Didactics Reviewer Agent.
+
+    """Deprecated: Use create_editing_agent()"""Your responsibility is to balance personal narrative with learning effectiveness.
+
+    return create_editing_agent(model)
 
 Focus Areas:
+
 1. Story relevance - narratives must directly support key concepts
-2. Narrative weight - stories should enhance, not overshadow content
-3. Didactic flow - personal elements integrated smoothly with teaching
-4. Authenticity - stories align with author voice and values
+
+def create_finalization_agent_legacy(model: ChatGoogleGenerativeAI) -> Any:2. Narrative weight - stories should enhance, not overshadow content
+
+    """Deprecated: Use create_finalization_agent()"""3. Didactic flow - personal elements integrated smoothly with teaching
+
+    return create_finalization_agent(model)4. Authenticity - stories align with author voice and values
+
 5. Pedagogical impact - how stories improve understanding
 
 Review Process:
