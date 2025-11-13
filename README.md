@@ -2,7 +2,7 @@
 
 **A Production-Ready, AI-Powered Editorial Pipeline for Autonomous Ebook Generation**
 
-Transform raw topics into publication-ready ebooks with a sophisticated 8-stage editorial pipeline powered by LangChain 1.0+ and Google's Gemini AI.
+Transform raw topics into publication-ready ebooks with a sophisticated 9-stage editorial pipeline powered by LangChain 1.0+ and Google's Gemini AI.
 
 ## 🎯 Overview
 
@@ -10,7 +10,7 @@ Ebook Generator 1.0 is an advanced multi-agent system that orchestrates the comp
 
 ### Key Features
 
-- **8-Stage Autonomous Pipeline**: From ideation to publication-ready package
+- **9-Stage Autonomous Pipeline**: From ideation to publication-ready package
 - **5 Specialized Review Personas**: Technical, Editorial, Style, Governance, and Ethics validation
 - **5 Virtual Readers**: Beginner, Professional, Educator, Specialist, and Reflective perspectives
 - **Dual-Model Strategy**: Gemini 2.5 Flash (writing) + Gemini 2.5 (research/RAG)
@@ -21,11 +21,11 @@ Ebook Generator 1.0 is an advanced multi-agent system that orchestrates the comp
 
 ## 📋 Pipeline Architecture
 
-### The 8-Stage Editorial Pipeline
+### The 9-Stage Editorial Pipeline
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│ EBOOK GENERATOR 1.0 - 8-STAGE EDITORIAL PIPELINE                      │
+│ EBOOK GENERATOR 1.0 - 9-STAGE EDITORIAL PIPELINE                      │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                         │
 │ Stage 1: IDEATION                                                      │
@@ -179,7 +179,7 @@ Each reader generates independent reports that feed into the **3-iteration refin
 ```python
 from src.main import run_ebook_pipeline
 
-# Execute the 8-stage pipeline
+# Execute the 9-stage pipeline
 results = run_ebook_pipeline(
     topic="Advanced Python with LangChain",
     target_audience="Senior Python Developers",
@@ -202,7 +202,7 @@ ebook-generator/
 ├── .github/
 │   └── copilot-instructions.md    # Code standards for all agents
 ├── src/
-│   ├── main.py                     # Pipeline orchestration (8 stages)
+│   ├── main.py                     # Pipeline orchestration (9 stages)
 │   ├── agents.py                   # 8 agents + 1 coordinator + 5 reviewers
 │   ├── tools.py                    # 30+ specialized tools
 │   ├── config.py                   # Model initialization
@@ -236,7 +236,7 @@ The system includes 14 distinct agent creators:
 - `create_ethics_validator_agent()` - Ethics and bias checking
 
 **Orchestration**:
-- `create_coordinator_superagent()` - 8-stage pipeline orchestrator
+- `create_coordinator_superagent()` - 9-stage pipeline orchestrator
 - `execute_review_personas()` - Execute all 5 reviewers in sequence
 
 ### tools.py: Specialized Tools
@@ -301,7 +301,7 @@ Configuration parameters:
 ```python
 from src.main import run_ebook_pipeline
 
-# Run complete 8-stage pipeline
+# Run complete 9-stage pipeline
 results = run_ebook_pipeline(
     topic="Python Data Science with Pandas",
     target_audience="Data Scientists and Analysts",
@@ -658,7 +658,7 @@ For issues, questions, or suggestions:
 
 ### Version 1.0 (Current)
 
-- ✅ 8-stage autonomous pipeline
+- ✅ 9-stage autonomous pipeline
 - ✅ 5 specialized review personas
 - ✅ LangChain 1.0+ integration
 - ✅ Google Gemini 2.5 Flash support

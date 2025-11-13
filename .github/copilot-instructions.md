@@ -260,12 +260,11 @@ specs/
 ├── models.yaml           # Gemini model configuration
 ├── personas.yaml         # 10 review personas + 5 virtual readers
 ├── tools.yaml            # Tool specifications (30+)
-├── README.md             # Specs documentation
-└── examples/             # Pre-configured examples
-    ├── academic_book.yaml
-    ├── tech_guide.yaml
-    ├── health_wellness.yaml
-    └── business_book.yaml
+├── book.yaml             # Generated from input validation (gitignore)
+└── README.md             # Specs documentation
+
+input/
+└── book_input.yaml       # User-provided book specification (mandatory)
 
 docs/
 ├── PRD.md                # Product Requirements Document (v1.0)
@@ -366,6 +365,7 @@ from src.config import (
     get_tools_config,
     get_message
 )
+from src.input_validator import validate_book_input
 
 # Load pipeline configuration
 pipeline_cfg = get_pipeline_config()
@@ -374,8 +374,9 @@ stage_1_params = pipeline_cfg['stages']['stage_1_ideation']['parameters']
 # Load Portuguese messages
 msg = get_message('pipeline_start')  # "🚀 Iniciando pipeline..."
 
-# Load pre-configured example
-example = load_example_config('tech_guide')
+# Validate user input and generate book config
+config = validate_book_input()
+book_config = config  # Merged specs/book.yaml equivalent
 
 # Load model configuration
 models_cfg = get_models_config()
@@ -394,20 +395,24 @@ Pipeline execution is parameter-driven from specs/:
 
 ```python
 from src.main import run_ebook_pipeline
-from src.config_loader import load_example_config
+from src.input_validator import validate_book_input
+from src.config import get_pipeline_config
 
-# Option 1: Use defaults
+# Option 1: Validate input/book_input.yaml and run
+config = validate_book_input()
+result = run_ebook_pipeline(**config['metadata'], **config['parameters'])
+
+# Option 2: Use defaults from pipeline.yaml
 result = run_ebook_pipeline(
     topic="Python para Análise",
-    audience="Data Scientists"
+    target_audience="Data Scientists",
+    word_count_target=15000
 )
 
-# Option 2: Use pre-configured example
-config = load_example_config("tech_guide")
-result = run_ebook_pipeline(**config['input'])
-
-# Option 3: Custom overrides
-config = load_example_config("academic_book")
+# Option 3: Custom overrides via stage_overrides in input
+config = validate_book_input()  # includes stage_overrides
+result = run_ebook_pipeline(**config)
+```
 config['input']['word_count_target'] = 50000
 result = run_ebook_pipeline(**config['input'])
 ```
@@ -716,18 +721,20 @@ All code must pass:
 
 The complete Product Requirements Document (v1.0) defines:
 
-### 8-Stage Editorial Pipeline
+### 9-Stage Editorial Pipeline
 1. **Ideation** - Central idea, problem, audience, transformation promise
 2. **Title Generation** - Amazon-optimized titles (3 options)
 3. **Structure** - Hierarchical outline scaled to word count
-4. **Chapter Writing** - Didactic content with RAG integration
-5. **Review** - 5 specialized review personas (Technical, Editorial, Stylist, Governance, Ethics)
-6. **Leitura Crítica** - 5 virtual reader personas (Beginner, Professional, Educator, Specialist, Reflective)
-7. **Editing** - Final formatting and validation
-8. **Publication** - DOCX, EPUB, PDF, JSON export for KDP
+4. **Deep Research** - External RAG with Context7 MCP, vectorized research
+5. **Chapter Writing** - Didactic content with research-backed integration
+6. **Specialized Review** - 10 specialized review personas
+7. **Critical Reading & Iteration** - 5 virtual readers, 3 cycles of refinement
+8. **Editing** - Final formatting and validation
+9. **Publication** - DOCX, EPUB, PDF, JSON export for KDP
 
 ### Dual-Model Architecture
 - **Gemini 2.5 Flash** - Writing, creativity, speed (temperature: 0.7)
+- **Gemini 2.5 Pro** - Research, analysis, RAG, factuality (temperature: 0.3)
 - **Gemini 2.5** - Research, analysis, RAG, factuality (temperature: 0.3)
 
 ### Success Criteria

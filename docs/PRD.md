@@ -300,7 +300,7 @@ All parameters are managed in:
 ## 8. Roadmap
 
 ### Q4 2024 (Now)
-- ✅ 8-stage pipeline
+- ✅ 9-stage pipeline
 - ✅ 5 specialized review personas
 - ✅ LangChain 1.0+ integration
 - ✅ Code standards documentation
@@ -369,7 +369,7 @@ Transform the ebook publishing workflow from a time-consuming manual process int
 
 ## 3. Functional Requirements
 
-### 3.1 Pipeline Architecture: 8-Stage Process
+### 3.1 Pipeline Architecture: 9-Stage Process
 
 #### Stage 1: Ideation
 **Input**: Topic, target audience, word count target  
@@ -989,12 +989,12 @@ output = response["messages"][-1].content
 
 ### User Story 1: Complete Pipeline Execution
 **As a** publisher  
-**I want to** execute a full 8-stage pipeline from topic to publication  
+**I want to** execute a full 9-stage pipeline from topic to publication  
 **So that** I can produce a complete ebook in minimal time
 
 **Acceptance Criteria**:
 - ✅ User provides topic, audience, and word count target
-- ✅ All 8 stages execute sequentially
+- ✅ All 9 stages execute sequentially
 - ✅ Output includes all required formats (DOCX, EPUB, PDF, JSON)
 - ✅ Execution completes in <5 minutes
 
@@ -1122,8 +1122,8 @@ output = response["messages"][-1].content
 ## 10. Roadmap
 
 ### Q4 2024 (Now)
-- ✅ Core 8-stage pipeline
-- ✅ 5 review personas
+- ✅ Core 9-stage pipeline
+- ✅ 10 review personas
 - ✅ 5 virtual readers
 - ✅ LangChain 1.0+ integration
 - ✅ Code standards documentation

@@ -163,9 +163,10 @@ ideation_params = config['stages']['stage_1_ideation']['parameters']
 # Get Portuguese message
 msg = get_message('pipeline_start')  # "🚀 Iniciando pipeline..."
 
-# Load example configuration
-example = load_example_config('tech_guide')
-result = run_ebook_pipeline(**example['input'])
+# Validate input and run pipeline
+from src.input_validator import validate_book_input
+book_config = validate_book_input()
+result = run_ebook_pipeline(**book_config)
 
 # Logging with Rich
 logger = get_logger('my_module')
@@ -1189,7 +1190,7 @@ src/
 
 ```
 src/
-├── main.py           # Main editorial pipeline (8 stages)
+├── main.py           # Main editorial pipeline (9 stages)
 ├── agents.py         # Definition of 8 specialized agents
 ├── tools.py          # Available tools (30+ tools)
 ├── config.py         # Gemini 2.5 Flash model configuration
