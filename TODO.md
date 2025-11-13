@@ -51,16 +51,16 @@
 [x] Update __init__.py: Export all public functions from agents, tools, config, main, input_validator
 [x] Verify all YAML files load correctly: pipeline.yaml, agents.yaml, config.yaml, models.yaml, tools.yaml
 
-## TESTING (BASIC)
-[x] Create tests/ directory and __init__.py
-[x] Create tests/test_config.py: Test YAML loading and configuration access
-[x] Create tests/test_input_validator.py: Test input validation and merging
-[x] Create tests/test_agents.py: Test agent creation and execute_agent() function
-[x] Create tests/test_pipeline.py: Test complete pipeline with minimal sample data
-[x] Run all tests: Verify no import errors and basic functionality works
+## TESTING (BASIC) - SKIP (use only if explicitly requested)
+[ ] SKIP: Create tests/ directory and __init__.py (not implemented unless requested)
+[ ] SKIP: Create tests/test_config.py (not implemented unless requested)
+[ ] SKIP: Create tests/test_input_validator.py (not implemented unless requested)
+[ ] SKIP: Create tests/test_agents.py (not implemented unless requested)
+[ ] SKIP: Create tests/test_pipeline.py (not implemented unless requested)
+[ ] SKIP: Run all tests (not implemented unless requested)
 
-## DOCUMENTATION & STANDARDS
-[x] Update .github/copilot-instructions.md: Add "TODO.md Workflow" section (see template below)
+## DOCUMENTATION & STANDARDS - SKIP (use only if explicitly requested)
+[x] Update .github/copilot-instructions.md: Add "TODO.md Workflow" section
 [x] Update .github/copilot-instructions.md: Clarify "Always commit after completing tasks" requirement
 [x] Verify README.md reflects current 9-stage pipeline architecture
 [x] Verify copilot-instructions.md matches actual implementation patterns
