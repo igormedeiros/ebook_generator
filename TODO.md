@@ -25,31 +25,31 @@
 [x] Complete tools.py: Implement get_publication_tools() - export_to_docx, export_to_epub, export_to_pdf, export_to_json
 
 ## PIPELINE ORCHESTRATION
-[ ] Complete main.py: Implement run_ebook_pipeline() sequential execution of all 9 stages
-[ ] Complete main.py: Ensure stages 1-3 flow correctly (ideation → titles → structure)
-[ ] Complete main.py: Ensure stages 4A & 4B flow correctly (deep research → chapter writing)
-[ ] Complete main.py: Ensure stage 5 collects feedback from 10 review personas
-[ ] Complete main.py: Ensure stage 6 simple iteration with 5 virtual readers (1 cycle only)
-[ ] Complete main.py: Ensure stages 7-9 flow correctly (editing → finalization → publication)
-[ ] Complete main.py: Add proper logging at each stage using get_logger()
+[x] Complete main.py: Implement run_ebook_pipeline() sequential execution of all 9 stages
+[x] Complete main.py: Ensure stages 1-3 flow correctly (ideation → titles → structure)
+[x] Complete main.py: Ensure stages 4A & 4B flow correctly (deep research → chapter writing)
+[x] Complete main.py: Ensure stage 5 collects feedback from 10 review personas
+[x] Complete main.py: Ensure stage 6 simple iteration with 5 virtual readers (1 cycle only)
+[x] Complete main.py: Ensure stages 7-9 flow correctly (editing → finalization → publication)
+[x] Complete main.py: Add proper logging at each stage using get_logger()
 
 ## INPUT VALIDATION
-[ ] Complete input_validator.py: Implement validate_book_input() with mandatory field checks
-[ ] Complete input_validator.py: Implement merge input/book_input.yaml with pipeline.yaml defaults
-[ ] Complete input_validator.py: Implement interactive prompts for missing/invalid fields
-[ ] Complete input_validator.py: Implement generate specs/book.yaml at runtime
+[x] Complete input_validator.py: Implement validate_book_input() with mandatory field checks
+[x] Complete input_validator.py: Implement merge input/book_input.yaml with pipeline.yaml defaults
+[x] Complete input_validator.py: Implement interactive prompts for missing/invalid fields
+[x] Complete input_validator.py: Implement generate specs/book.yaml at runtime
 
 ## RAG INTEGRATION
-[ ] Setup Supabase connection in config.py with pgvector support
-[ ] Implement simple rag_external table operations (store and retrieve)
-[ ] Implement retrieve_rag_external() for vectorized research search
-[ ] Implement query to author knowledge tables (rag_author_stories, rag_author_positioning, rag_author_vision)
+[x] Setup Supabase connection in config.py with pgvector support
+[x] Implement simple rag_external table operations (store and retrieve)
+[x] Implement retrieve_rag_external() for vectorized research search
+[x] Implement query to author knowledge tables (rag_author_stories, rag_author_positioning, rag_author_vision)
 
 ## CONFIGURATION & UTILITIES
-[ ] Update config.py: Verify get_agent_for_stage() maps stages to agent IDs correctly
-[ ] Update config.py: Ensure dual-model setup works (Flash 0.7 + Pro 0.3)
-[ ] Update __init__.py: Export all public functions from agents, tools, config, main, input_validator
-[ ] Verify all YAML files load correctly: pipeline.yaml, agents.yaml, config.yaml, models.yaml, tools.yaml
+[x] Update config.py: Verify get_agent_for_stage() maps stages to agent IDs correctly
+[x] Update config.py: Ensure dual-model setup works (Flash 0.7 + Pro 0.3)
+[x] Update __init__.py: Export all public functions from agents, tools, config, main, input_validator
+[x] Verify all YAML files load correctly: pipeline.yaml, agents.yaml, config.yaml, models.yaml, tools.yaml
 
 ## TESTING (BASIC)
 [ ] Create tests/ directory and __init__.py
@@ -60,10 +60,10 @@
 [ ] Run all tests: Verify no import errors and basic functionality works
 
 ## DOCUMENTATION & STANDARDS
-[ ] Update .github/copilot-instructions.md: Add "TODO.md Workflow" section (see template below)
-[ ] Update .github/copilot-instructions.md: Clarify "Always commit after completing tasks" requirement
-[ ] Verify README.md reflects current 9-stage pipeline architecture
-[ ] Verify copilot-instructions.md matches actual implementation patterns
+[x] Update .github/copilot-instructions.md: Add "TODO.md Workflow" section (see template below)
+[x] Update .github/copilot-instructions.md: Clarify "Always commit after completing tasks" requirement
+[x] Verify README.md reflects current 9-stage pipeline architecture
+[x] Verify copilot-instructions.md matches actual implementation patterns
 
 ## FINAL COMMIT
 [ ] git add -A && git commit -m "feat: implement core agents, tools, and 9-stage pipeline"
