@@ -2,13 +2,13 @@
 # Preencha os campos obrigatórios e opcionais conforme necessário
 
 # Campos Obrigatórios
-topic: ""  # Tópico principal do livro (ex: "Python para Análise de Dados")
-target_audience: ""  # Público-alvo (ex: "Cientistas de dados iniciantes")
-word_count_target: 15000  # Contagem de palavras desejada (5000-100000)
+topic: "Python para Análise de Dados"
+target_audience: "Data Scientists em início de carreira"
+word_count_target: 15000
 
 # Campos Opcionais
-transformation_promise: ""  # Promessa de transformação para o leitor (opcional)
-reading_level: "intermediary"  # beginner | intermediary | advanced | expert
+transformation_promise: "Domine as ferramentas essenciais de Python para análise profissional de dados"
+reading_level: "intermediate"
 
 # Overrides de Estágios (opcional)
 # Descomente e customize conforme necessário

@@ -159,6 +159,13 @@ class InputValidator:
         """
         # Type validation
         if field == "word_count_target":
+            # Convert string to int if necessary
+            if isinstance(value, str):
+                try:
+                    value = int(value)
+                except ValueError:
+                    raise ValueError(f"{field} deve ser um número inteiro (recebido: {value})")
+            
             if not isinstance(value, int):
                 raise ValueError(f"{field} deve ser um número inteiro")
             # Range check from pipeline config

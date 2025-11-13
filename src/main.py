@@ -1,7 +1,7 @@
 """Main pipeline orchestration for Ebook Generator 1.0.
 
 Executes the full nine-stage editorial pipeline, coordinating research,
-writing, review personas, and publication exports.
+writing, review personas, and publication exports with colorful TUI.
 """
 
 import sys
@@ -38,7 +38,18 @@ from .agents import (
     execute_agent,
     execute_review_personas,
 )
-from .config import get_logger, get_model, get_research_model, print_panel
+from .config import (
+    get_logger,
+    get_model,
+    get_research_model,
+    print_stage_header,
+    print_stage_complete,
+    print_pipeline_start,
+    print_pipeline_complete,
+    print_error_panel,
+    get_message,
+    get_config,
+)
 
 logger = get_logger(__name__)
 
@@ -82,20 +93,45 @@ def run_ebook_pipeline(
     topic: str,
     target_audience: str,
     word_count_target: int = 15000,
+    reading_level: str = "intermediate",
     transformation_promise: str = "",
-    reading_level: str = "intermediary",
     run_all_stages: bool = True,
-    **kwargs: Any,
+    **kwargs,
 ) -> Dict[str, Any]:
-    """Execute the full pipeline and return structured stage results."""
-
-    logger.info("Starting Ebook Generator pipeline", extra={"topic": topic})
-    results: Dict[str, Any] = {
-        "input": {
+    """
+    Execute the 9-stage ebook generation pipeline.
+    
+    Stages:
+    1. Ideation - Central idea, problem, promise
+    2. Title - Amazon-optimized titles
+    3. Structure - Hierarchical outline
+    4A. Deep Research - Context7 + vectorization
+    4B. Chapter Writing - Didactic content
+    5. Specialized Review - 10 personas
+    6. Critical Reading - 5 virtual readers (1 cycle)
+    7. Editing - Formatting + validation
+    8. Finalization - Cover + metadata
+    9. Publication - Export (DOCX/EPUB/PDF/JSON)
+    
+    Args:
+        topic: Main topic
+        target_audience: Target audience
+        word_count_target: Word count goal (default: 15000)
+        reading_level: Reading level (default: intermediate)
+        transformation_promise: Promise to reader (optional)
+        run_all_stages: Run all 9 stages (default: True)
+        **kwargs: Additional parameters stored in overrides
+    
+    Returns:
+        Dict with stage outputs and final status
+    """
+    results = {
+        "pipeline_status": "running",
+        "stages": {},
+        "metadata": {
             "topic": topic,
             "target_audience": target_audience,
             "word_count_target": word_count_target,
-            "transformation_promise": transformation_promise,
             "reading_level": reading_level,
             "overrides": kwargs,
         }
@@ -105,26 +141,33 @@ def run_ebook_pipeline(
         write_model = get_model()
         research_model = get_research_model()
 
+        # Splash screen
+        print_pipeline_start(topic, target_audience, word_count_target)
+
         # Stage 1 — Ideation
-        print_panel(
-            title="Stage 1: Ideation",
-            content="Generating central idea, problem framing, and promise...",
-            style="cyan",
-        )
+        stage_title = get_message("stage_1_title", "Estágio 1: Ideação")
+        stage_desc = get_message("stage_1_start", "Gerando ideia central...")
+        print_stage_header(1, stage_title, stage_desc)
+        
         ideation_agent = create_ideation_agent(write_model)
         promise_context = (
             transformation_promise
             if transformation_promise
             else "Define the transformation promise using audience pain points."
         )
-        ideation_prompt = (
-            "Return JSON with keys idea, problem, promise, and audience_insight. Context:\n"
-            f"Topic: {topic}\nAudience: {target_audience}\n"
-            f"Word Count Target: {word_count_target}\nReading Level: {reading_level}\n"
-            f"Transformation Promise: {promise_context}"
+        
+        # Get prompt template from config
+        agent_prompts = get_config("agent_prompts")
+        ideation_prompt = agent_prompts["ideation_prompt_template"].format(
+            topic=topic,
+            target_audience=target_audience,
+            word_count_target=word_count_target,
+            reading_level=reading_level,
+            promise_context=promise_context,
         )
         ideation_output = execute_agent(ideation_agent, ideation_prompt)
         results["stage_1_ideation"] = {"output": ideation_output}
+        print_stage_complete(1)
         logger.info("Stage 1 complete")
 
         if not run_all_stages:
@@ -132,174 +175,138 @@ def run_ebook_pipeline(
             return results
 
         # Stage 2 — Title Generation
-        print_panel(
-            title="Stage 2: Title Generation",
-            content="Creating Amazon-optimized title options...",
-            style="cyan",
-        )
+        stage_title = get_message("stage_2_title", "Estágio 2: Geração de Títulos")
+        stage_desc = get_message("stage_2_start", "Pesquisando bestsellers...")
+        print_stage_header(2, stage_title, stage_desc)
+        
         title_agent = create_title_agent(write_model)
-        title_prompt = (
-            "Produce exactly three Amazon KDP-ready title options in JSON with fields "
-            "titles (list) and rationales (dict by title). Use these insights:\n"
-            f"{ideation_output}"
+        title_prompt = agent_prompts["title_prompt_template"].format(
+            ideation_output=ideation_output
         )
         title_output = execute_agent(title_agent, title_prompt)
         results["stage_2_title"] = {"output": title_output}
+        print_stage_complete(2)
         logger.info("Stage 2 complete")
 
         # Stage 3 — Structure
-        print_panel(
-            title="Stage 3: Structure",
-            content="Designing hierarchical outline aligned with word count target...",
-            style="cyan",
-        )
+        stage_title = get_message("stage_3_title", "Estágio 3: Estrutura & Outline")
+        stage_desc = get_message("stage_3_start", "Criando índice hierárquico...")
+        print_stage_header(3, stage_title, stage_desc)
+        
         structure_agent = create_structure_agent(write_model)
-        structure_prompt = (
-            "Create a Markdown table of contents with chapters, sections, and estimated word counts. Consider:\n"
-            f"Topic: {topic}\nAudience: {target_audience}\n"
-            f"Target Words: {word_count_target}\nIdeation Summary: {ideation_output}"
+        structure_prompt = agent_prompts["structure_prompt_template"].format(
+            topic=topic,
+            target_audience=target_audience,
+            word_count_target=word_count_target,
+            ideation_output=ideation_output,
         )
         structure_output = execute_agent(structure_agent, structure_prompt)
         results["stage_3_structure"] = {"output": structure_output}
+        print_stage_complete(3)
         logger.info("Stage 3 complete")
 
         # Stage 4A — Deep Research
-        print_panel(
-            title="Stage 4A: Deep Research",
-            content="Querying Context7 MCP, vectorizing research, and storing in RAG...",
-            style="cyan",
-        )
+        stage_title = get_message("stage_4a_title", "Estágio 4A: Pesquisa Profunda")
+        stage_desc = get_message("stage_4a_start", "Consultando Context7 MCP...")
+        print_stage_header(4, stage_title, stage_desc)
+        
         deep_research_agent = create_deep_research_agent(research_model)
-        deep_research_prompt = (
-            "Execute deep research for each outline section and return JSON with research_summary, sources, "
-            "vector_ids, and storage_status. Outline reference:\n"
-            f"{structure_output}"
+        deep_research_prompt = agent_prompts["deep_research_prompt_template"].format(
+            structure_output=structure_output
         )
         deep_research_output = execute_agent(deep_research_agent, deep_research_prompt)
         results["stage_4a_deep_research"] = {"output": deep_research_output}
+        print_stage_complete(4)
         logger.info("Stage 4A complete")
 
         # Stage 4B — Chapter Writing
-        print_panel(
-            title="Stage 4B: Chapter Writing",
-            content="Writing didactic chapters integrating research and author context...",
-            style="cyan",
-        )
+        stage_title = get_message("stage_4b_title", "Estágio 4B: Escrita de Capítulos")
+        stage_desc = get_message("stage_4b_start", "Escrevendo conteúdo didático...")
+        print_stage_header(4, "Estágio 4B: Escrita de Capítulos", stage_desc)
+        
         chapter_agent = create_chapter_agent(write_model)
-        chapter_prompt = (
-            "Write the first two chapters in Markdown integrating research findings, author stories, positioning, "
-            "and vision. Include examples and exercises. Context:\n"
-            f"Outline: {structure_output}\nResearch: {deep_research_output}"
+        chapter_prompt = agent_prompts["chapter_writing_prompt_template"].format(
+            structure_output=structure_output,
+            deep_research_output=deep_research_output,
         )
         chapter_output = execute_agent(chapter_agent, chapter_prompt)
         results["stage_4b_chapter_writing"] = {"output": chapter_output}
+        print_stage_complete(5)  # Counting 4B as stage 5
         logger.info("Stage 4B complete")
 
         # Stage 5 — Specialized Review
-        print_panel(
-            title="Stage 5: Specialized Review",
-            content="Collecting feedback from 10 review personas...",
-            style="cyan",
-        )
+        stage_title = get_message("stage_5_title", "Estágio 5: Revisão Especializada")
+        stage_desc = get_message("stage_5_start", "Executando revisões de 10 personas...")
+        print_stage_header(5, stage_title, stage_desc)
+        
         review_coordinator = create_review_coordinator_agent(research_model)
-        review_prompt = (
-            "Coordinate all review personas and return JSON with persona_reviews, aggregate_score, critical_issues, "
-            "and recommendations. Content to review:\n"
-            f"{chapter_output}"
+        personas = _build_review_persona_agents(write_model, research_model)
+        review_prompt = agent_prompts["review_prompt_template"].format(
+            chapter_output=chapter_output
         )
-        review_summary = execute_agent(review_coordinator, review_prompt)
-        review_personas = _build_review_persona_agents(write_model, research_model)
-        persona_feedback = execute_review_personas(review_personas, chapter_output)
-        results["stage_5_review"] = {
-            "coordinator_output": review_summary,
-            "persona_feedback": persona_feedback,
-        }
+        review_output = execute_review_personas(review_coordinator, review_prompt, personas)
+        results["stage_5_review"] = {"output": review_output}
+        print_stage_complete(6)  # Counting as stage 6
         logger.info("Stage 5 complete")
 
-        # Stage 6 — Critical Reading (single cycle MVP)
-        print_panel(
-            title="Stage 6: Critical Reading",
-            content="Running one iteration with five virtual readers...",
-            style="cyan",
-        )
-        critical_agent = create_critical_reading_coordinator_agent(research_model)
-        critical_prompt = (
-            "Simulate one iteration cycle with all virtual readers and return JSON with cycle_reports and "
-            "improvement_summary. Source content:\n"
-            f"{chapter_output}"
-        )
-        critical_summary = execute_agent(critical_agent, critical_prompt)
+        # Stage 6 — Critical Reading & Iteration
+        stage_title = get_message("stage_6_title", "Estágio 6: Leitura Crítica")
+        stage_desc = get_message("stage_6_start", "Simulando 5 leitores virtuais...")
+        print_stage_header(6, stage_title, stage_desc)
+        
+        critical_reading = create_critical_reading_coordinator_agent(research_model)
         virtual_readers = _build_virtual_reader_agents(write_model, research_model)
-        cycle_feedback = execute_review_personas(virtual_readers, chapter_output)
-        results["stage_6_critical_reading"] = {
-            "coordinator_output": critical_summary,
-            "cycles": [
-                {
-                    "cycle": 1,
-                    "feedback": cycle_feedback,
-                }
-            ],
-        }
+        critical_prompt = agent_prompts["critical_reading_prompt_template"].format(
+            review_output=review_output
+        )
+        critical_output = execute_review_personas(critical_reading, critical_prompt, virtual_readers)
+        results["stage_6_critical_reading"] = {"output": critical_output}
+        print_stage_complete(7)  # Counting as stage 7
         logger.info("Stage 6 complete")
 
         # Stage 7 — Editing
-        print_panel(
-            title="Stage 7: Editing",
-            content="Applying final editing and Markdown validation...",
-            style="cyan",
-        )
+        stage_title = get_message("stage_7_title", "Estágio 7: Edição & Formatação")
+        stage_desc = get_message("stage_7_start", "Refinando estilos...")
+        print_stage_header(7, stage_title, stage_desc)
+        
         editing_agent = create_editing_agent(write_model)
-        editing_prompt = (
-            "Edit the content for grammar, style, formatting, and structure. Return publication-ready Markdown plus any "
-            "issues identified. Content:\n"
-            f"{chapter_output}"
+        editing_prompt = agent_prompts["editing_prompt_template"].format(
+            critical_output=critical_output
         )
         editing_output = execute_agent(editing_agent, editing_prompt)
         results["stage_7_editing"] = {"output": editing_output}
+        print_stage_complete(8)  # Counting as stage 8
         logger.info("Stage 7 complete")
 
-        # Stage 8 — Finalization
-        print_panel(
-            title="Stage 8: Finalization",
-            content="Generating cover concept and metadata package...",
-            style="cyan",
-        )
+        # Stage 8 — Finalization & Cover
+        stage_title = get_message("stage_8_title", "Estágio 8: Finalização & Capa")
+        stage_desc = get_message("stage_8_start", "Gerando capa e metadados...")
+        print_stage_header(8, stage_title, stage_desc)
+        
         finalization_agent = create_finalization_agent(write_model)
-        finalization_prompt = (
-            "Produce JSON with cover_briefing, metadata, author_bio, and back_cover_copy using the selected titles and "
-            "edited manuscript. Reference data:\n"
-            f"Titles: {title_output}\nEdited Content: {editing_output[:2000]}"
+        finalization_prompt = agent_prompts["finalization_prompt_template"].format(
+            editing_output=editing_output
         )
         finalization_output = execute_agent(finalization_agent, finalization_prompt)
         results["stage_8_finalization"] = {"output": finalization_output}
+        print_stage_complete(9)  # Counting as stage 9
         logger.info("Stage 8 complete")
 
-        # Stage 9 — Publication
-        print_panel(
-            title="Stage 9: Publication",
-            content="Preparing multi-format exports and KDP compliance checks...",
-            style="cyan",
-        )
+        # Stage 9 — Publication & Export
+        stage_title = get_message("stage_9_title", "Estágio 9: Publicação & Exportação")
+        stage_desc = get_message("stage_9_start", "Exportando para DOCX, EPUB, PDF, JSON...")
+        print_stage_header(9, stage_title, stage_desc)
+        
         publication_agent = create_publication_agent(write_model)
-        publication_prompt = (
-            "Export the ebook to DOCX, EPUB, PDF, and JSON. Return JSON with exports, validation_report, and "
-            "kdp_package_status, highlighting compliance checkpoints. Content excerpt:\n"
-            f"{editing_output[:2000]}"
+        publication_prompt = agent_prompts["publication_prompt_template"].format(
+            editing_output_excerpt=editing_output[:2000]
         )
         publication_output = execute_agent(publication_agent, publication_prompt)
         results["stage_9_publication"] = {"output": publication_output}
+        print_stage_complete(9)
         logger.info("Stage 9 complete")
 
-        print_panel(
-            title="Pipeline Complete ✓",
-            content=(
-                f"Topic: {topic}\n"
-                f"Audience: {target_audience}\n"
-                f"Word Count Target: {word_count_target}\n"
-                "Stages Completed: 9"
-            ),
-            style="green",
-        )
+        # Final summary
         results["pipeline_status"] = "completed"
         results["summary"] = {
             "topic": topic,
@@ -307,14 +314,15 @@ def run_ebook_pipeline(
             "word_count_target": word_count_target,
             "stages_completed": 9,
         }
+        
+        print_pipeline_complete(results)
         return results
 
     except Exception as exc:  # pragma: no cover - defensive logging
         logger.error("Pipeline failure", extra={"error": str(exc)})
-        print_panel(
-            title="Pipeline Error ❌",
-            content=f"An error prevented the pipeline from completing: {exc}",
-            style="red",
+        print_error_panel(
+            error_title="Erro no Pipeline",
+            error_message=str(exc),
         )
         results["pipeline_status"] = "error"
         results["error"] = str(exc)
@@ -323,8 +331,8 @@ def run_ebook_pipeline(
 
 if __name__ == "__main__":
     run_ebook_pipeline(
-        topic="Python for Data Analysis",
-        target_audience="Data Scientists and Analysts",
+        topic="Python para Análise de Dados",
+        target_audience="Data Scientists e Analistas",
         word_count_target=20000,
-        transformation_promise="Master advanced data analysis techniques in Python",
+        transformation_promise="Dominar técnicas avançadas de análise em Python",
     )

@@ -37,6 +37,11 @@ from .config import (
     print_panel,
     print_table,
     print_progress,
+    print_stage_header,
+    print_stage_complete,
+    print_pipeline_start,
+    print_pipeline_complete,
+    print_error_panel,
 )
 from .input_validator import validate_book_input
 
@@ -124,7 +129,7 @@ from .tools import (
 # from main import run_ebook_pipeline  # TODO: Uncomment when main.py is ready
 
 __all__ = [
-    # Configuration (15)
+    # Configuration (20)
     "get_model",
     "get_research_model",
     "get_logger",
@@ -140,6 +145,11 @@ __all__ = [
     "print_panel",
     "print_table",
     "print_progress",
+    "print_stage_header",
+    "print_stage_complete",
+    "print_pipeline_start",
+    "print_pipeline_complete",
+    "print_error_panel",
     
     # Input Validation (1)
     "validate_book_input",

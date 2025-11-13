@@ -181,45 +181,95 @@ Each reader generates independent reports that feed into the **3-iteration refin
    cd ebook-generator
    ```
 
-2. **Create virtual environment**
+2. **Install dependencies with uv**
    ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   uv sync
    ```
 
-3. **Install dependencies**
+3. **Configure environment**
    ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Configure environment**
-   ```bash
-   # Create .env file
-   cp .env.example .env
-   
    # Add your Google API Key
    export GOOGLE_API_KEY="your-api-key-here"
    ```
 
 ### Basic Usage
 
+#### Option 1: Interactive Mode (Recommended)
+
+The pipeline automatically loads specifications from `input/book_input.yaml`. If any required fields are missing, it will prompt you interactively:
+
+```bash
+uv run python -m src
+```
+
+This will:
+1. Load `input/book_input.yaml` specifications
+2. Prompt for any missing required fields (topic, audience, word count)
+3. Execute the full 9-stage pipeline
+4. Generate publication-ready output
+
+#### Option 2: Pre-configured Book Specification
+
+Edit `input/book_input.yaml` with your book specifications:
+
+```yaml
+# input/book_input.yaml
+topic: "Advanced Python with LangChain"
+target_audience: "Senior Python Developers"
+word_count_target: 15000
+transformation_promise: "Master LangChain for production AI systems"
+reading_level: "advanced"
+```
+
+Then run:
+```bash
+uv run python -m src
+```
+
+#### Option 3: Programmatic Usage
+
 ```python
+from src.input_validator import InputValidator
 from src.main import run_ebook_pipeline
 
-# Execute the 9-stage pipeline
+# Validate specifications and collect missing data
+validator = InputValidator()
+config = validator.validate()
+
+# Execute the pipeline
 results = run_ebook_pipeline(
-    topic="Advanced Python with LangChain",
-    target_audience="Senior Python Developers",
-    word_count_target=15000,
+    topic=config["topic"],
+    target_audience=config["target_audience"],
+    word_count_target=config["word_count_target"],
+    transformation_promise=config.get("transformation_promise", ""),
+    reading_level=config.get("reading_level", "intermediate"),
     run_all_stages=True
 )
+```
 
-# Access results from each stage
-ideation = results["ideation"]
-titles = results["title"]
-structure = results["structure"]
-chapter = results["chapter"]
-reviews = results["review_personas"]  # 5 specialized reviews
+#### Specification File Format
+
+The system uses `input/book_input.yaml` to configure your ebook:
+
+```yaml
+# Mandatory fields
+topic: "Your ebook topic"
+target_audience: "Who this is for"
+word_count_target: 15000
+
+# Optional fields
+transformation_promise: "What transformation will readers experience?"
+reading_level: "beginner|intermediate|advanced"
+author_name: "Your name"
+author_bio: "Your credentials"
+publication_year: 2025
+
+# Advanced: Stage-specific overrides
+stage_overrides:
+  stage_1_ideation:
+    reading_level: "beginner"
+  stage_2_title:
+    title_count: 5
 ```
 
 ## 📁 Project Structure

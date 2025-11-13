@@ -1,70 +1,51 @@
-"""Entry point for Ebook Generator 1.0 CLI execution.
+"""Entry point for Ebook Generator 1.0.
 
-Enables running the pipeline via: python -m src
+Loads specifications from input/book_input.yaml and executes the nine-stage
+editorial pipeline. Missing fields are collected via interactive terminal prompts.
 """
 
-import argparse
 import sys
 
+from .input_validator import InputValidator
 from .main import run_ebook_pipeline
-from .config import get_logger
+from .config import get_logger, print_error_panel
 
 logger = get_logger(__name__)
 
 
 def main():
-    """Main CLI entry point."""
-    parser = argparse.ArgumentParser(
-        description="Ebook Generator 1.0 - Multi-agent editorial automation"
-    )
-    parser.add_argument(
-        "--topic",
-        type=str,
-        default="Python for Data Analysis",
-        help="Book topic (default: Python for Data Analysis)",
-    )
-    parser.add_argument(
-        "--audience",
-        type=str,
-        default="Data Scientists and Analysts",
-        help="Target audience (default: Data Scientists and Analysts)",
-    )
-    parser.add_argument(
-        "--word-count",
-        type=int,
-        default=20000,
-        help="Target word count (default: 20000)",
-    )
-    parser.add_argument(
-        "--promise",
-        type=str,
-        default="Master advanced data analysis techniques in Python",
-        help="Transformation promise (optional)",
-    )
-    
-    args = parser.parse_args()
-    
-    logger.info("Starting Ebook Generator pipeline...")
-    logger.info(f"Topic: {args.topic}")
-    logger.info(f"Audience: {args.audience}")
-    logger.info(f"Word count target: {args.word_count}")
-    
-    result = run_ebook_pipeline(
-        topic=args.topic,
-        target_audience=args.audience,
-        word_count_target=args.word_count,
-        transformation_promise=args.promise,
-    )
-    
-    if result.get("pipeline_status") == "completed":
-        logger.info("✓ Pipeline completed successfully")
-        return 0
-    else:
-        logger.error("✗ Pipeline failed")
-        if "error" in result:
-            logger.error(f"Error: {result['error']}")
-        return 1
+    """Load book specifications and execute the ebook pipeline."""
+    try:
+        # Load and validate input from book_input.yaml (or prompt for missing data)
+        validator = InputValidator()
+        book_config = validator.validate()
+
+        # Extract required parameters (merged config has metadata and parameters keys)
+        metadata = book_config.get("metadata", {})
+        parameters = book_config.get("parameters", {})
+        
+        topic = metadata.get("topic")
+        target_audience = metadata.get("target_audience")
+        word_count_target = parameters.get("word_count_target", 15000)
+        transformation_promise = parameters.get("transformation_promise", "")
+        reading_level = parameters.get("reading_level", "intermediate")
+
+        # Execute the pipeline
+        result = run_ebook_pipeline(
+            topic=topic,
+            target_audience=target_audience,
+            word_count_target=word_count_target,
+            transformation_promise=transformation_promise,
+            reading_level=reading_level,
+            run_all_stages=True,
+        )
+        logger.info(f"Pipeline executado com sucesso. Status: {result.get('pipeline_status')}")
+
+    except Exception as e:
+        print_error_panel("Erro na Execução", str(e))
+        logger.error(f"Pipeline failed: {str(e)}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()

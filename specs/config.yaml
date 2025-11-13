@@ -4,30 +4,50 @@
 messages:
   # Pipeline
   pipeline_start: "🚀 Iniciando pipeline de geração de ebook..."
+  pipeline_start_detail: "Preparando ambiente para automação editorial de 9 estágios"
   pipeline_complete: "✅ Pipeline concluído com sucesso!"
   pipeline_error: "❌ Erro durante execução do pipeline"
   
-  # Estágios
-  stage_1_start: "📝 Estágio 1: Gerando ideia central..."
+  # Estágios - com descrições detalhadas
+  stage_1_title: "Estágio 1: Ideação"
+  stage_1_start: "Gerando ideia central, definição de problema e promessa de transformação..."
   stage_1_complete: "✓ Ideia central gerada com sucesso"
-  stage_2_start: "📚 Estágio 2: Gerando títulos otimizados..."
-  stage_2_complete: "✓ Títulos gerados com sucesso"
-  stage_3_start: "🗂️ Estágio 3: Criando estrutura e outline..."
-  stage_3_complete: "✓ Estrutura criada com sucesso"
-  stage_4a_start: "🔬 Estágio 4A: Executando pesquisa profunda..."
-  stage_4a_complete: "✓ Pesquisa concluída e vetorizada"
-  stage_4b_start: "✍️ Estágio 4B: Escrevendo capítulos..."
+  
+  stage_2_title: "Estágio 2: Geração de Títulos"
+  stage_2_start: "Pesquisando bestsellers e gerando títulos otimizados para Amazon..."
+  stage_2_complete: "✓ 3 opções de títulos geradas com sucesso"
+  
+  stage_3_title: "Estágio 3: Estrutura & Outline"
+  stage_3_start: "Criando índice hierárquico e distribuição de palavras por capítulo..."
+  stage_3_complete: "✓ Estrutura do ebook criada com sucesso"
+  
+  stage_4a_title: "Estágio 4A: Pesquisa Profunda"
+  stage_4a_start: "Consultando Context7 MCP e vetorizando resultados de pesquisa..."
+  stage_4a_complete: "✓ Pesquisa concluída e armazenada em rag_external"
+  
+  stage_4b_title: "Estágio 4B: Escrita de Capítulos"
+  stage_4b_start: "Escrevendo conteúdo didático com integração de pesquisa e narrativas do autor..."
   stage_4b_complete: "✓ Capítulos escritos com sucesso"
-  stage_5_start: "👥 Estágio 5: Revisão especializada (10 personas)..."
-  stage_5_complete: "✓ Revisão concluída"
-  stage_6_start: "👓 Estágio 6: Leitura crítica e iteração..."
-  stage_6_complete: "✓ Iterações concluídas"
-  stage_7_start: "🎨 Estágio 7: Edição e formatação..."
-  stage_7_complete: "✓ Edição concluída"
-  stage_8_start: "📖 Estágio 8: Finalização e geração de capa..."
-  stage_8_complete: "✓ Finalização concluída"
-  stage_9_start: "🎯 Estágio 9: Publicação e exportação..."
-  stage_9_complete: "✓ Exportação concluída"
+  
+  stage_5_title: "Estágio 5: Revisão Especializada"
+  stage_5_start: "Executando revisões de 10 personas especializadas (técnica, editorial, ética, etc)..."
+  stage_5_complete: "✓ Revisão especializada concluída com feedback consolidado"
+  
+  stage_6_title: "Estágio 6: Leitura Crítica & Iteração"
+  stage_6_start: "Simulando 5 leitores virtuais para feedback iterativo (1 ciclo)..."
+  stage_6_complete: "✓ Leitura crítica concluída"
+  
+  stage_7_title: "Estágio 7: Edição & Formatação"
+  stage_7_start: "Refinando estilos, hierarquia de headings e validando Markdown..."
+  stage_7_complete: "✓ Edição e formatação concluídas"
+  
+  stage_8_title: "Estágio 8: Finalização & Capa"
+  stage_8_start: "Gerando resumo dinâmico, metadados KDP e criando capa com IA..."
+  stage_8_complete: "✓ Finalização concluída com capa e metadados"
+  
+  stage_9_title: "Estágio 9: Publicação & Exportação"
+  stage_9_start: "Exportando para DOCX, EPUB, PDF e JSON para KDP..."
+  stage_9_complete: "✓ Exportação concluída - pronto para publicação!"
 
   # Agentes
   agent_executing: "Executando agente"
@@ -76,6 +96,7 @@ messages:
   success_import: "Importações verificadas com sucesso"
   success_config: "Configuração carregada com sucesso"
   success_iteration: "Iteração {num} concluída com sucesso"
+  success_pipeline_complete: "🎉 Pipeline completo! Seu ebook está pronto para publicação no KDP"
 
 labels:
   topic: "Tópico"
@@ -97,59 +118,127 @@ prompts:
   ask_continue: "Deseja continuar com a próxima etapa?"
   
   # System prompts base
-  system_ideation: """Você é o Agente de Ideação - especialista em conceituação editorial.
-Sua responsabilidade é transformar ideias brutas em essência coerente de livro.
+  system_ideation: |
+    Você é o Agente de Ideação - especialista em conceituação editorial.
+    Sua responsabilidade é transformar ideias brutas em essência coerente de livro.
 
-Áreas de Foco:
-1. Definição clara do problema central
-2. Identificação precisa do público-alvo
-3. Promessa de transformação compelling
-4. Proposição de valor diferenciada
+    Áreas de Foco:
+    1. Definição clara do problema central
+    2. Identificação precisa do público-alvo
+    3. Promessa de transformação compelling
+    4. Proposição de valor diferenciada
 
-Processo:
-- Analisar entrada do usuário
-- Pesquisar contexto e nicho
-- Definir transformação promissora
-- Estruturar proposta de valor
+    Processo:
+    - Analisar entrada do usuário
+    - Pesquisar contexto e nicho
+    - Definir transformação promissora
+    - Estruturar proposta de valor
 
-Formato de Saída:
-JSON com: idea (string), central_problem (string), target_audience (string), transformation_promise (string)"""
+    Formato de Saída:
+    JSON com: idea (string), central_problem (string), target_audience (string), transformation_promise (string)
 
-  system_title: """Você é o Agente de Geração de Títulos - especialista em marketing editorial.
-Sua responsabilidade é criar títulos otimizados para Amazon KDP.
+  system_title: |
+    Você é o Agente de Geração de Títulos - especialista em marketing editorial.
+    Sua responsabilidade é criar títulos otimizados para Amazon KDP.
 
-Áreas de Foco:
-1. Otimização para SEO e busca
-2. Apelo emocional e valor
-3. Compatibilidade Amazon KDP
-4. Diferenciação no mercado
+    Áreas de Foco:
+    1. Otimização para SEO e busca
+    2. Apelo emocional e valor
+    3. Compatibilidade Amazon KDP
+    4. Diferenciação no mercado
 
-Processo:
-- Pesquisar bestsellers no nicho
-- Analisar palavras-chave de alta conversão
-- Gerar 3 variações de título
-- Validar compatibilidade Amazon
+    Processo:
+    - Pesquisar bestsellers no nicho
+    - Analisar palavras-chave de alta conversão
+    - Gerar 3 variações de título
+    - Validar compatibilidade Amazon
 
-Formato de Saída:
-JSON com: titles (array de 3 títulos), seo_score (0-1), amazon_compliance (bool)"""
+    Formato de Saída:
+    JSON com: titles (array de 3 títulos), seo_score (0-1), amazon_compliance (bool)
 
-  system_structure: """Você é o Agente de Estrutura - especialista em arquitetura editorial.
-Sua responsabilidade é criar índice hierárquico escalado ao target de palavras.
+  system_structure: |
+    Você é o Agente de Estrutura - especialista em arquitetura editorial.
+    Sua responsabilidade é criar índice hierárquico escalado ao target de palavras.
 
-Áreas de Foco:
-1. Progressão didática lógica
-2. Distribuição equilibrada de palavras
-3. Hierarquia clara de seções
-4. Fluxo de aprendizagem otimizado
+    Áreas de Foco:
+    1. Progressão didática lógica
+    2. Distribuição equilibrada de palavras
+    3. Hierarquia clara de seções
+    4. Fluxo de aprendizagem otimizado
 
-Processo:
-- Definir capítulos baseado em target de palavras
-- Criar seções com distribuição de palavras
-- Estabelecer objetivos de aprendizagem
-- Validar progressão didática
+    Processo:
+    - Definir capítulos baseado em target de palavras
+    - Criar seções com distribuição de palavras
+    - Estabelecer objetivos de aprendizagem
+    - Validar progressão didática
 
-Formato de Saída:
-JSON com: chapters (array), outline (markdown), word_distribution (dict)"""
+    Formato de Saída:
+    JSON com: chapters (array), outline (markdown), word_distribution (dict)
+
+agent_prompts:
+  # Estágio 1: Ideation
+  ideation_prompt_template: |
+    Return JSON with keys idea, problem, promise, and audience_insight. Context:
+    Topic: {topic}
+    Audience: {target_audience}
+    Word Count Target: {word_count_target}
+    Reading Level: {reading_level}
+    Transformation Promise: {promise_context}
+  
+  # Estágio 2: Title Generation
+  title_prompt_template: |
+    Produce exactly three Amazon KDP-ready title options in JSON with fields
+    titles (list) and rationales (dict by title). Use these insights:
+    {ideation_output}
+  
+  # Estágio 3: Structure
+  structure_prompt_template: |
+    Create a Markdown table of contents with chapters, sections, and estimated word counts. Consider:
+    Topic: {topic}
+    Audience: {target_audience}
+    Target Words: {word_count_target}
+    Ideation Summary: {ideation_output}
+  
+  # Estágio 4A: Deep Research
+  deep_research_prompt_template: |
+    Execute deep research for each outline section and return JSON with research_summary, sources,
+    vector_ids, and storage_status. Outline reference:
+    {structure_output}
+  
+  # Estágio 4B: Chapter Writing
+  chapter_writing_prompt_template: |
+    Write comprehensive chapters based on structure and deep research. Return JSON with
+    chapters (dict keyed by chapter title) and word_count_actual. Integrate:
+    Structure: {structure_output}
+    Research: {deep_research_output}
+  
+  # Estágio 5: Specialized Review
+  review_prompt_template: |
+    Provide specialized feedback on:
+    {chapter_output}
+  
+  # Estágio 6: Critical Reading
+  critical_reading_prompt_template: |
+    Critically evaluate and iterate:
+    {review_output}
+  
+  # Estágio 7: Editing
+  editing_prompt_template: |
+    Edit for clarity, consistency, and KDP compliance. Return JSON with
+    edited_content and validation_report:
+    {critical_output}
+  
+  # Estágio 8: Finalization
+  finalization_prompt_template: |
+    Generate book summary, create cover concept, compile metadata. Return JSON with
+    summary, cover_concept, metadata, and kdp_compliance_check:
+    {editing_output}
+  
+  # Estágio 9: Publication
+  publication_prompt_template: |
+    Export the ebook to DOCX, EPUB, PDF, and JSON. Return JSON with exports, validation_report, and
+    kdp_package_status, highlighting compliance checkpoints. Content excerpt:
+    {editing_output_excerpt}
 
 tables:
   title_persona_review: "Resultado da Revisão por Personas"

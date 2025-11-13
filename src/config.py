@@ -384,6 +384,105 @@ def print_progress(
     )
 
 
+# ============================================================================
+# TUI - Terminal User Interface (Colorida & Bonita)
+# ============================================================================
+
+
+def print_stage_header(stage_num: int, stage_title: str, stage_description: str) -> None:
+    """
+    Exibe cabeçalho colorido para estágio.
+    
+    Args:
+        stage_num: Número do estágio (1-9)
+        stage_title: Título (ex: "Ideação")
+        stage_description: Descrição detalhada
+    """
+    colors = ["cyan", "blue", "magenta", "bright_cyan", "bright_blue", 
+              "bright_magenta", "yellow", "bright_yellow", "green"]
+    color = colors[stage_num - 1] if stage_num <= 9 else "white"
+    
+    panel = Panel(
+        f"[bold {color}]Estágio {stage_num}[/bold {color}]\n\n[white]{stage_description}[/white]",
+        title=f"[bold {color}]{stage_title}[/bold {color}]",
+        border_style=color,
+        padding=(1, 2),
+    )
+    console.print(panel)
+
+
+def print_stage_complete(stage_num: int, elapsed_seconds: float = None) -> None:
+    """
+    Exibe conclusão do estágio com tempo decorrido.
+    
+    Args:
+        stage_num: Número do estágio
+        elapsed_seconds: Tempo em segundos (opcional)
+    """
+    time_str = f" em {elapsed_seconds:.1f}s" if elapsed_seconds else ""
+    console.print(f"[green]✓ Estágio {stage_num} concluído com sucesso{time_str}[/green]")
+
+
+def print_pipeline_start(topic: str, audience: str, word_count: int) -> None:
+    """
+    Exibe splash screen do início do pipeline.
+    
+    Args:
+        topic: Tópico do ebook
+        audience: Público-alvo
+        word_count: Meta de palavras
+    """
+    panel = Panel(
+        f"[bold cyan]Tópico:[/bold cyan] {topic}\n"
+        f"[bold yellow]Público-alvo:[/bold yellow] {audience}\n"
+        f"[bold magenta]Meta de Palavras:[/bold magenta] {word_count:,}",
+        title="[bold bright_cyan]🚀 Ebook Generator 1.0[/bold bright_cyan]",
+        subtitle="[bright_yellow]Automação Editorial com IA[/bright_yellow]",
+        border_style="bright_cyan",
+        padding=(1, 3),
+    )
+    console.print(panel)
+    console.print()  # Espaço
+
+
+def print_pipeline_complete(results: Dict[str, Any]) -> None:
+    """
+    Exibe tela final de sucesso com resumo.
+    
+    Args:
+        results: Dicionário com resultados do pipeline
+    """
+    summary = results.get("summary", {})
+    panel = Panel(
+        f"[bold green]✅ Pipeline Completado com Sucesso![/bold green]\n\n"
+        f"[cyan]Tópico:[/cyan] {summary.get('topic', 'N/A')}\n"
+        f"[yellow]Público-alvo:[/yellow] {summary.get('target_audience', 'N/A')}\n"
+        f"[magenta]Estágios Concluídos:[/magenta] {summary.get('stages_completed', 0)}/9\n\n"
+        f"[bright_yellow]🎉 Seu ebook está pronto para publicação no KDP![/bright_yellow]",
+        title="[bold green]CONCLUSÃO[/bold green]",
+        border_style="green",
+        padding=(2, 3),
+    )
+    console.print(panel)
+
+
+def print_error_panel(error_title: str, error_message: str) -> None:
+    """
+    Exibe painel de erro com destaque.
+    
+    Args:
+        error_title: Título do erro
+        error_message: Mensagem detalhada
+    """
+    panel = Panel(
+        f"[bright_red]{error_message}[/bright_red]",
+        title=f"[bold bright_red]❌ {error_title}[/bold bright_red]",
+        border_style="bright_red",
+        padding=(1, 2),
+    )
+    console.print(panel)
+
+
 # Configuração inicial de logging
 _logger = setup_logging()
 
@@ -406,4 +505,9 @@ __all__ = [
     "print_panel",
     "print_table",
     "print_progress",
+    "print_stage_header",
+    "print_stage_complete",
+    "print_pipeline_start",
+    "print_pipeline_complete",
+    "print_error_panel",
 ]
