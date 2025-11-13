@@ -7,10 +7,12 @@
 [x] Externalize ALL 10 agent prompts to specs/config.yaml
 [x] Refactor CLI: remove argparse, use input/book_input.yaml + interactive prompts
 [x] Update README.md with correct usage instructions
+[x] Fix YAML syntax in specs/config.yaml (multi-line strings)
+[x] Test input validation and specification loading
 
 ## Current Phase: Testing & Validation
-[ ] Test pipeline execution: uv run python -m src
-[ ] Verify input/book_input.yaml loading
+[x] Test pipeline execution: uv run python -m src
+[x] Verify input/book_input.yaml loading
 [ ] Test interactive prompts for missing fields
 [ ] Test all TUI output (colorful headers, stage completion)
 [ ] Validate specs/book.yaml generation
