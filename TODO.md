@@ -9,6 +9,10 @@
 [x] Update README.md with correct usage instructions
 [x] Fix YAML syntax in specs/config.yaml (multi-line strings)
 [x] Test input validation and specification loading
+[x] Create docs/USAGE.md with comprehensive guide
+[x] Create example book_input.yaml files
+[x] git add -A && git commit -m "refactor: input-driven pipeline with interactive prompts"
+[x] git add -A && git commit -m "docs: add usage guide and example specifications"
 
 ## Current Phase: Testing & Validation
 [x] Test pipeline execution: uv run python -m src
