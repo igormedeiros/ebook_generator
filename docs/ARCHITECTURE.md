@@ -132,19 +132,18 @@ from src.input_validator import (
 topic: _
 ```
 
-### 2.3 Configuration Loader (`src/config_loader.py`)
+### 2.3 Configuration Module (`src/config.py`)
 
 Provides unified interface for loading and accessing all configurations:
 
 ```python
-from src.config_loader import (
+from src.config import (
     get_config,              # Load any config section
     get_message,             # Load Portuguese messages
     get_pipeline_config,     # Load pipeline parameters
     get_models_config,       # Load model configuration
     get_personas_config,     # Load personas
     get_tools_config,        # Load tools
-    load_example_config,     # Load pre-configured example
     get_logger,              # Get configured logger
     console,                 # Rich console for output
     print_panel,             # Display formatted panels
@@ -656,7 +655,7 @@ export BANANA_API_KEY="your-key"  # optional for cover
 All output must use logging and Rich formatting:
 
 ```python
-from src.config_loader import get_logger, console, print_panel
+from src.config import get_logger, console, print_panel
 
 logger = get_logger('module_name')
 
@@ -696,24 +695,23 @@ Pipeline execution is fully parameterized from specs/:
 
 ```python
 from src.main import run_ebook_pipeline
-from src.config_loader import load_example_config, get_pipeline_config
+from src.input_validator import validate_book_input
+from src.config import get_pipeline_config
 
-# Option 1: Use defaults from pipeline.yaml
+# Option 1: Validate input/book_input.yaml and run
+config = validate_book_input()
+result = run_ebook_pipeline(**config['metadata'], **config['parameters'])
+
+# Option 2: Use defaults from pipeline.yaml
 result = run_ebook_pipeline(
     topic="Python para Análise",
-    audience="Data Scientists",
+    target_audience="Data Scientists",
     word_count_target=15000  # from pipeline.yaml default
 )
 
-# Option 2: Use pre-configured example
-config = load_example_config('tech_guide')
-result = run_ebook_pipeline(**config['input'])
-
-# Option 3: Custom overrides
-config = load_example_config('academic_book')
-config['input']['word_count_target'] = 50000
-config['stage_overrides']['stage_5_review']['threshold_score'] = 0.85
-result = run_ebook_pipeline(**config['input'], **config['stage_overrides'])
+# Option 3: Custom overrides via stage_overrides in input
+config = validate_book_input()  # includes stage_overrides from input/book_input.yaml
+result = run_ebook_pipeline(**config)
 ```
 - Author personal data encrypted
 - Compliance validated in Compliance Agent

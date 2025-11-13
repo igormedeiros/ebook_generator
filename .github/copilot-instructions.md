@@ -250,8 +250,8 @@ src/
 ├── main.py               # Pipeline orchestration (9 stages)
 ├── agents.py             # All agent definitions (25 agents)
 ├── tools.py              # All tool definitions (30+ tools)
-├── config.py             # Model initialization and config
-├── config_loader.py      # Configuration and logging with Rich
+├── config.py             # Configuration, logging, models, YAML loading
+├── input_validator.py    # Input validation and interactive prompts
 └── __init__.py           # Package initialization
 
 specs/
@@ -285,11 +285,10 @@ docs/
    Ebook Generator 1.0 - Multi-agent editorial automation platform.
    """
    from config import get_model, get_research_model
-   from config_loader import (
+   from config import (
        get_logger, 
        get_config, 
        get_pipeline_config,
-       load_example_config,
        console
    )
    from agents import create_ideation_agent, ...
@@ -313,9 +312,12 @@ docs/
 
 **All output must use logging and Rich, NOT print()**:
 
+# Logging and Output Standards
+
+**All output must use logging and Rich, NOT print()**:
+
 ```python
-from src.config_loader import get_logger, console, print_panel
-import logging
+from src.config import get_logger, console
 
 logger = get_logger(__name__)
 
@@ -357,12 +359,11 @@ console.print("Iniciando...")  # Apenas para output estruturado
 All configurable elements are in `specs/`:
 
 ```python
-from src.config_loader import (
+from src.config import (
     get_pipeline_config,
     get_models_config,
     get_personas_config,
     get_tools_config,
-    load_example_config,
     get_message
 )
 

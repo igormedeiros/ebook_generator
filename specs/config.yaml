@@ -156,6 +156,17 @@ tables:
   title_iteration_feedback: "Feedback da Iteração {num}"
   title_stage_summary: "Resumo do Estágio {num}"
 
+# Prompts para validação de entrada
+input_prompts:
+  prompt_topic: "Qual é o tema principal do seu e-book?"
+  prompt_target_audience: "Quem é o público-alvo principal?"
+  prompt_word_count_target: "Qual é a contagem de palavras desejada? (5000-100000)"
+  prompt_transformation_promise: "Qual é a promessa de transformação para o leitor? (opcional)"
+  prompt_reading_level: "Qual é o nível de dificuldade? (beginner/intermediate/advanced, padrão: intermediate)"
+  prompt_author_name: "Qual é o seu nome? (opcional)"
+  prompt_author_bio: "Qual é sua biografia/credenciais? (opcional)"
+  prompt_publication_year: "Qual é o ano de publicação? (opcional)"
+
 spinner_text: "Processando... 🔄"
 success_icon: "✅"
 error_icon: "❌"
