@@ -1,12 +1,13 @@
 """Entry point for Ebook Generator 1.0.
 
-Loads specifications from input/book_input.yaml and executes the nine-stage
-editorial pipeline. Missing fields are collected via interactive terminal prompts.
+Loads specifications from specs/book.yaml (single source of truth) and executes 
+the nine-stage editorial pipeline. Missing fields are collected via interactive 
+terminal prompts.
 """
 
 import sys
 
-from .input_validator import InputValidator
+from .input_validator import validate_book_input
 from .main import run_ebook_pipeline
 from .config import get_logger, print_error_panel
 
@@ -14,13 +15,13 @@ logger = get_logger(__name__)
 
 
 def main():
-    """Load book specifications and execute the ebook pipeline."""
+    """Load and validate book specs, then execute the ebook pipeline."""
     try:
-        # Load and validate input from book_input.yaml (or prompt for missing data)
-        validator = InputValidator()
-        book_config = validator.validate()
+        # Load and validate specs from specs/book.yaml
+        # Missing fields will be prompted interactively
+        book_config = validate_book_input()
 
-        # Extract required parameters (merged config has metadata and parameters keys)
+        # Extract required parameters
         metadata = book_config.get("metadata", {})
         parameters = book_config.get("parameters", {})
         

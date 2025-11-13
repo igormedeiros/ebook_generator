@@ -1,289 +1,573 @@
-"""
-Input validator for ebook generator book specifications.
+""""""
 
-Validates user-provided input/book_input.yaml against the system's configuration
-schema and generates specs/book.yaml with merged defaults.
+Input validator for ebook generator book specifications.Input validator for ebook generator book specifications.
 
-This module:
-1. Loads input/book_input.yaml
-2. Validates mandatory fields (topic, target_audience, word_count_target)
-3. Validates field types and value ranges against specs/pipeline.yaml
-4. Interactively prompts for missing or invalid fields
-5. Merges with defaults from specs/pipeline.yaml
-6. Generates specs/book.yaml for pipeline execution
-"""
 
-import os
-from pathlib import Path
-from typing import Dict, Any, Optional
+
+Loads specs/book.yaml (the single source of truth) and validates all fields.Loads specs/book.yaml (the single source of truth) and validates all fields.
+
+Missing or empty fields are collected via interactive terminal prompts.Missing or empty fields are collected via interactive terminal prompts.
+
+
+
+This module:This module:
+
+1. Loads specs/book.yaml1. Loads specs/book.yaml
+
+2. Checks for empty/null fields in metadata and parameters2. Checks for empty/null fields in metadata and parameters
+
+3. Validates field types and value ranges3. Validates field types and value ranges against specs/pipeline.yaml
+
+4. Interactively prompts for missing or invalid fields4. Interactively prompts for missing or invalid fields
+
+5. Updates specs/book.yaml with validated data5. Updates specs/book.yaml with validated data
+
+6. Returns complete configuration ready for pipeline execution6. Returns complete configuration ready for pipeline execution
+
+""""""
+
+
+
+from pathlib import Pathimport os
+
+from typing import Dict, Any, Optionalfrom pathlib import Path
+
+import yamlfrom typing import Dict, Any, Optional
+
 import yaml
 
 from .config import (
-    get_logger,
-    get_pipeline_config,
-    get_config,
-    console,
+
+    get_logger,from .config import (
+
+    get_pipeline_config,    get_logger,
+
+    get_config,    get_pipeline_config,
+
+    console,    get_config,
+
+)    console,
+
     print_panel,
-)
+
+logger = get_logger(__name__))
+
+
 
 logger = get_logger(__name__)
 
+class SpecValidator:
 
-class InputValidator:
-    """
-    Validates and processes book input specifications.
-    
-    Validates input/book_input.yaml and generates specs/book.yaml with proper
-    type checking, range validation, and interactive prompts for missing fields.
     """
 
-    # Mandatory fields that must be provided by user
-    MANDATORY_FIELDS = ["topic", "target_audience", "word_count_target"]
+    Validates and processes book specifications from specs/book.yaml.class SpecValidator:
 
-    # Optional fields with defaults
-    OPTIONAL_FIELDS = {
-        "transformation_promise": None,
-        "reading_level": "intermediate",
-        "stage_overrides": {},
-        "author_name": None,
-        "author_bio": None,
-        "publication_year": None,
-    }
+        """
 
-    def __init__(self):
-        """Initialize the input validator with configuration."""
-        self.pipeline_config = get_pipeline_config()
+    Loads specs/book.yaml (single source of truth) and prompts for any    Validates and processes book specifications from specs/book.yaml.
+
+    missing/empty fields interactively with proper type checking and validation.    
+
+    """    Loads specs/book.yaml (single source of truth) and prompts for any
+
+    missing/empty fields interactively with proper type checking and validation.
+
+    # Fields that are considered mandatory (must have non-null value)    """
+
+    MANDATORY_METADATA = ["topic", "target_audience", "author_name"]
+
+    MANDATORY_PARAMS = ["word_count_target", "transformation_promise"]    # Fields that are considered mandatory (must have non-null value)
+
+    MANDATORY_METADATA = ["topic", "target_audience", "author_name"]
+
+    def __init__(self):    MANDATORY_PARAMS = ["word_count_target", "transformation_promise"]
+
+        """Initialize the specification validator."""
+
+        self.pipeline_config = get_pipeline_config()    def __init__(self):
+
+        self.config_messages = get_config()        """Initialize the specification validator."""
+
+        self.spec_file = Path("specs/book.yaml")        self.pipeline_config = get_pipeline_config()
+
         self.config_messages = get_config()
-        self.input_file = Path("input/book_input.yaml")
-        self.output_file = Path("specs/book.yaml")
 
-    def validate(self) -> Dict[str, Any]:
+    def validate(self) -> Dict[str, Any]:        self.spec_file = Path("specs/book.yaml")
+
         """
-        Validate input and generate book configuration.
-        
-        Returns:
-            dict: Validated and merged book configuration ready for pipeline
-            
-        Raises:
-            FileNotFoundError: If input/book_input.yaml does not exist
-            ValueError: If validation fails and user doesn't complete interactive prompts
+
+        Validate specs/book.yaml and fill missing fields interactively.    def validate(self) -> Dict[str, Any]:
+
+                """
+
+        Returns:        Validate specs/book.yaml and fill missing fields interactively.
+
+            dict: Complete validated book configuration ready for pipeline        
+
+                    Returns:
+
+        Raises:            dict: Complete validated book configuration ready for pipeline
+
+            FileNotFoundError: If specs/book.yaml does not exist            
+
+        """        Raises:
+
+        logger.info("Carregando e validando specs/book.yaml")            FileNotFoundError: If specs/book.yaml does not exist
+
         """
-        logger.info("Iniciando validação de entrada")
 
-        # Check if input file exists
-        if not self.input_file.exists():
-            logger.warning(f"Arquivo {self.input_file} não encontrado")
-            return self._create_interactive_input()
+        if not self.spec_file.exists():        logger.info("Carregando e validando specs/book.yaml")
 
-        # Load and validate user input
-        user_input = self._load_input_file()
-        validated = self._validate_fields(user_input)
+            raise FileNotFoundError(f"Arquivo {self.spec_file} não encontrado")
 
-        # Merge with defaults from pipeline config
-        merged = self._merge_with_defaults(validated)
+        if not self.spec_file.exists():
 
-        # Save generated configuration
-        self._save_book_config(merged)
+        # Load current specs            raise FileNotFoundError(f"Arquivo {self.spec_file} não encontrado")
 
-        logger.info("Validação concluída com sucesso")
-        return merged
+        spec_data = self._load_spec_file()
 
-    def _load_input_file(self) -> Dict[str, Any]:
+                # Load current specs
+
+        # Validate and fill missing metadata fields        spec_data = self._load_spec_file()
+
+        spec_data["metadata"] = self._validate_metadata(spec_data.get("metadata", {}))        
+
+                # Validate and fill missing metadata fields
+
+        # Validate and fill missing parameter fields        spec_data["metadata"] = self._validate_metadata(spec_data.get("metadata", {}))
+
+        spec_data["parameters"] = self._validate_parameters(spec_data.get("parameters", {}))        
+
+        # Validate and fill missing parameter fields
+
+        # Save updated specs        spec_data["parameters"] = self._validate_parameters(spec_data.get("parameters", {}))
+
+        self._save_spec_file(spec_data)
+
+        # Save updated specs
+
+        logger.info("Validação de specs concluída com sucesso")        self._save_spec_file(spec_data)
+
+        return spec_data
+
+        logger.info("Validação de specs concluída com sucesso")
+
+    def _load_spec_file(self) -> Dict[str, Any]:        return spec_data
+
         """
-        Load input/book_input.yaml file.
-        
-        Returns:
-            dict: Loaded YAML content
-            
-        Raises:
-            ValueError: If file is malformed YAML
-        """
-        try:
-            with open(self.input_file, "r", encoding="utf-8") as f:
-                content = yaml.safe_load(f)
-                return content if content else {}
-        except yaml.YAMLError as e:
+
+        Load specs/book.yaml file.    def _load_spec_file(self) -> Dict[str, Any]:
+
+                """
+
+        Returns:        Load specs/book.yaml file.
+
+            dict: Loaded YAML content        
+
+        """        Returns:
+
+        try:            dict: Loaded YAML content
+
+            with open(self.spec_file, "r", encoding="utf-8") as f:        """
+
+                content = yaml.safe_load(f)        try:
+
+                return content if content else {}            with open(self.spec_file, "r", encoding="utf-8") as f:
+
+        except yaml.YAMLError as e:                content = yaml.safe_load(f)
+
+            logger.error(f"Erro ao processar YAML: {str(e)}")                return content if content else {}
+
+            raise ValueError(f"Arquivo YAML inválido: {str(e)}")        except yaml.YAMLError as e:
+
             logger.error(f"Erro ao processar YAML: {str(e)}")
-            raise ValueError(f"Arquivo YAML inválido: {str(e)}")
 
-    def _validate_fields(self, user_input: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Validate user input fields against schema.
-        
-        Args:
-            user_input: Dictionary from input/book_input.yaml
-            
-        Returns:
-            dict: Validated input (completes missing mandatory fields interactively)
-        """
-        validated = {}
+    def _validate_metadata(self, metadata: Dict[str, Any]) -> Dict[str, Any]:            raise ValueError(f"Arquivo YAML inválido: {str(e)}")
 
-        # Validate each mandatory field
-        for field in self.MANDATORY_FIELDS:
-            if field in user_input and user_input[field]:
-                # Field provided, validate type and range
-                value = user_input[field]
-                validated[field] = self._validate_field_value(field, value)
-            else:
-                # Field missing, prompt user
-                logger.warning(f"Campo obrigatório ausente: {field}")
-                validated[field] = self._prompt_for_field(field)
+        """        try:
 
-        # Process optional fields
-        for field, default in self.OPTIONAL_FIELDS.items():
-            if field in user_input and user_input[field]:
-                validated[field] = self._validate_field_value(field, user_input[field])
-            else:
-                validated[field] = default
+        Validate and complete metadata fields.            with open(self.input_file, "r", encoding="utf-8") as f:
 
-        # Add any additional fields from user input that aren't in our schema
-        for key, value in user_input.items():
-            if key not in validated:
-                validated[key] = value
+                        content = yaml.safe_load(f)
+
+        Args:                return content if content else {}
+
+            metadata: Current metadata dictionary        except yaml.YAMLError as e:
+
+                        logger.error(f"Erro ao processar YAML: {str(e)}")
+
+        Returns:            raise ValueError(f"Arquivo YAML inválido: {str(e)}")
+
+            dict: Validated metadata with all fields filled
+
+        """    def _validate_metadata(self, metadata: Dict[str, Any]) -> Dict[str, Any]:
+
+        validated = metadata.copy() if metadata else {}        """
+
+        Validate and complete metadata fields.
+
+        # Check and prompt for missing mandatory metadata        
+
+        for field in self.MANDATORY_METADATA:        Args:
+
+            if not validated.get(field):            metadata: Current metadata dictionary
+
+                logger.warning(f"Campo obrigatório faltando: metadata.{field}")            
+
+                validated[field] = self._prompt_for_field(f"metadata_{field}")        Returns:
+
+            dict: Validated metadata with all fields filled
+
+        # Check optional metadata fields        """
+
+        optional_metadata = ["author_bio", "publication_year"]        validated = metadata.copy() if metadata else {}
+
+        for field in optional_metadata:
+
+            if field not in validated or not validated[field]:        # Check and prompt for missing mandatory metadata
+
+                response = self._prompt_optional_field(f"metadata_{field}")        for field in self.MANDATORY_METADATA:
+
+                if response:            if not validated.get(field):
+
+                    validated[field] = response                logger.warning(f"Campo obrigatório faltando: metadata.{field}")
+
+                validated[field] = self._prompt_for_field(f"metadata_{field}")
 
         return validated
 
-    def _validate_field_value(self, field: str, value: Any) -> Any:
-        """
+        # Check optional metadata fields
+
+    def _validate_parameters(self, parameters: Dict[str, Any]) -> Dict[str, Any]:        optional_metadata = ["author_bio", "publication_year"]
+
+        """        for field in optional_metadata:
+
+        Validate and complete parameters fields.            if field not in validated or not validated[field]:
+
+                        response = self._prompt_optional_field(f"metadata_{field}")
+
+        Args:                if response:
+
+            parameters: Current parameters dictionary                    validated[field] = response
+
+            
+
+        Returns:        return validated
+
+            dict: Validated parameters with all fields filled
+
+        """    def _validate_parameters(self, parameters: Dict[str, Any]) -> Dict[str, Any]:
+
+        validated = parameters.copy() if parameters else {}        """
+
+        Validate and complete parameters fields.
+
+        # Check mandatory parameters        
+
+        for field in self.MANDATORY_PARAMS:        Args:
+
+            if not validated.get(field):            parameters: Current parameters dictionary
+
+                logger.warning(f"Campo obrigatório faltando: parameters.{field}")            
+
+                validated[field] = self._prompt_for_field(f"parameters_{field}")        Returns:
+
+            dict: Validated parameters with all fields filled
+
+        # Ensure reading_level has a value        """
+
+        if "reading_level" not in validated or not validated["reading_level"]:        validated = parameters.copy() if parameters else {}
+
+            validated["reading_level"] = "intermediate"
+
+        # Check mandatory parameters
+
+        return validated        for field in self.MANDATORY_PARAMS:
+
+            if not validated.get(field):
+
+    def _validate_field_value(self, field: str, value: Any) -> Any:                logger.warning(f"Campo obrigatório faltando: parameters.{field}")
+
+        """                validated[field] = self._prompt_for_field(f"parameters_{field}")
+
         Validate individual field value against schema.
-        
-        Args:
-            field: Field name to validate
+
+                # Ensure reading_level has a value
+
+        Args:        if "reading_level" not in validated or not validated["reading_level"]:
+
+            field: Full field path (e.g., "parameters_word_count_target")            validated["reading_level"] = "intermediate"
+
             value: Value to validate
-            
+
+                    return validated
+
         Returns:
-            Any: Validated value
+
+            Any: Validated value    def _validate_field_value(self, field: str, value: Any) -> Any:
+
+                    """
+
+        Raises:        Validate individual field value against schema.
+
+            ValueError: If validation fails        
+
+        """        Args:
+
+        # Extract field name without prefix            field: Full field path (e.g., "parameters_word_count_target")
+
+        field_name = field.split("_", 1)[1] if "_" in field else field            value: Value to validate
+
             
-        Raises:
-            ValueError: If validation fails
-        """
-        # Type validation
-        if field == "word_count_target":
-            # Convert string to int if necessary
-            if isinstance(value, str):
-                try:
-                    value = int(value)
+
+        # Type validation        Returns:
+
+        if field_name == "word_count_target":            Any: Validated value
+
+            # Convert string to int if necessary            
+
+            if isinstance(value, str):        Raises:
+
+                try:            ValueError: If validation fails
+
+                    value = int(value)        """
+
+                except ValueError:        # Extract field name without prefix
+
+                    raise ValueError(f"word_count_target deve ser um número inteiro")        field_name = field.split("_", 1)[1] if "_" in field else field
+
+            
+
+            if not isinstance(value, int):        # Type validation
+
+                raise ValueError(f"word_count_target deve ser um número inteiro")        if field_name == "word_count_target":
+
+                        # Convert string to int if necessary
+
+            # Range check: 5000-100000            if isinstance(value, str):
+
+            if not (5000 <= value <= 100000):                try:
+
+                raise ValueError(f"word_count_target deve estar entre 5000 e 100000")                    value = int(value)
+
                 except ValueError:
-                    raise ValueError(f"{field} deve ser um número inteiro (recebido: {value})")
-            
-            if not isinstance(value, int):
-                raise ValueError(f"{field} deve ser um número inteiro")
-            # Range check from pipeline config
-            stage_cfg = self.pipeline_config.get("stages", {}).get("stage_1_ideation", {})
-            params = stage_cfg.get("parameters", {})
-            word_count_param = params.get("word_count_target", {})
-            min_val = word_count_param.get("minimum", 5000)
-            max_val = word_count_param.get("maximum", 100000)
-            if not (min_val <= value <= max_val):
-                raise ValueError(
-                    f"{field} deve estar entre {min_val} e {max_val} "
-                    f"(recebido: {value})"
-                )
 
-        elif field == "reading_level":
-            valid_levels = ["beginner", "intermediate", "advanced"]
-            if value not in valid_levels:
-                raise ValueError(
-                    f"{field} deve ser um de: {', '.join(valid_levels)} "
-                    f"(recebido: {value})"
-                )
+        elif field_name == "reading_level":                    raise ValueError(f"word_count_target deve ser um número inteiro")
 
-        elif field == "topic":
+            valid_levels = ["beginner", "intermediate", "advanced", "expert"]            
+
+            if value not in valid_levels:            if not isinstance(value, int):
+
+                raise ValueError(                raise ValueError(f"word_count_target deve ser um número inteiro")
+
+                    f"reading_level deve ser um de: {', '.join(valid_levels)}"            
+
+                )            # Range check: 5000-100000
+
+            if not (5000 <= value <= 100000):
+
+        elif field_name in ["topic", "target_audience", "transformation_promise", "author_name", "author_bio"]:                raise ValueError(f"word_count_target deve estar entre 5000 e 100000")
+
             if not isinstance(value, str) or not value.strip():
-                raise ValueError(f"{field} deve ser uma string não vazia")
 
-        elif field == "target_audience":
-            if not isinstance(value, str) or not value.strip():
-                raise ValueError(f"{field} deve ser uma string não vazia")
+                raise ValueError(f"{field_name} deve ser uma string não vazia")        elif field_name == "reading_level":
 
-        return value
+            valid_levels = ["beginner", "intermediate", "advanced", "expert"]
 
-    def _prompt_for_field(self, field: str) -> str:
-        """
-        Interactively prompt user for a field value.
-        
-        Args:
-            field: Field name to prompt for
+        return value            if value not in valid_levels:
+
+                raise ValueError(
+
+    def _prompt_for_field(self, field: str) -> str:                    f"reading_level deve ser um de: {', '.join(valid_levels)}"
+
+        """                )
+
+        Interactively prompt user for a required field value.
+
+                elif field_name in ["topic", "target_audience", "transformation_promise", "author_name", "author_bio"]:
+
+        Args:            if not isinstance(value, str) or not value.strip():
+
+            field: Field name to prompt for (e.g., "metadata_topic")                raise ValueError(f"{field_name} deve ser uma string não vazia")
+
             
-        Returns:
+
+        Returns:        return value
+
             str: User-provided value
-        """
-        messages = get_config()
-        prompts = messages.get("input_prompts", {})
 
-        # Get field-specific prompt
-        prompt_key = f"prompt_{field}"
-        prompt_text = prompts.get(prompt_key, f"Digite o valor para {field}:")
+        """    def _prompt_for_field(self, field: str) -> str:
 
-        # Show prompt and get input
-        while True:
-            value = console.input(f"\n[cyan]{prompt_text}[/cyan] ")
-            if value.strip():
+        messages = get_config()        """
+
+        prompts = messages.get("input_prompts", {})        Interactively prompt user for a required field value.
+
+        
+
+        # Get field-specific prompt        Args:
+
+        prompt_key = f"prompt_{field}"            field: Field name to prompt for (e.g., "metadata_topic")
+
+        prompt_text = prompts.get(prompt_key, f"Digite o valor para {field}:")            
+
+        Returns:
+
+        # Show prompt and get input            str: User-provided value
+
+        while True:        """
+
+            value = console.input(f"\n[cyan]{prompt_text}[/cyan] ")        messages = get_config()
+
+            if value.strip():        prompts = messages.get("input_prompts", {})
+
                 try:
-                    self._validate_field_value(field, value)
-                    return value.strip()
-                except ValueError as e:
+
+                    validated_value = self._validate_field_value(field, value)        # Get field-specific prompt
+
+                    return validated_value if isinstance(validated_value, str) else str(validated_value)        prompt_key = f"prompt_{field}"
+
+                except ValueError as e:        prompt_text = prompts.get(prompt_key, f"Digite o valor para {field}:")
+
                     logger.warning(f"Valor inválido: {str(e)}")
-                    console.print(f"[red]❌ {str(e)}[/red]")
-            else:
-                logger.warning(f"Campo {field} não pode estar vazio")
-                console.print("[red]❌ Este campo é obrigatório[/red]")
 
-    def _create_interactive_input(self) -> Dict[str, Any]:
-        """
-        Create input interactively when input file doesn't exist.
+                    console.print(f"[red]❌ {str(e)}[/red]")        # Show prompt and get input
+
+            else:        while True:
+
+                logger.warning(f"Campo {field} não pode estar vazio")            value = console.input(f"\n[cyan]{prompt_text}[/cyan] ")
+
+                console.print("[red]❌ Este campo é obrigatório[/red]")            if value.strip():
+
+                try:
+
+    def _prompt_optional_field(self, field: str) -> Optional[str]:                    self._validate_field_value(field, value)
+
+        """                    return value.strip()
+
+        Interactively prompt user for an optional field value.                except ValueError as e:
+
+                            logger.warning(f"Valor inválido: {str(e)}")
+
+        Args:                    console.print(f"[red]❌ {str(e)}[/red]")
+
+            field: Field name to prompt for (e.g., "metadata_author_bio")            else:
+
+                            logger.warning(f"Campo {field} não pode estar vazio")
+
+        Returns:                console.print("[red]❌ Este campo é obrigatório[/red]")
+
+            Optional[str]: User-provided value or None if skipped
+
+        """    def _create_interactive_input(self) -> Dict[str, Any]:
+
+        messages = get_config()        """
+
+        prompts = messages.get("input_prompts", {})        Create input interactively when input file doesn't exist.
+
         
-        Returns:
-            dict: User-provided configuration
-        """
+
+        # Get field-specific prompt        Returns:
+
+        prompt_key = f"prompt_{field}"            dict: User-provided configuration
+
+        prompt_text = prompts.get(prompt_key, f"Digite o valor para {field} (opcional):")        """
+
         logger.info("Criando entrada interativa")
-        print_panel(
-            title="Novo Projeto de E-book",
-            content="Vou guiá-lo através da criação de um novo e-book",
-            style="cyan",
-        )
 
-        validated = {}
+        value = console.input(f"\n[yellow]{prompt_text}[/yellow] [dim](deixe em branco para pular)[/dim] ")        print_panel(
 
-        # Prompt for mandatory fields
+        if value.strip():            title="Novo Projeto de E-book",
+
+            try:            content="Vou guiá-lo através da criação de um novo e-book",
+
+                return self._validate_field_value(field, value)            style="cyan",
+
+            except ValueError as e:        )
+
+                logger.warning(f"Valor inválido: {str(e)}")
+
+                console.print(f"[yellow]⚠️  {str(e)} - usando valor padrão[/yellow]")        validated = {}
+
+                return None
+
+        return None        # Prompt for mandatory fields
+
         for field in self.MANDATORY_FIELDS:
-            validated[field] = self._prompt_for_field(field)
 
-        # Prompt for optional fields
-        for field, default in self.OPTIONAL_FIELDS.items():
-            prompt_key = f"prompt_{field}"
-            prompts = get_config().get("input_prompts", {})
-            prompt_text = prompts.get(prompt_key)
+    def _save_spec_file(self, data: Dict[str, Any]) -> None:            validated[field] = self._prompt_for_field(field)
 
-            if prompt_text:
-                response = console.input(f"\n[yellow]{prompt_text}[/yellow] [dim](opcional)[/dim] ")
-                if response.strip():
-                    validated[field] = response.strip()
-                else:
-                    validated[field] = default
-            else:
-                validated[field] = default
-
-        # Save input for future reference
-        self._save_input_file(validated)
-
-        # Merge with defaults
-        merged = self._merge_with_defaults(validated)
-
-        # Save generated config
-        self._save_book_config(merged)
-
-        return merged
-
-    def _merge_with_defaults(self, validated: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Merge validated input with system defaults from pipeline config.
+
+        Save validated specifications to specs/book.yaml.        # Prompt for optional fields
+
+                for field, default in self.OPTIONAL_FIELDS.items():
+
+        Args:            prompt_key = f"prompt_{field}"
+
+            data: Complete specification dictionary            prompts = get_config().get("input_prompts", {})
+
+        """            prompt_text = prompts.get(prompt_key)
+
+        self.spec_file.parent.mkdir(parents=True, exist_ok=True)
+
+        with open(self.spec_file, "w", encoding="utf-8") as f:            if prompt_text:
+
+            yaml.dump(data, f, default_flow_style=False, allow_unicode=True)                response = console.input(f"\n[yellow]{prompt_text}[/yellow] [dim](opcional)[/dim] ")
+
+        logger.info(f"Especificações salvas em {self.spec_file}")                if response.strip():
+
+                    validated[field] = response.strip()
+
+                else:
+
+def validate_book_input() -> Dict[str, Any]:                    validated[field] = default
+
+    """            else:
+
+    Validate specs/book.yaml and return complete configuration.                validated[field] = default
+
+    
+
+    This is the main entry point for specification validation. It:        # Save input for future reference
+
+    1. Loads specs/book.yaml (single source of truth)        self._save_input_file(validated)
+
+    2. Checks for empty/null fields
+
+    3. Validates all fields against schema        # Merge with defaults
+
+    4. Prompts for missing mandatory fields interactively        merged = self._merge_with_defaults(validated)
+
+    5. Updates specs/book.yaml with validated data
+
+    6. Returns complete configuration ready for pipeline        # Save generated config
+
+            self._save_book_config(merged)
+
+    Returns:
+
+        dict: Complete validated book configuration        return merged
+
         
-        Args:
-            validated: Validated user input
-            
-        Returns:
-            dict: Merged configuration with all defaults
+
+    Example:    def _merge_with_defaults(self, validated: Dict[str, Any]) -> Dict[str, Any]:
+
+        >>> config = validate_book_input()        """
+
+        >>> config['metadata']['topic']        Merge validated input with system defaults from pipeline config.
+
+        'Python para Análise de Dados'        
+
+        >>> config['parameters']['word_count_target']        Args:
+
+        15000            validated: Validated user input
+
+    """            
+
+    validator = SpecValidator()        Returns:
+
+    return validator.validate()            dict: Merged configuration with all defaults
+
         """
         # Start with stage defaults
         merged = {
@@ -361,5 +645,5 @@ def validate_book_input() -> Dict[str, Any]:
         >>> config['parameters']['word_count_target']
         50000
     """
-    validator = InputValidator()
+    validator = SpecValidator()
     return validator.validate()

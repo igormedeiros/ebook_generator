@@ -16,11 +16,21 @@
 
 ## Current Phase: Testing & Validation
 [x] Test pipeline execution: uv run python -m src
-[x] Verify input/book_input.yaml loading
+[x] Verify specs/book.yaml loading and validation
+[x] Refactor: Remove input/book_input.yaml references, use specs/book.yaml only
+[x] Fill specs/book.yaml metadata with author knowledge from refs/knowledge/
 [ ] Test interactive prompts for missing fields
 [ ] Test all TUI output (colorful headers, stage completion)
-[ ] Validate specs/book.yaml generation
-[ ] Check all Portuguese messages render correctly
+[ ] Validate all Portuguese messages render correctly
+
+## Known Bugs & Issues Found
+[ ] BUG: agents.py - create_* functions are stubs, return placeholder strings instead of agent objects
+[ ] BUG: main.py execute_agent() function calls non-existent agent.invoke() method
+[ ] BUG: tools.py - all tools are stubs with pass statements, no actual implementation
+[ ] BUG: Review personas execution flow not tested (stage 5+)
+[ ] BUG: RAG integration with Supabase pgvector not implemented
+[ ] BUG: Context7 MCP deep research integration missing
+[ ] BUG: Missing error handling for invalid YAML in specs/book.yaml
 
 ## Next Phase: Core Agent Implementation (Stubs → Full)
 [ ] agents.py: Complete ideation_agent with detailed logic
