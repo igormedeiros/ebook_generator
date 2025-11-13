@@ -548,6 +548,37 @@ uv lock
 
 All dependencies are declared in `pyproject.toml` and managed via `uv`.
 
+## Python Execution
+
+**Always use `uv` to execute Python code**:
+
+```bash
+# Run a script
+uv run script.py
+
+# Run tests
+uv run pytest tests/
+
+# Run a module
+uv run -m module_name
+
+# Run with arguments
+uv run script.py --arg1 value1
+```
+
+**Benefits**:
+- Ensures correct virtual environment is used
+- Consistent execution across all environments
+- Automatic dependency resolution
+- No need to manually activate venv
+
+**Never use**:
+- `python script.py` (incorrect environment)
+- `/path/to/venv/bin/python script.py` (brittle paths)
+- Direct Python invocation without `uv`
+
+All Python execution in the project must use `uv run` to ensure reproducibility and correct environment isolation.
+
 ## RAG Integration Points
 
 RAG tools are marked with integration points:
