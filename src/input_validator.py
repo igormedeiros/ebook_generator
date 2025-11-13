@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Dict, Any, Optional
 import yaml
 
-from config import (
+from .config import (
     get_logger,
     get_pipeline_config,
     get_config,
