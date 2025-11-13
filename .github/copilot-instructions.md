@@ -686,6 +686,18 @@ Before committing code:
 4. Validate tool output formats
 5. Ensure all documentation is complete
 
+### Important: Skip Testing and Documentation Tasks
+
+**CRITICAL**: Do NOT implement testing or documentation tasks unless explicitly requested by the user.
+
+**Task Skipping Rules**:
+- Skip all tasks in "TESTING (BASIC)" section of TODO.md unless user explicitly requests
+- Skip all tasks in "DOCUMENTATION & STANDARDS" section unless user explicitly requests  
+- User will request explicitly: "add tests", "create tests", "implement testing", "add documentation", etc.
+- If user says "resolve all TODO tasks", skip testing and documentation - implement core features only
+
+**Exception**: If user explicitly says "implement all tasks including tests and docs", then proceed with all tasks.
+
 ## Middleware Patterns (Future)
 
 LangChain 1.0+ supports middleware for aspect-oriented concerns:

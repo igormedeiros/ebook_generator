@@ -5,6 +5,11 @@
 **Version**: 1.0  
 **Last Updated**: November 12, 2025  
 
+## Related Documentation
+
+- **[Product Requirements Document (PRD.md)](./PRD.md)** - Business objectives, features, and success metrics
+- **[This Architecture Document](./ARCHITECTURE.md)** - Technical stack, components, and execution flow
+
 ---
 
 ## 1. Stack and Integrations
