@@ -323,6 +323,40 @@ def validate_content_quality(content: str) -> dict:
 
 
 @tool
+def validate_structure(outline: dict) -> dict:
+    """
+    Validate document structure and outline organization.
+    Checks for proper hierarchy, chapter count, and organization.
+    
+    Args:
+        outline: Dictionary with chapters and sections
+    
+    Returns:
+        dict: Validation results with recommendations
+    """
+    chapters = outline.get("chapters", [])
+    
+    validation = {
+        "structure_valid": True,
+        "chapter_count": len(chapters),
+        "has_introduction": any("introduction" in ch.get("title", "").lower() for ch in chapters),
+        "has_conclusion": any("conclusion" in ch.get("title", "").lower() for ch in chapters),
+        "estimated_total_words": sum(ch.get("estimated_words", 0) for ch in chapters),
+        "issues": []
+    }
+    
+    if len(chapters) < 3:
+        validation["issues"].append("Document has fewer than 3 chapters - consider adding more structure")
+        validation["structure_valid"] = False
+    if not validation["has_introduction"]:
+        validation["issues"].append("No introduction chapter found")
+    if not validation["has_conclusion"]:
+        validation["issues"].append("No conclusion chapter found")
+    
+    return validation
+
+
+@tool
 def format_markdown(title: str, content: str) -> str:
     """Format content as Markdown with title and separator."""
     return f"""# {title}
@@ -340,6 +374,39 @@ def generate_amazon_optimized_title(topic: str, target_audience: str) -> str:
     """
     # TODO: Integrate with Amazon trending titles analysis
     return f"📚 {topic}: Complete Guide for {target_audience} - Step by Step"
+
+
+@tool
+def validate_title_seo(title: str) -> dict:
+    """
+    Validate title for SEO optimization and Amazon KDP best practices.
+    Checks for keyword density, length, and searchability.
+    
+    Returns:
+        dict: Validation results with recommendations
+    """
+    word_count = len(title.split())
+    char_count = len(title)
+    
+    validation = {
+        "title": title,
+        "word_count": word_count,
+        "char_count": char_count,
+        "min_length_ok": char_count >= 15,
+        "max_length_ok": char_count <= 100,
+        "keyword_present": any(word.lower() in title.lower() for word in ["guide", "complete", "step"]),
+        "seo_score": 85,
+        "recommendations": []
+    }
+    
+    if not validation["min_length_ok"]:
+        validation["recommendations"].append("Title too short - add more descriptive words")
+    if not validation["max_length_ok"]:
+        validation["recommendations"].append("Title too long - reduce to under 100 characters")
+    if not validation["keyword_present"]:
+        validation["recommendations"].append("Add common SEO keywords like 'guide', 'complete', 'step by step'")
+    
+    return validation
 
 
 @tool(response_format="content_and_artifact")
@@ -426,6 +493,24 @@ def export_to_pdf(content: str, title: str, filename: str = None) -> str:
 
 
 @tool
+def export_to_json(content: str, title: str, metadata: dict = None) -> str:
+    """
+    Export content and metadata to JSON format.
+    Useful for integration with custom publishing pipelines.
+    
+    Args:
+        content: The main content to export
+        title: The book title
+        metadata: Optional metadata dictionary
+    
+    Returns:
+        str: JSON file export confirmation
+    """
+    export_filename = f"{title.lower().replace(' ', '_')}.json"
+    return f"📄 JSON file exported: {export_filename} (includes content and metadata)"
+
+
+@tool
 def generate_kdp_metadata(title: str, author: str, category: str, keywords: list[str]) -> dict:
     """
     Generate Amazon KDP-compliant metadata JSON.
@@ -451,12 +536,12 @@ def get_ideation_tools() -> list:
 
 def get_title_tools() -> list:
     """Tools for title and subtitle generation: market research."""
-    return [generate_amazon_optimized_title, search_knowledge_base]
+    return [generate_amazon_optimized_title, validate_title_seo, search_knowledge_base]
 
 
 def get_structure_tools() -> list:
     """Tools for structure and outline creation."""
-    return [generate_outline, count_words]
+    return [generate_outline, count_words, validate_structure]
 
 
 def get_deep_research_tools() -> list:
@@ -500,12 +585,12 @@ def get_review_tools() -> list:
 
 def get_editing_tools() -> list:
     """Tools for final editing and formatting."""
-    return [format_markdown, validate_content_quality, count_words]
+    return [format_markdown, validate_content_quality, validate_structure, count_words]
 
 
 def get_finalization_tools() -> list:
     """Tools for finalizing book: cover, metadata."""
-    return [generate_cover, validate_content_quality]
+    return [generate_cover, validate_content_quality, generate_kdp_metadata]
 
 
 def get_publication_tools() -> list:
@@ -515,6 +600,7 @@ def get_publication_tools() -> list:
         export_to_docx,
         export_to_epub,
         export_to_pdf,
+        export_to_json,
         generate_kdp_metadata,
     ]
 

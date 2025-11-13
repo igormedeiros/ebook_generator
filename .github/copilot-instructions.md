@@ -524,6 +524,30 @@ This keeps the project root focused on essential files (README, pyproject.toml, 
 
 Both models use environment-based API key management and support the LangChain 1.0+ create_agent() standard.
 
+## Dependency Management
+
+**Tool**: `uv` (not pip or pip-tools)
+
+All Python package management uses `uv` for faster, more reliable dependency resolution:
+
+```bash
+# Install dependencies from pyproject.toml
+uv sync
+
+# Add a new package
+uv add package_name
+
+# Update all packages
+uv lock
+```
+
+**Never use**:
+- `pip install`
+- `poetry install`
+- `pip-tools`
+
+All dependencies are declared in `pyproject.toml` and managed via `uv`.
+
 ## RAG Integration Points
 
 RAG tools are marked with integration points:
@@ -627,18 +651,31 @@ def process_content(text, count):
 ### Imports
 - Group imports: standard library, third-party, local
 - Use explicit imports over wildcards
-- Always use absolute imports
+- Always use relative imports for local modules (never use `src` in imports)
 
 ```python
-# ✅ Good
+# ✅ Good (in src/ files)
 from langchain.agents import create_agent
-from config import get_model
-from tools import get_all_tools
+from .config import get_model
+from .tools import get_all_tools
+
+# ✅ Good (from root level)
+from src.config import get_model
+from src.tools import get_all_tools
+
+# ❌ NEVER (src in imports from src/ files)
+from src.config import get_model  # WRONG - this creates import errors
+from src.tools import get_all_tools  # WRONG
 
 # ❌ Avoid
 from langchain.agents import *
 import *
 ```
+
+**CRITICAL RULE**: When writing code in `src/` module files:
+- Use relative imports: `from .config import ...`
+- NEVER use `from src.config import ...` in src/ files
+- Use `from src.X import ...` only from root-level scripts (main.py, tests, etc.)
 
 ## Testing & Validation
 
