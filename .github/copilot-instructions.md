@@ -701,6 +701,14 @@ All code must pass:
 - Only update individual task checkboxes when work is done
 - Keep the file clean and focused on actionable tasks
 
+### Commit Workflow
+- After completing tasks from TODO.md: **Always commit changes** with descriptive message
+- Format: `git commit -m "feat/fix: description of completed tasks"`
+- Reference completed tasks in commit message when relevant
+- **NEVER push** without explicit user request
+- Push only when user asks: "push", "make push", "upload to remote", etc.
+- Workflow: Complete tasks → Update TODO.md checkboxes → Commit → Await push instruction
+
 ---
 
 ## PRD Reference
