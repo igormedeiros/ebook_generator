@@ -6,20 +6,47 @@ Transform raw topics into publication-ready ebooks with a sophisticated 9-stage 
 
 ## 🎯 Overview
 
-Ebook Generator 1.0 is an advanced multi-agent system that orchestrates the complete editorial process from ideation to KDP publication. The pipeline combines specialized AI agents with 5 domain-expert review personas and 5 virtual readers for iterative critical feedback.
+Ebook Generator 1.0 is an advanced multi-agent system that orchestrates the complete editorial process from ideation to KDP publication. The pipeline combines specialized AI agents with 10 specialized review personas and 5 virtual readers for iterative critical feedback.
 
 ### Key Features
 
 - **9-Stage Autonomous Pipeline**: From ideation to publication-ready package
-- **5 Specialized Review Personas**: Technical, Editorial, Style, Governance, and Ethics validation
+- **10 Specialized Review Personas**: Technical, Editorial, Style, Governance, Ethics, Author Stories, Author Positioning, Author Vision, Code Reviewer, Research Validator
 - **5 Virtual Readers**: Beginner, Professional, Educator, Specialist, and Reflective perspectives
-- **Dual-Model Strategy**: Gemini 2.5 Flash (writing) + Gemini 2.5 (research/RAG)
+- **25 Independent Agents**: 9 pipeline + 10 review + 5 readers (defined in specs/agents.yaml)
+- **Dual-Model Strategy**: Gemini 2.5 Flash (writing, 0.7°) + Gemini 2.5 Pro (research/RAG, 0.3°)
 - **LangChain 1.0+ Native**: Built on latest best practices and patterns
+- **Configuration-Driven**: All parameters in YAML (pipeline, agents, config, models, tools)
 - **RAG Integration Ready**: Supabase pgvector support for knowledge augmentation
 - **Production Quality**: Output validated for Amazon KDP, LGPD, and industry standards
 - **Extensible Architecture**: Easy to add new agents, tools, and personas
 
-## 📋 Pipeline Architecture
+## � Implementation Status
+
+**Phase 1: Architecture & Configuration ✅ COMPLETE**
+- ✅ specs/ YAML system (pipeline.yaml, agents.yaml, config.yaml, models.yaml, tools.yaml)
+- ✅ agents.yaml: 25 agents fully specified (9 main + 10 review + 5 readers)
+- ✅ pipeline.yaml: 9 stages with agent ID mappings
+- ✅ Agent decoupling: Agents independent of stages
+- ✅ config.py: YAML loading, dual-model setup, logging with Rich
+- ✅ Documentation: PRD.md, ARCHITECTURE.md, copilot-instructions.md
+
+**Phase 2: Core Implementation ⏳ IN PROGRESS**
+- ⏳ agents.py: Complete logic for 25 agents (currently stubs)
+- ⏳ tools.py: Implement 30+ tools (currently stubs)
+- ⏳ main.py: Sequential execution of 9-stage pipeline
+- ⏳ input_validator.py: Validation and spec merging
+- ⏳ Supabase RAG integration (basic operations)
+
+**Phase 3: Testing & Refinement ❌ NOT STARTED**
+- ❌ tests/: Unit tests for agents, tools, pipeline
+- ❌ Context7 MCP deep research integration
+- ❌ Performance optimization
+- ❌ Edge case handling
+
+**Current Focus**: See TODO.md for detailed task list. Start with agents.py completion to unblock the entire pipeline.
+
+## �📋 Pipeline Architecture
 
 ### The 9-Stage Editorial Pipeline
 
@@ -200,25 +227,148 @@ reviews = results["review_personas"]  # 5 specialized reviews
 ```
 ebook-generator/
 ├── .github/
-│   └── copilot-instructions.md    # Code standards for all agents
+│   └── copilot-instructions.md    # Code standards and best practices
 ├── src/
 │   ├── main.py                     # Pipeline orchestration (9 stages)
-│   ├── agents.py                   # 8 agents + 1 coordinator + 5 reviewers
-│   ├── tools.py                    # 30+ specialized tools
-│   ├── config.py                   # Model initialization
-│   └── __init__.py
+│   ├── agents.py                   # All agent definitions (25 agents)
+│   ├── tools.py                    # All tool definitions (30+ tools)
+│   ├── config.py                   # Configuration, logging, models
+│   ├── input_validator.py          # Input validation and interactive prompts
+│   └── __init__.py                 # Package initialization
+├── specs/                          # Configuration & Specifications
+│   ├── pipeline.yaml               # 9-stage parameters with agent mappings
+│   ├── agents.yaml                 # 25 independent agent specifications
+│   ├── config.yaml                 # Portuguese strings and messages
+│   ├── models.yaml                 # Gemini model configuration
+│   ├── tools.yaml                  # Tool specifications (30+)
+│   ├── book.yaml                   # Generated from input validation (gitignore)
+│   └── README.md                   # Configuration documentation
+├── input/
+│   └── book_input.yaml             # User-provided book specification
+├── docs/
+│   ├── PRD.md                      # Product Requirements Document (v1.0)
+│   └── ARCHITECTURE.md             # Technical Architecture (v1.0)
 ├── pyproject.toml                  # Project metadata and dependencies
 ├── README.md                        # This file
 └── requirements.txt                # Python dependencies
 ```
 
-## 🔧 Core Components
+## � Configuration System
+
+All parameters are externalized to YAML specifications in `specs/`:
+
+### Core Configuration Files
+
+**1. pipeline.yaml** - 9-stage pipeline with agent ID mappings
+- Defines 9 stages (Stage 1: Ideation → Stage 9: Publication)
+- Each stage references an agent via the `agent` field
+- Includes stage-specific parameters with types, defaults, and ranges
+- Example: `stage_1_ideation: { agent: "ideation_agent", parameters: {...} }`
+
+**2. agents.yaml** - 25 independent agent specifications
+- **Main Pipeline Agents** (9): ideation_agent, title_agent, structure_agent, deep_research_agent, chapter_writing_agent, review_coordinator_agent, critical_reading_coordinator_agent, editing_agent, finalization_agent, publication_agent
+- **Review Personas** (10): technical_reviewer, editorial_reviewer, content_stylist, governance_qa, ethics_validator, author_stories_reviewer, author_positioning_reviewer, author_vision_reviewer, code_examples_reviewer, research_validator
+- **Virtual Readers** (5): curious_beginner, technical_professional, didactic_educator, domain_specialist, reflective_reader
+- Each agent includes: name, model, role, responsibility, focus_areas, process, output_format, tools, timeouts
+
+**3. config.yaml** - Centralized Portuguese strings
+- 100+ messages (pipeline events, agent operations, validation results)
+- Labels for UI and reporting
+- System prompts base for agents
+- Table titles and icons for Rich formatting
+
+**4. models.yaml** - AI model configuration
+- **write_model**: Gemini 2.5 Flash (temperature: 0.7 - balanced creativity)
+- **research_model**: Gemini 2.5 Pro (temperature: 0.3 - focused for RAG)
+- API configuration and token limits
+
+**5. tools.yaml** - 30+ tool specifications
+- Tool definitions organized by pipeline stage
+- Default values and constraints
+- Timeout and retry configurations
+
+**6. book.yaml** - Generated at runtime
+- Merged configuration from `input/book_input.yaml` + defaults
+- Auto-generated during input validation
+- Not committed to git (regenerated on each run)
+
+### Input Validation Flow
+
+```
+input/book_input.yaml (user fills)
+    ↓
+InputValidator.validate_book_input()
+    ├─ Check mandatory fields (topic, target_audience, word_count_target)
+    ├─ Validate types and ranges
+    ├─ Interactive prompts for missing/invalid fields
+    └─ Merge with defaults from pipeline.yaml
+    ↓
+specs/book.yaml (auto-generated)
+    ↓
+run_ebook_pipeline(**config)
+```
+
+### Configuration Access in Code
+
+```python
+from src.config import (
+    get_pipeline_config,      # Load all 9 stages with parameters
+    get_agents_config,        # Load all 25 agent specifications
+    get_agent_for_stage,      # Map stage name to agent ID
+    get_models_config,        # Load model configuration
+    get_message,              # Get Portuguese message by key
+)
+
+# Get agent for a specific stage
+agent_id = get_agent_for_stage("stage_1_ideation")  # Returns: "ideation_agent"
+
+# Load agent specification
+agents_config = get_agents_config()
+agent_spec = agents_config['main_pipeline_agents'][agent_id]
+```
+
+## �🔧 Core Components
 
 ### agents.py: Specialized Agents
 
-The system includes 14 distinct agent creators:
+The system includes 25 distinct agent specifications:
 
-**Main Pipeline Agents (8)**:
+**Main Pipeline Agents (9)**:
+- `ideation_agent` - Stage 1: Central idea definition (Flash)
+- `title_agent` - Stage 2: Amazon-optimized titles (Flash)
+- `structure_agent` - Stage 3: Outline generation (Flash)
+- `deep_research_agent` - Stage 4A: Deep research via Context7 MCP (Pro)
+- `chapter_writing_agent` - Stage 4B: Content writing with RAG (Flash)
+- `review_coordinator_agent` - Stage 5: Review orchestration (Pro)
+- `critical_reading_coordinator_agent` - Stage 6: Critical reading iterations (Pro)
+- `editing_agent` - Stage 7: Formatting validation (Flash)
+- `finalization_agent` - Stage 8: Cover and metadata (Flash)
+- `publication_agent` - Stage 9: Export to all formats (Flash)
+
+**Specialized Review Personas (10)**:
+- `technical_reviewer` - Code quality, framework versions, syntax
+- `editorial_reviewer` - Clarity, tone, flow, audience alignment
+- `content_stylist` - Formatting consistency, visual hierarchy
+- `governance_qa` - Compliance, metadata, security, LGPD
+- `ethics_validator` - Bias detection, medical disclaimers, AI ethics
+- `author_stories_reviewer` - Narrative balance, didactic flow (RAG: author_stories)
+- `author_positioning_reviewer` - Authority, positioning clarity (RAG: author_positioning)
+- `author_vision_reviewer` - Vision alignment, opinion authenticity (RAG: author_vision_opinions)
+- `code_examples_reviewer` - Code execution, exercises, GitHub collection
+- `research_validator` - Source credibility, fact-checking, citation accuracy
+
+**Virtual Reader Personas (5)**:
+- `curious_beginner` - New learner perspective (Flash)
+- `technical_professional` - Expert validation (Pro)
+- `didactic_educator` - Methodology perspective (Flash)
+- `domain_specialist` - Cross-disciplinary view (Pro)
+- `reflective_reader` - General audience (Flash)
+
+### agents.py: Specialized Agents
+
+The system includes agent creators for all 25 agents:
+
+**Main Pipeline Agents (9)**:
 - `create_ideation_agent()` - Stage 1: Central idea definition
 - `create_title_agent()` - Stage 2: Amazon-optimized titles
 - `create_structure_agent()` - Stage 3: Outline generation
@@ -226,6 +376,7 @@ The system includes 14 distinct agent creators:
 - `create_review_agent()` - Stage 5: Review orchestration
 - `create_editing_agent()` - Stage 6: Formatting validation
 - `create_finalization_agent()` - Stage 7: Cover and metadata
+````
 - `create_publication_agent()` - Stage 8: Export and packaging
 
 **Specialized Review Agents (5)**:
@@ -678,5 +829,6 @@ For issues, questions, or suggestions:
 
 ---
 
-**Last Updated**: 2024
-**Status**: Production Ready ✅
+**Version**: 1.0  
+**Last Updated**: November 12, 2025  
+**Status**: Architecture Complete ✅ | Core Implementation In Progress ⏳ | Testing Pending ❌

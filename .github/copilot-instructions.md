@@ -8,7 +8,65 @@ This file documents the coding standards and best practices for all code agents 
 
 ---
 
-## 📘 Project Overview
+## � TODO.md Workflow
+
+**CRITICAL**: This workflow must be followed for ALL multi-step work:
+
+### Format Rules
+- TODO.md contains ONLY tasks with checkboxes: `[ ] Task description`
+- Format for completed tasks: `[x] Task description`
+- NO summaries, no status reports, no progress descriptions
+- Plain text, no Markdown formatting except checkbox syntax
+- One task per line
+
+### Task Management Workflow
+1. **When starting a work session**: Read TODO.md to understand pending tasks
+2. **Before implementing a task**: Update the checkbox to `[x]` (completed) IMMEDIATELY after finishing
+3. **After each task completion**: 
+   - Mark it as `[x]` in TODO.md
+   - Make a focused git commit with that task
+   - Do NOT batch multiple tasks into one commit
+4. **Last task in TODO.md**: Always `[ ] git add -A && git commit -m "..."` (the final commit)
+5. **After completing ALL tasks**: Push to remote only when user explicitly requests
+
+### Important Reminders
+- **NEVER** add summary sections explaining work done
+- **NEVER** add progress reports or narrative descriptions
+- **NEVER** batch completions of multiple tasks
+- Keep the file clean and focused on actionable tasks
+- Each git commit corresponds to 1-3 completed tasks (topic-related)
+
+### Example Workflow
+```
+1. User: "Implement stage 1-3 agents"
+   
+2. You update TODO.md: Mark 3 agent tasks as in-progress
+   - Start first agent implementation
+   
+3. After completing ideation_agent:
+   - Update TODO.md: [x] Complete agents.py: Implement create_ideation_agent()
+   - Commit: "feat: implement ideation_agent with spec-driven logic"
+   
+4. After completing title_agent:
+   - Update TODO.md: [x] Complete agents.py: Implement create_title_agent()
+   - Commit: "feat: implement title_agent"
+   
+5. Continue for each task...
+   
+6. After ALL tasks: 
+   - Final commit: "feat: complete core agents, tools, and pipeline"
+   - Wait for user to request push
+```
+
+### Commit Message Convention
+- Use semantic commits: `feat:`, `fix:`, `refactor:`, `docs:`, `test:`, `chore:`
+- Be specific about what was done
+- Reference completed tasks when relevant
+- Example: `feat: implement stage 4A deep research agent with Context7 MCP`
+
+---
+
+## �📘 Project Overview
 
 **Ebook Generator 1.0** is a multi-agent AI-powered editorial automation platform that transforms raw ideas into publication-ready ebooks using:
 
