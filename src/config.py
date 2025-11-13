@@ -217,7 +217,7 @@ def get_research_model() -> ChatGoogleGenerativeAI:
     Uses Gemini 2.5 Pro for deep analysis, RAG retrieval, and semantic search.
     
     Configuration:
-    - Model: gemini-2.5
+    - Model: gemini-2.5-pro
     - Temperature: 0.3 (focused on precision and factuality)
     - top_p: 0.95
     - top_k: 40
@@ -235,7 +235,7 @@ def get_research_model() -> ChatGoogleGenerativeAI:
         raise ValueError("GOOGLE_API_KEY environment variable not set")
     
     return ChatGoogleGenerativeAI(
-        model="gemini-2.5",
+        model="gemini-2.5-pro",
         google_api_key=api_key,
         temperature=0.3,  # Focused on precision and factuality for RAG
         top_p=0.95,
