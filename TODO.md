@@ -11,6 +11,9 @@
 [x] Test input validation and specification loading
 [x] Create docs/USAGE.md with comprehensive guide
 [x] Create example book_input.yaml files
+[x] Remove legacy input/ directory and artifacts
+[x] Align word count configuration to avoid redundant defaults
+[x] Registrar estilo de escrita e tom narrativo no specs/book.yaml
 [x] git add -A && git commit -m "refactor: input-driven pipeline with interactive prompts"
 [x] git add -A && git commit -m "docs: add usage guide and example specifications"
 
@@ -23,28 +26,28 @@
 [ ] Test all TUI output (colorful headers, stage completion)
 [ ] Validate all Portuguese messages render correctly
 
-## Known Bugs & Issues Found
-[ ] BUG: agents.py - create_* functions are stubs, return placeholder strings instead of agent objects
-[ ] BUG: main.py execute_agent() function calls non-existent agent.invoke() method
-[ ] BUG: tools.py - all tools are stubs with pass statements, no actual implementation
-[ ] BUG: Review personas execution flow not tested (stage 5+)
-[ ] BUG: RAG integration with Supabase pgvector not implemented
-[ ] BUG: Context7 MCP deep research integration missing
-[ ] BUG: Missing error handling for invalid YAML in specs/book.yaml
+## Code Compliance & Standards
+[x] agents.py - all create_* functions return proper LangChain agent objects
+[x] main.py - execute_agent uses correct LangChain invocation patterns
+[x] tools.py - all tools implemented with @tool decorator from LangChain 1.0+
+[x] Missing error handling for invalid YAML in specs/book.yaml
+[x] Centralize ALL Portuguese strings to specs/config.yaml (validation messages added)
 
-## Next Phase: Core Agent Implementation (Stubs → Full)
-[ ] agents.py: Complete ideation_agent with detailed logic
-[ ] agents.py: Complete title_agent with detailed logic
-[ ] agents.py: Complete structure_agent with detailed logic
-[ ] agents.py: Complete deep_research_agent with Context7 MCP
-[ ] agents.py: Complete chapter_writing_agent with RAG integration
-[ ] agents.py: Implement 10 review persona agents (full logic)
-[ ] agents.py: Implement 5 virtual reader agents (full logic)
-[ ] tools.py: Implement all 30+ tools with proper decorators
+## Next Phase: Testing & Validation
+[ ] Test pipeline execution: uv run python -m src (end-to-end)
+[ ] Validate all input/book_input.yaml interactive prompts work correctly
+[ ] Verify Rich TUI output with Portuguese messages renders properly
+[ ] Confirm specs/book.yaml merges input with pipeline defaults correctly
+[ ] Test error handling for missing mandatory fields and YAML validation
+
+## Documentation & Standards
+[x] Align docs/ARCHITECTURE.md with .github/copilot-instructions.md
+[x] Align docs/PRD.md with .github/copilot-instructions.md
 
 ## Future: Advanced Features
-[ ] Context7 MCP integration for deep research
-[ ] Supabase RAG vector store operations
-[ ] Author knowledge base integration
-[ ] KDP compliance validation
-[ ] Final commit and push
+[ ] Context7 MCP live integration for deep research stage
+[ ] Supabase RAG live vector operations
+[ ] Author knowledge base live integration
+[ ] KDP compliance automated validation
+[ ] GitHub repository auto-creation for code examples
+[ ] Multi-language ebook support
