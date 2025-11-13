@@ -1,434 +1,1278 @@
-""""""
+""""""""""""
 
-Specialized agents for the Ebook Generator pipeline.Specialized agents for the Ebook Generator pipeline.
+All 25 agents for Ebook Generator 1.0.
 
-All 25 agents: 9 main pipeline + 10 review personas + 5 virtual readers.Each agent handles a specific stage of the editorial process.
+All 25 agent definitions for Ebook Generator 1.0.
 
-Follows LangChain 1.0+ create_agent standard.Follows LangChain 1.0+ create_agent standard.
+Organized by type:
 
-Each agent loads its specification from specs/agents.yaml at runtime.
+- 9 Main Pipeline Agents (ideation to publication)Specialized agents for the Ebook Generator pipeline.Specialized agents for the Ebook Generator pipeline.
 
-"""25 agents total:
+- 10 Specialized Review Personas 
 
-- 9 main pipeline agents (ideation, title, structure, deep_research, chapter, review, critical_reading, editing, finalization, publication)
+- 5 Virtual Reader PersonasArchitecture:
 
-from typing import Any, Dict- 10 review personas (technical, editorial, stylist, governance, ethics, author_stories, author_positioning, author_vision, code_reviewer, research_validator)
 
-from langchain.agents import create_agent- 5 virtual readers (curious_beginner, technical_professional, didactic_educator, domain_specialist, reflective_reader)
 
-from langchain_google_genai import ChatGoogleGenerativeAI"""
+All agents are spec-driven: load specifications from agents.yaml at runtime.- 9 Main Pipeline Agents (stages 1-9)All 25 agents: 9 main pipeline + 10 review personas + 5 virtual readers.Each agent handles a specific stage of the editorial process.
 
-from config import get_agents_config, get_logger
+"""
 
-from typing import Any, Dict
+- 10 Specialized Review Personas (stage 5)
 
-logger = get_logger(__name__)from langchain.agents import create_agent
+from typing import Any
+
+from langchain.agents import create_agent- 5 Virtual Reader Personas (stage 6)Follows LangChain 1.0+ create_agent standard.Follows LangChain 1.0+ create_agent standard.
 
 from langchain_google_genai import ChatGoogleGenerativeAI
 
-# Import tool getter functionsfrom config import get_agents_config, get_logger
 
-from tools import (
 
-    get_ideation_tools,logger = get_logger(__name__)
+from .config import get_logger, get_agents_config, get_tools_config
 
-    get_title_tools,
+from .tools import (All agents load specifications dynamically from specs/agents.yaml at runtime.Each agent loads its specification from specs/agents.yaml at runtime.
 
-    get_structure_tools,# Import tool getter functions
+    get_ideation_tools,
 
-    get_deep_research_tools,from tools import (
+    get_title_tools,System prompts are built from agent specs (focus_areas, process, output_format).
 
-    get_chapter_writing_tools,    get_ideation_tools,
+    get_structure_tools,
 
-    get_review_tools,    get_title_tools,
+    get_deep_research_tools,""""""25 agents total:
 
-    get_editing_tools,    get_structure_tools,
+    get_chapter_writing_tools,
 
-    get_finalization_tools,    get_deep_research_tools,
+    get_review_tools,
 
-    get_publication_tools,    get_chapter_writing_tools,
+    get_editing_tools,
 
-    get_all_tools,    get_review_tools,
-
-)    get_editing_tools,
-
-    get_finalization_tools,
+    get_finalization_tools,from typing import Any- 9 main pipeline agents (ideation, title, structure, deep_research, chapter, review, critical_reading, editing, finalization, publication)
 
     get_publication_tools,
 
-# ============================================================================    get_all_tools,
-
-# HELPER FUNCTIONS)
-
-# ============================================================================
+)from langchain.agents import create_agent
 
 
 
-def _build_system_prompt(agent_spec: Dict[str, Any]) -> str:# ============================================================================
+logger = get_logger(__name__)from langchain_google_genai import ChatGoogleGenerativeAIfrom typing import Any, Dict- 10 review personas (technical, editorial, stylist, governance, ethics, author_stories, author_positioning, author_vision, code_reviewer, research_validator)
 
-    """# HELPER FUNCTIONS
 
-    Build system prompt from agent specification.# ============================================================================
+
+
+
+def _build_system_prompt(agent_spec: dict) -> str:
+
+    """from .config import get_agents_config, get_loggerfrom langchain.agents import create_agent- 5 virtual readers (curious_beginner, technical_professional, didactic_educator, domain_specialist, reflective_reader)
+
+    Build dynamic system prompt from agent specification.
 
     
 
-    Args:def _build_system_prompt(agent_spec: Dict[str, Any]) -> str:
+    Args:
 
-        agent_spec: Agent configuration from agents.yaml    """
+        agent_spec: Agent specification from agents.yamllogger = get_logger(__name__)from langchain_google_genai import ChatGoogleGenerativeAI"""
+
+    
+
+    Returns:
+
+        str: Formatted system prompt
+
+    """from config import get_agents_config, get_logger
+
+    prompt = f"""You are the {agent_spec.get('name', 'Agent')} - a {agent_spec.get('role', 'specialist')} expert.
+
+def _build_system_prompt(agent_spec: dict) -> str:
+
+Your responsibility is to {agent_spec.get('responsibility', 'assist with content generation')}.
+
+    """from typing import Any, Dict
+
+Focus Areas:"""
 
         Build system prompt from agent specification.
 
-    Returns:    
+    for i, focus in enumerate(agent_spec.get('focus_areas', []), 1):
 
-        str: Formatted system prompt    Args:
-
-    """        agent_spec: Agent configuration from agents.yaml
-
-    focus_areas_text = "\n".join(    
-
-        f"  {i+1}. {area}"     Returns:
-
-        for i, area in enumerate(agent_spec.get('focus_areas', []))        str: Formatted system prompt
-
-    )    """
-
-    process_text = "\n".join(    focus_areas_text = "\n".join(f"  {i+1}. {area}" for i, area in enumerate(agent_spec.get('focus_areas', [])))
-
-        f"  - {step}"     process_text = "\n".join(f"  - {step}" for step in agent_spec.get('process', []))
-
-        for step in agent_spec.get('process', [])    
-
-    )    prompt = f"""You are the {agent_spec.get('name', 'Agent')} - {agent_spec.get('role', 'Specialist')}.
-
-    Your responsibility is to {agent_spec.get('responsibility', 'assist with the pipeline')}.
-
-    prompt = f"""You are the {agent_spec.get('name', 'Agent')} - {agent_spec.get('role', 'Specialist')}.
-
-Your responsibility is to {agent_spec.get('responsibility', 'assist with the pipeline')}.Focus Areas:
-
-{focus_areas_text}
-
-Focus Areas:
-
-{focus_areas_text}Process:
-
-{process_text}
-
-Process:
-
-{process_text}Output Format:
-
-{agent_spec.get('output_format', 'Provide structured output')}"""
-
-Output Format:    
-
-{agent_spec.get('output_format', 'Provide structured output')}"""    return prompt
+        prompt += f"\n{i}. {focus}"    logger = get_logger(__name__)from langchain.agents import create_agent
 
     
 
-    return prompt
+    prompt += "\n\nProcess:"    Args:
+
+    for step in agent_spec.get('process', []):
+
+        prompt += f"\n- {step}"        agent_spec: Agent specification from agents.yamlfrom langchain_google_genai import ChatGoogleGenerativeAI
+
+    
+
+    prompt += f"\n\nOutput Format:\n{agent_spec.get('output_format', 'Structured response with clear sections')}"    
+
+    
+
+    return prompt    Returns:# Import tool getter functionsfrom config import get_agents_config, get_logger
+
+
+
+        str: Formatted system prompt for the agent
 
 def execute_agent(agent: Any, query: str) -> str:
 
-    """
+    """    """from tools import (
 
-def execute_agent(agent: Any, query: str) -> str:    Execute an agent with a query and return the response.
+    Execute an agent with a query and return the response.
 
-    """    
+        prompt = f"""You are the {agent_spec.get('name', 'Agent')} - a {agent_spec.get('role', 'specialist')} expert.
 
-    Execute an agent with a query and return the response.    Args:
+    Args:
 
-            agent: LangChain agent instance
+        agent: LangChain agent instance    get_ideation_tools,logger = get_logger(__name__)
 
-    Args:        query: Query string to execute
+        query: User query string
 
-        agent: LangChain agent instance    
+    Your responsibility is to {agent_spec.get('responsibility', 'assist with the task')}.
 
-        query: Query string to execute    Returns:
+    Returns:
 
-            str: Agent response text
-
-    Returns:    """
-
-        str: Agent response text    try:
-
-    """        response = agent.invoke({"input": query})
-
-    try:        # Handle both response formats
-
-        response = agent.invoke({"input": query})        if isinstance(response, dict):
-
-        # Handle both response formats            if "output" in response:
-
-        if isinstance(response, dict):                return response["output"]
-
-            if "output" in response:            elif "messages" in response:
-
-                return response["output"]                return response["messages"][-1].content if response["messages"] else ""
-
-            elif "messages" in response:        return str(response)
-
-                messages = response.get("messages", [])    except Exception as e:
-
-                return messages[-1].content if messages else ""        logger.error(f"Error executing agent: {str(e)}")
-
-        return str(response)        return f"Error: {str(e)}"
-
-    except Exception as e:
-
-        logger.error(f"Error executing agent: {str(e)}")
-
-        return f"Error: {str(e)}"def execute_review_personas(personas_agents: Dict[str, Any], content: str) -> Dict[str, str]:
+        str: Agent response text    get_title_tools,
 
     """
 
-    Execute all review personas on content and collect feedback.
+    try:Focus Areas:
 
-def execute_review_personas(personas_agents: Dict[str, Any], content: str) -> Dict[str, str]:    
+        response = agent.invoke({
 
-    """    Args:
+            "messages": [{"role": "user", "content": query}]"""    get_structure_tools,# Import tool getter functions
 
-    Execute all review personas on content and collect feedback.        personas_agents: Dictionary of persona agents
+        })
 
-            content: Content to review
+            for i, focus in enumerate(agent_spec.get('focus_areas', []), 1):
 
-    Args:    
+        if hasattr(response, '__getitem__'):
 
-        personas_agents: Dictionary of {persona_name: agent}    Returns:
+            if 'messages' in response:        prompt += f"{i}. {focus}\n"    get_deep_research_tools,from tools import (
 
-        content: Content to review        dict: Feedback from each persona
+                return response['messages'][-1].content
 
-        """
+            elif 'output' in response:    
 
-    Returns:    feedback = {}
+                return response['output']
 
-        dict: Feedback from each persona    for persona_name, agent in personas_agents.items():
+            prompt += "\nProcess:\n"    get_chapter_writing_tools,    get_ideation_tools,
 
-    """        query = f"Please review the following content:\n\n{content[:2000]}"
+        return str(response)
 
-    feedback = {}        feedback[persona_name] = execute_agent(agent, query)
+    except Exception as e:    for process in agent_spec.get('process', []):
 
-    for persona_name, agent in personas_agents.items():        logger.info(f"Review from {persona_name} completed")
+        logger.error(f"Agent execution error: {str(e)}")
 
-        query = f"Please review the following content and provide feedback:\n\n{content[:2000]}"    return feedback
+        return f"Error executing agent: {str(e)}"        prompt += f"- {process}\n"    get_review_tools,    get_title_tools,
 
-        feedback[persona_name] = execute_agent(agent, query)
 
-        logger.info(f"Review from {persona_name} completed")
 
-    return feedback# ============================================================================
+    
 
-# MAIN PIPELINE AGENTS (9 agents)
+def execute_review_personas(personas_agents: dict, content: str) -> dict:
 
-# ============================================================================
+    """    prompt += f"\nOutput Format:\n{agent_spec.get('output_format', 'Provide clear, structured output.')}"    get_editing_tools,    get_structure_tools,
 
-# ============================================================================
+    Execute multiple review persona agents in sequence.
 
-# MAIN PIPELINE AGENTS (9 agents)
+        
 
-# ============================================================================def create_ideation_agent(model: ChatGoogleGenerativeAI):
+    Args:
+
+        personas_agents: Dictionary of {persona_name: agent}    return prompt    get_finalization_tools,    get_deep_research_tools,
+
+        content: Content to review
+
+    
+
+    Returns:
+
+        dict: {persona_name: feedback}    get_publication_tools,    get_chapter_writing_tools,
 
     """
 
-def create_ideation_agent(model: ChatGoogleGenerativeAI) -> Any:    Stage 1: Ideation Agent
+    results = {}def execute_agent(agent: Any, query: str) -> str:
 
-    """    Defines central idea, problem, target audience, and transformation promise.
+    
 
-    Stage 1: Ideation Agent    
+    for persona_name, agent in personas_agents.items():    """    get_all_tools,    get_review_tools,
 
-    Defines central idea, problem, target audience, transformation promise.    From agents.yaml: ideation_agent spec
+        query = f"Please review this content: {content[:500]}... Provide structured feedback."
 
-    Loads spec from agents.yaml > main_pipeline_agents > ideation_agent    """
+        feedback = execute_agent(agent, query)    Execute an agent with a query and return the response.
 
-    """    agents_config = get_agents_config()
+        results[persona_name] = feedback
 
-    agents_config = get_agents_config()    spec = agents_config['main_pipeline_agents']['ideation_agent']
+        logger.info(f"Completed review from {persona_name}")    )    get_editing_tools,
 
-    spec = agents_config['main_pipeline_agents']['ideation_agent']    
+    
 
-        return create_agent(
+    return results    Args:
 
-    return create_agent(        model=model,
 
-        model=model,        tools=get_ideation_tools(),
 
-        tools=get_ideation_tools(),        system_prompt=_build_system_prompt(spec)
+        agent: LangChain agent instance    get_finalization_tools,
 
-        system_prompt=_build_system_prompt(spec)    )
+# MAIN PIPELINE AGENTS (9)
+
+        query: User query or prompt
+
+def create_ideation_agent(model: ChatGoogleGenerativeAI) -> Any:
+
+    """Stage 1: Ideation - Generate central idea and problem definition."""        get_publication_tools,
+
+    agents_config = get_agents_config()
+
+    spec = agents_config['main_pipeline_agents']['ideation_agent']    Returns:
+
+    
+
+    return create_agent(        str: Agent response content# ============================================================================    get_all_tools,
+
+        model=model,
+
+        tools=get_ideation_tools(),    """
+
+        system_prompt=_build_system_prompt(spec)
+
+    )    try:# HELPER FUNCTIONS)
+
+
+
+        response = agent.invoke({
+
+def create_title_agent(model: ChatGoogleGenerativeAI) -> Any:
+
+    """Stage 2: Title Generation - Create Amazon-optimized titles."""            "messages": [{"role": "user", "content": query}]# ============================================================================
+
+    agents_config = get_agents_config()
+
+    spec = agents_config['main_pipeline_agents']['title_agent']        })
+
+    
+
+    return create_agent(        return response["messages"][-1].content
+
+        model=model,
+
+        tools=get_title_tools(),    except Exception as e:
+
+        system_prompt=_build_system_prompt(spec)
+
+    )        logger.error(f"Agent execution error: {str(e)}")def _build_system_prompt(agent_spec: Dict[str, Any]) -> str:# ============================================================================
+
+
+
+        return f"Error executing agent: {str(e)}"
+
+def create_structure_agent(model: ChatGoogleGenerativeAI) -> Any:
+
+    """Stage 3: Structure - Build hierarchical outline."""    """# HELPER FUNCTIONS
+
+    agents_config = get_agents_config()
+
+    spec = agents_config['main_pipeline_agents']['structure_agent']
+
+    
+
+    return create_agent(def execute_review_personas(personas_agents: list, content: str) -> dict:    Build system prompt from agent specification.# ============================================================================
+
+        model=model,
+
+        tools=get_structure_tools(),    """
+
+        system_prompt=_build_system_prompt(spec)
+
+    )    Execute multiple review personas in sequence and collect feedback.    
+
+
+
+    
+
+def create_deep_research_agent(model: ChatGoogleGenerativeAI) -> Any:
+
+    """Stage 4A: Deep Research - Gather research with Context7 MCP."""    Args:    Args:def _build_system_prompt(agent_spec: Dict[str, Any]) -> str:
+
+    agents_config = get_agents_config()
+
+    spec = agents_config['main_pipeline_agents']['deep_research_agent']        personas_agents: List of persona agents
+
+    
+
+    return create_agent(        content: Content to review        agent_spec: Agent configuration from agents.yaml    """
+
+        model=model,
+
+        tools=get_deep_research_tools(),    
+
+        system_prompt=_build_system_prompt(spec)
+
+    )    Returns:        Build system prompt from agent specification.
+
+
+
+        dict: Feedback from each persona
+
+def create_chapter_agent(model: ChatGoogleGenerativeAI) -> Any:
+
+    """Stage 4B: Chapter Writing - Write didactic content with RAG."""    """    Returns:    
+
+    agents_config = get_agents_config()
+
+    spec = agents_config['main_pipeline_agents']['chapter_writing_agent']    results = {}
+
+    
+
+    return create_agent(    for agent in personas_agents:        str: Formatted system prompt    Args:
+
+        model=model,
+
+        tools=get_chapter_writing_tools(),        try:
+
+        system_prompt=_build_system_prompt(spec)
+
+    )            feedback = execute_agent(agent, f"Review this content:\n{content[:500]}")    """        agent_spec: Agent configuration from agents.yaml
+
+
+
+            results[agent.name] = feedback
+
+def create_review_coordinator_agent(model: ChatGoogleGenerativeAI) -> Any:
+
+    """Stage 5: Specialized Review - Orchestrate 10 review personas."""        except Exception as e:    focus_areas_text = "\n".join(    
+
+    agents_config = get_agents_config()
+
+    spec = agents_config['main_pipeline_agents']['review_coordinator_agent']            logger.error(f"Persona execution error: {str(e)}")
+
+    
+
+    return create_agent(            results[agent.name] = f"Error: {str(e)}"        f"  {i+1}. {area}"     Returns:
+
+        model=model,
+
+        tools=get_review_tools(),    return results
+
+        system_prompt=_build_system_prompt(spec)
+
+    )        for i, area in enumerate(agent_spec.get('focus_areas', []))        str: Formatted system prompt
+
+
+
+
+
+def create_critical_reading_coordinator_agent(model: ChatGoogleGenerativeAI) -> Any:
+
+    """Stage 6: Critical Reading - 5 virtual readers iterative feedback."""# MAIN PIPELINE AGENTS (9)    )    """
+
+    agents_config = get_agents_config()
+
+    spec = agents_config['main_pipeline_agents']['critical_reading_coordinator_agent']
+
+    
+
+    return create_agent(def create_ideation_agent(model: ChatGoogleGenerativeAI) -> Any:    process_text = "\n".join(    focus_areas_text = "\n".join(f"  {i+1}. {area}" for i, area in enumerate(agent_spec.get('focus_areas', [])))
+
+        model=model,
+
+        tools=get_review_tools(),    """Stage 1: Ideation Agent - Generate central idea and problem definition."""
+
+        system_prompt=_build_system_prompt(spec)
+
+    )    agents_config = get_agents_config()        f"  - {step}"     process_text = "\n".join(f"  - {step}" for step in agent_spec.get('process', []))
+
+
+
+    spec = agents_config['main_pipeline_agents']['ideation_agent']
+
+def create_editing_agent(model: ChatGoogleGenerativeAI) -> Any:
+
+    """Stage 7: Editing - Final formatting and validation."""            for step in agent_spec.get('process', [])    
+
+    agents_config = get_agents_config()
+
+    spec = agents_config['main_pipeline_agents']['editing_agent']    return create_agent(
+
+    
+
+    return create_agent(        model=model,    )    prompt = f"""You are the {agent_spec.get('name', 'Agent')} - {agent_spec.get('role', 'Specialist')}.
+
+        model=model,
+
+        tools=get_editing_tools(),        tools=[],
+
+        system_prompt=_build_system_prompt(spec)
+
+    )        system_prompt=_build_system_prompt(spec)    Your responsibility is to {agent_spec.get('responsibility', 'assist with the pipeline')}.
+
+
 
     )
 
+def create_finalization_agent(model: ChatGoogleGenerativeAI) -> Any:
+
+    """Stage 8: Finalization - Cover concept and metadata."""    prompt = f"""You are the {agent_spec.get('name', 'Agent')} - {agent_spec.get('role', 'Specialist')}.
+
+    agents_config = get_agents_config()
+
+    spec = agents_config['main_pipeline_agents']['finalization_agent']
+
+    
+
+    return create_agent(def create_title_agent(model: ChatGoogleGenerativeAI) -> Any:Your responsibility is to {agent_spec.get('responsibility', 'assist with the pipeline')}.Focus Areas:
+
+        model=model,
+
+        tools=get_finalization_tools(),    """Stage 2: Title Agent - Generate Amazon-optimized titles."""
+
+        system_prompt=_build_system_prompt(spec)
+
+    )    agents_config = get_agents_config(){focus_areas_text}
 
 
-def create_title_agent(model: ChatGoogleGenerativeAI):
 
-def create_title_agent(model: ChatGoogleGenerativeAI) -> Any:    """
+    spec = agents_config['main_pipeline_agents']['title_agent']
 
-    """    Stage 2: Title/Subtitle Agent
+def create_publication_agent(model: ChatGoogleGenerativeAI) -> Any:
 
-    Stage 2: Title Generation Agent    Analyzes Amazon trends and generates optimized titles for market success.
+    """Stage 9: Publication - Export to multiple formats."""    Focus Areas:
 
-    Generates 3 Amazon-optimized title options with market analysis.    """
+    agents_config = get_agents_config()
 
-    Loads spec from agents.yaml > main_pipeline_agents > title_agent    return create_agent(
+    spec = agents_config['main_pipeline_agents']['publication_agent']    return create_agent(
 
-    """        model=model,
+    
 
-    agents_config = get_agents_config()        tools=get_title_tools(),
+    return create_agent(        model=model,{focus_areas_text}Process:
 
-    spec = agents_config['main_pipeline_agents']['title_agent']        system_prompt="""You are the Title/Subtitle Agent.
+        model=model,
 
-    Your responsibility is to generate titles that sell on Amazon KDP.
+        tools=get_publication_tools(),        tools=[],
+
+        system_prompt=_build_system_prompt(spec)
+
+    )        system_prompt=_build_system_prompt(spec){process_text}
+
+
+
+    )
+
+# SPECIALIZED REVIEW PERSONAS (10)
+
+Process:
+
+def create_technical_reviewer_agent(model: ChatGoogleGenerativeAI) -> Any:
+
+    """Review Persona: Technical Reviewer - Code quality and accuracy."""
+
+    agents_config = get_agents_config()
+
+    spec = agents_config['review_personas']['technical_reviewer']def create_structure_agent(model: ChatGoogleGenerativeAI) -> Any:{process_text}Output Format:
+
+    
+
+    return create_agent(    """Stage 3: Structure Agent - Build hierarchical outline."""
+
+        model=model,
+
+        tools=get_review_tools(),    agents_config = get_agents_config(){agent_spec.get('output_format', 'Provide structured output')}"""
+
+        system_prompt=_build_system_prompt(spec)
+
+    )    spec = agents_config['main_pipeline_agents']['structure_agent']
+
+
+
+    Output Format:    
+
+def create_editorial_reviewer_agent(model: ChatGoogleGenerativeAI) -> Any:
+
+    """Review Persona: Editorial Reviewer - Clarity and tone."""    return create_agent(
+
+    agents_config = get_agents_config()
+
+    spec = agents_config['review_personas']['editorial_reviewer']        model=model,{agent_spec.get('output_format', 'Provide structured output')}"""    return prompt
+
+    
+
+    return create_agent(        tools=[],
+
+        model=model,
+
+        tools=get_review_tools(),        system_prompt=_build_system_prompt(spec)    
+
+        system_prompt=_build_system_prompt(spec)
+
+    )    )
+
+
+
+    return prompt
+
+def create_content_stylist_agent(model: ChatGoogleGenerativeAI) -> Any:
+
+    """Review Persona: Content Stylist - Formatting and structure."""
+
+    agents_config = get_agents_config()
+
+    spec = agents_config['review_personas']['content_stylist']def create_deep_research_agent(model: ChatGoogleGenerativeAI) -> Any:def execute_agent(agent: Any, query: str) -> str:
+
+    
+
+    return create_agent(    """Stage 4A: Deep Research Agent - Conduct research with Context7 MCP integration."""
+
+        model=model,
+
+        tools=get_review_tools(),    agents_config = get_agents_config()    """
+
+        system_prompt=_build_system_prompt(spec)
+
+    )    spec = agents_config['main_pipeline_agents']['deep_research_agent']
+
+
+
+    def execute_agent(agent: Any, query: str) -> str:    Execute an agent with a query and return the response.
+
+def create_governance_agent(model: ChatGoogleGenerativeAI) -> Any:
+
+    """Review Persona: Governance QA - Compliance and standards."""    return create_agent(
+
+    agents_config = get_agents_config()
+
+    spec = agents_config['review_personas']['governance_qa']        model=model,    """    
+
+    
+
+    return create_agent(        tools=[],
+
+        model=model,
+
+        tools=get_review_tools(),        system_prompt=_build_system_prompt(spec)    Execute an agent with a query and return the response.    Args:
+
+        system_prompt=_build_system_prompt(spec)
+
+    )    )
+
+
+
+            agent: LangChain agent instance
+
+def create_ethics_validator_agent(model: ChatGoogleGenerativeAI) -> Any:
+
+    """Review Persona: Ethics Validator - Bias and compliance."""
+
+    agents_config = get_agents_config()
+
+    spec = agents_config['review_personas']['ethics_validator']def create_chapter_agent(model: ChatGoogleGenerativeAI) -> Any:    Args:        query: Query string to execute
+
+    
+
+    return create_agent(    """Stage 4B: Chapter Writing Agent - Write didactic content with RAG integration."""
+
+        model=model,
+
+        tools=get_review_tools(),    agents_config = get_agents_config()        agent: LangChain agent instance    
+
+        system_prompt=_build_system_prompt(spec)
+
+    )    spec = agents_config['main_pipeline_agents']['chapter_writing_agent']
+
+
+
+            query: Query string to execute    Returns:
+
+def create_author_stories_reviewer_agent(model: ChatGoogleGenerativeAI) -> Any:
+
+    """Review Persona: Author Stories - Narrative balance."""    return create_agent(
+
+    agents_config = get_agents_config()
+
+    spec = agents_config['review_personas']['author_stories_reviewer']        model=model,            str: Agent response text
+
+    
+
+    return create_agent(        tools=[],
+
+        model=model,
+
+        tools=get_review_tools(),        system_prompt=_build_system_prompt(spec)    Returns:    """
+
+        system_prompt=_build_system_prompt(spec)
+
+    )    )
+
+
+
+        str: Agent response text    try:
+
+def create_author_positioning_reviewer_agent(model: ChatGoogleGenerativeAI) -> Any:
+
+    """Review Persona: Author Positioning - Authority clarity."""
+
+    agents_config = get_agents_config()
+
+    spec = agents_config['review_personas']['author_positioning_reviewer']def create_review_coordinator_agent(model: ChatGoogleGenerativeAI) -> Any:    """        response = agent.invoke({"input": query})
+
+    
+
+    return create_agent(    """Stage 5: Review Coordinator Agent - Orchestrate 10 specialized review personas."""
+
+        model=model,
+
+        tools=get_review_tools(),    agents_config = get_agents_config()    try:        # Handle both response formats
+
+        system_prompt=_build_system_prompt(spec)
+
+    )    spec = agents_config['main_pipeline_agents']['review_coordinator_agent']
+
+
+
+            response = agent.invoke({"input": query})        if isinstance(response, dict):
+
+def create_author_vision_reviewer_agent(model: ChatGoogleGenerativeAI) -> Any:
+
+    """Review Persona: Author Vision - Opinion alignment."""    return create_agent(
+
+    agents_config = get_agents_config()
+
+    spec = agents_config['review_personas']['author_vision_reviewer']        model=model,        # Handle both response formats            if "output" in response:
+
+    
+
+    return create_agent(        tools=[],
+
+        model=model,
+
+        tools=get_review_tools(),        system_prompt=_build_system_prompt(spec)        if isinstance(response, dict):                return response["output"]
+
+        system_prompt=_build_system_prompt(spec)
+
+    )    )
+
+
+
+            if "output" in response:            elif "messages" in response:
+
+def create_code_examples_reviewer_agent(model: ChatGoogleGenerativeAI) -> Any:
+
+    """Review Persona: Code Examples - Code quality validation."""
+
+    agents_config = get_agents_config()
+
+    spec = agents_config['review_personas']['code_examples_reviewer']def create_critical_reading_coordinator_agent(model: ChatGoogleGenerativeAI) -> Any:                return response["output"]                return response["messages"][-1].content if response["messages"] else ""
+
+    
+
+    return create_agent(    """Stage 6: Critical Reading Agent - Execute iteration cycles with 5 virtual readers."""
+
+        model=model,
+
+        tools=get_review_tools(),    agents_config = get_agents_config()            elif "messages" in response:        return str(response)
+
+        system_prompt=_build_system_prompt(spec)
+
+    )    spec = agents_config['main_pipeline_agents']['critical_reading_coordinator_agent']
+
+
+
+                    messages = response.get("messages", [])    except Exception as e:
+
+def create_research_validator_agent(model: ChatGoogleGenerativeAI) -> Any:
+
+    """Review Persona: Research Validator - Source credibility."""    return create_agent(
+
+    agents_config = get_agents_config()
+
+    spec = agents_config['review_personas']['research_validator']        model=model,                return messages[-1].content if messages else ""        logger.error(f"Error executing agent: {str(e)}")
+
+    
+
+    return create_agent(        tools=[],
+
+        model=model,
+
+        tools=get_review_tools(),        system_prompt=_build_system_prompt(spec)        return str(response)        return f"Error: {str(e)}"
+
+        system_prompt=_build_system_prompt(spec)
+
+    )    )
+
+
+
+    except Exception as e:
+
+# VIRTUAL READER PERSONAS (5)
+
+
+
+def create_curious_beginner_agent(model: ChatGoogleGenerativeAI) -> Any:
+
+    """Virtual Reader: Curious Beginner - Clarity and accessibility."""def create_editing_agent(model: ChatGoogleGenerativeAI) -> Any:        logger.error(f"Error executing agent: {str(e)}")
+
+    agents_config = get_agents_config()
+
+    spec = agents_config['virtual_readers']['curious_beginner']    """Stage 7: Editing Agent - Format and validate content."""
+
+    
+
+    return create_agent(    agents_config = get_agents_config()        return f"Error: {str(e)}"def execute_review_personas(personas_agents: Dict[str, Any], content: str) -> Dict[str, str]:
+
+        model=model,
+
+        tools=get_review_tools(),    spec = agents_config['main_pipeline_agents']['editing_agent']
+
+        system_prompt=_build_system_prompt(spec)
+
+    )        """
+
+
 
     return create_agent(
 
-        model=model,Consider:
+def create_technical_professional_agent(model: ChatGoogleGenerativeAI) -> Any:
+
+    """Virtual Reader: Technical Professional - Depth and relevance."""        model=model,    Execute all review personas on content and collect feedback.
+
+    agents_config = get_agents_config()
+
+    spec = agents_config['virtual_readers']['technical_professional']        tools=[],
+
+    
+
+    return create_agent(        system_prompt=_build_system_prompt(spec)def execute_review_personas(personas_agents: Dict[str, Any], content: str) -> Dict[str, str]:    
+
+        model=model,
+
+        tools=get_review_tools(),    )
+
+        system_prompt=_build_system_prompt(spec)
+
+    )    """    Args:
+
+
+
+
+
+def create_didactic_educator_agent(model: ChatGoogleGenerativeAI) -> Any:
+
+    """Virtual Reader: Didactic Educator - Pedagogical structure."""def create_finalization_agent(model: ChatGoogleGenerativeAI) -> Any:    Execute all review personas on content and collect feedback.        personas_agents: Dictionary of persona agents
+
+    agents_config = get_agents_config()
+
+    spec = agents_config['virtual_readers']['didactic_educator']    """Stage 8: Finalization Agent - Generate cover and metadata."""
+
+    
+
+    return create_agent(    agents_config = get_agents_config()            content: Content to review
+
+        model=model,
+
+        tools=get_review_tools(),    spec = agents_config['main_pipeline_agents']['finalization_agent']
+
+        system_prompt=_build_system_prompt(spec)
+
+    )        Args:    
+
+
+
+    return create_agent(
+
+def create_domain_specialist_agent(model: ChatGoogleGenerativeAI) -> Any:
+
+    """Virtual Reader: Domain Specialist - Cross-disciplinary coherence."""        model=model,        personas_agents: Dictionary of {persona_name: agent}    Returns:
+
+    agents_config = get_agents_config()
+
+    spec = agents_config['virtual_readers']['domain_specialist']        tools=[],
+
+    
+
+    return create_agent(        system_prompt=_build_system_prompt(spec)        content: Content to review        dict: Feedback from each persona
+
+        model=model,
+
+        tools=get_review_tools(),    )
+
+        system_prompt=_build_system_prompt(spec)
+
+    )        """
+
+
+
+
+
+def create_reflective_reader_agent(model: ChatGoogleGenerativeAI) -> Any:
+
+    """Virtual Reader: Reflective Reader - Empathy and impact."""def create_publication_agent(model: ChatGoogleGenerativeAI) -> Any:    Returns:    feedback = {}
+
+    agents_config = get_agents_config()
+
+    spec = agents_config['virtual_readers']['reflective_reader']    """Stage 9: Publication Agent - Export to multiple formats for KDP."""
+
+    
+
+    return create_agent(    agents_config = get_agents_config()        dict: Feedback from each persona    for persona_name, agent in personas_agents.items():
+
+        model=model,
+
+        tools=get_review_tools(),    spec = agents_config['main_pipeline_agents']['publication_agent']
+
+        system_prompt=_build_system_prompt(spec)
+
+    )        """        query = f"Please review the following content:\n\n{content[:2000]}"
+
+
+    return create_agent(
+
+        model=model,    feedback = {}        feedback[persona_name] = execute_agent(agent, query)
+
+        tools=[],
+
+        system_prompt=_build_system_prompt(spec)    for persona_name, agent in personas_agents.items():        logger.info(f"Review from {persona_name} completed")
+
+    )
+
+        query = f"Please review the following content and provide feedback:\n\n{content[:2000]}"    return feedback
+
+
+
+# REVIEW PERSONAS (10)        feedback[persona_name] = execute_agent(agent, query)
+
+
+
+def create_technical_reviewer_agent(model: ChatGoogleGenerativeAI) -> Any:        logger.info(f"Review from {persona_name} completed")
+
+    """Review Persona: Technical Reviewer - Code quality and framework accuracy."""
+
+    agents_config = get_agents_config()    return feedback# ============================================================================
+
+    spec = agents_config['review_personas']['technical_reviewer']
+
+    # MAIN PIPELINE AGENTS (9 agents)
+
+    return create_agent(
+
+        model=model,# ============================================================================
+
+        tools=[],
+
+        system_prompt=_build_system_prompt(spec)# ============================================================================
+
+    )
+
+# MAIN PIPELINE AGENTS (9 agents)
+
+
+
+def create_editorial_reviewer_agent(model: ChatGoogleGenerativeAI) -> Any:# ============================================================================def create_ideation_agent(model: ChatGoogleGenerativeAI):
+
+    """Review Persona: Editorial Reviewer - Clarity, tone, and audience alignment."""
+
+    agents_config = get_agents_config()    """
+
+    spec = agents_config['review_personas']['editorial_reviewer']
+
+    def create_ideation_agent(model: ChatGoogleGenerativeAI) -> Any:    Stage 1: Ideation Agent
+
+    return create_agent(
+
+        model=model,    """    Defines central idea, problem, target audience, and transformation promise.
+
+        tools=[],
+
+        system_prompt=_build_system_prompt(spec)    Stage 1: Ideation Agent    
+
+    )
+
+    Defines central idea, problem, target audience, transformation promise.    From agents.yaml: ideation_agent spec
+
+
+
+def create_content_stylist_agent(model: ChatGoogleGenerativeAI) -> Any:    Loads spec from agents.yaml > main_pipeline_agents > ideation_agent    """
+
+    """Review Persona: Content Stylist - Formatting and visual consistency."""
+
+    agents_config = get_agents_config()    """    agents_config = get_agents_config()
+
+    spec = agents_config['review_personas']['content_stylist']
+
+        agents_config = get_agents_config()    spec = agents_config['main_pipeline_agents']['ideation_agent']
+
+    return create_agent(
+
+        model=model,    spec = agents_config['main_pipeline_agents']['ideation_agent']    
+
+        tools=[],
+
+        system_prompt=_build_system_prompt(spec)        return create_agent(
+
+    )
+
+    return create_agent(        model=model,
+
+
+
+def create_governance_agent(model: ChatGoogleGenerativeAI) -> Any:        model=model,        tools=get_ideation_tools(),
+
+    """Review Persona: Governance QA - Compliance and standards validation."""
+
+    agents_config = get_agents_config()        tools=get_ideation_tools(),        system_prompt=_build_system_prompt(spec)
+
+    spec = agents_config['review_personas']['governance_qa']
+
+            system_prompt=_build_system_prompt(spec)    )
+
+    return create_agent(
+
+        model=model,    )
+
+        tools=[],
+
+        system_prompt=_build_system_prompt(spec)
+
+    )
+
+def create_title_agent(model: ChatGoogleGenerativeAI):
+
+
+
+def create_ethics_validator_agent(model: ChatGoogleGenerativeAI) -> Any:def create_title_agent(model: ChatGoogleGenerativeAI) -> Any:    """
+
+    """Review Persona: Ethics Validator - Bias and ethics compliance."""
+
+    agents_config = get_agents_config()    """    Stage 2: Title/Subtitle Agent
+
+    spec = agents_config['review_personas']['ethics_validator']
+
+        Stage 2: Title Generation Agent    Analyzes Amazon trends and generates optimized titles for market success.
+
+    return create_agent(
+
+        model=model,    Generates 3 Amazon-optimized title options with market analysis.    """
+
+        tools=[],
+
+        system_prompt=_build_system_prompt(spec)    Loads spec from agents.yaml > main_pipeline_agents > title_agent    return create_agent(
+
+    )
+
+    """        model=model,
+
+
+
+def create_author_stories_reviewer_agent(model: ChatGoogleGenerativeAI) -> Any:    agents_config = get_agents_config()        tools=get_title_tools(),
+
+    """Review Persona: Author Stories - Narrative and pedagogy balance."""
+
+    agents_config = get_agents_config()    spec = agents_config['main_pipeline_agents']['title_agent']        system_prompt="""You are the Title/Subtitle Agent.
+
+    spec = agents_config['review_personas']['author_stories_reviewer']
+
+        Your responsibility is to generate titles that sell on Amazon KDP.
+
+    return create_agent(
+
+        model=model,    return create_agent(
+
+        tools=[],
+
+        system_prompt=_build_system_prompt(spec)        model=model,Consider:
+
+    )
 
         tools=get_title_tools(),1. High-volume search keywords
 
-        system_prompt=_build_system_prompt(spec)2. Patterns from top 10 bestsellers in the category
-
-    )3. Clarity and immediate impact
-
-4. Include target audience in title/subtitle
 
 
+def create_author_positioning_reviewer_agent(model: ChatGoogleGenerativeAI) -> Any:        system_prompt=_build_system_prompt(spec)2. Patterns from top 10 bestsellers in the category
 
-def create_structure_agent(model: ChatGoogleGenerativeAI) -> Any:Generate 3 title options with subtitles for validation."""
+    """Review Persona: Author Positioning - Authority and market positioning."""
+
+    agents_config = get_agents_config()    )3. Clarity and immediate impact
+
+    spec = agents_config['review_personas']['author_positioning_reviewer']
+
+    4. Include target audience in title/subtitle
+
+    return create_agent(
+
+        model=model,
+
+        tools=[],
+
+        system_prompt=_build_system_prompt(spec)def create_structure_agent(model: ChatGoogleGenerativeAI) -> Any:Generate 3 title options with subtitles for validation."""
+
+    )
 
     """    )
 
-    Stage 3: Structure Agent
 
-    Creates hierarchical outline and table of contents.
 
-    Loads spec from agents.yaml > main_pipeline_agents > structure_agentdef create_structure_agent(model: ChatGoogleGenerativeAI):
+def create_author_vision_reviewer_agent(model: ChatGoogleGenerativeAI) -> Any:    Stage 3: Structure Agent
 
-    """    """
+    """Review Persona: Author Vision - Vision alignment and authenticity."""
 
-    agents_config = get_agents_config()    Stage 3: Structure Agent
+    agents_config = get_agents_config()    Creates hierarchical outline and table of contents.
+
+    spec = agents_config['review_personas']['author_vision_reviewer']
+
+        Loads spec from agents.yaml > main_pipeline_agents > structure_agentdef create_structure_agent(model: ChatGoogleGenerativeAI):
+
+    return create_agent(
+
+        model=model,    """    """
+
+        tools=[],
+
+        system_prompt=_build_system_prompt(spec)    agents_config = get_agents_config()    Stage 3: Structure Agent
+
+    )
 
     spec = agents_config['main_pipeline_agents']['structure_agent']    Creates hierarchical outline and didactic structure scaled to word count target.
 
-        """
 
-    return create_agent(    return create_agent(
 
-        model=model,        model=model,
+def create_code_examples_reviewer_agent(model: ChatGoogleGenerativeAI) -> Any:        """
 
-        tools=get_structure_tools(),        tools=get_structure_tools(),
+    """Review Persona: Code Examples - Code quality and exercise validation."""
 
-        system_prompt=_build_system_prompt(spec)        system_prompt="""You are the Structure and Outline Agent.
+    agents_config = get_agents_config()    return create_agent(    return create_agent(
+
+    spec = agents_config['review_personas']['code_examples_reviewer']
+
+            model=model,        model=model,
+
+    return create_agent(
+
+        model=model,        tools=get_structure_tools(),        tools=get_structure_tools(),
+
+        tools=[],
+
+        system_prompt=_build_system_prompt(spec)        system_prompt=_build_system_prompt(spec)        system_prompt="""You are the Structure and Outline Agent.
+
+    )
 
     )Your responsibility is to create the logical architecture of the ebook.
 
 
 
-Consider:
+def create_research_validator_agent(model: ChatGoogleGenerativeAI) -> Any:
 
-def create_deep_research_agent(model: ChatGoogleGenerativeAI) -> Any:1. Word count target for scaling depth
+    """Review Persona: Research Validator - Source credibility and citations."""
 
-    """2. Didactic sequence (easy → complex)
+    agents_config = get_agents_config()Consider:
 
-    Stage 4A: Deep Research Agent3. Balanced chapters in size
+    spec = agents_config['review_personas']['research_validator']
 
-    Queries Context7 MCP, vectorizes research, stores in Supabase RAG.4. Well-defined introduction, body, and conclusion
+    def create_deep_research_agent(model: ChatGoogleGenerativeAI) -> Any:1. Word count target for scaling depth
 
-    Loads spec from agents.yaml > main_pipeline_agents > deep_research_agent
+    return create_agent(
 
-    Uses research_model (Gemini 2.5 Pro, temp 0.3)Generate a hierarchical outline in Markdown with estimated words per chapter."""
+        model=model,    """2. Didactic sequence (easy → complex)
 
-    """    )
+        tools=[],
 
-    agents_config = get_agents_config()
-
-    spec = agents_config['main_pipeline_agents']['deep_research_agent']
-
-    def create_chapter_agent(model: ChatGoogleGenerativeAI):
-
-    return create_agent(    """
-
-        model=model,    Stage 4: Chapter Writing Agent
-
-        tools=get_deep_research_tools(),    Writes high-quality, didactic content with RAG research and word count respect.
-
-        system_prompt=_build_system_prompt(spec)    """
-
-    )    return create_agent(
-
-        model=model,
-
-        tools=get_chapter_writing_tools(),
-
-def create_chapter_agent(model: ChatGoogleGenerativeAI) -> Any:        system_prompt="""You are the Chapter Writing Agent.
-
-    """Your responsibility is to write high-quality, didactic, contextualized content.
-
-    Stage 4B: Chapter Writing Agent
-
-    Writes didactic content with RAG research integration.Consider:
-
-    Loads spec from agents.yaml > main_pipeline_agents > chapter_writing_agent1. Consult RAG for accurate information and avoid hallucinations
-
-    """2. Maintain the author's "voice" (tone, humor, empathy)
-
-    agents_config = get_agents_config()3. Respect the word limit allocated for each chapter
-
-    spec = agents_config['main_pipeline_agents']['chapter_writing_agent']4. Include practical examples and didactic content
-
-    
-
-    return create_agent(Write clearly, fluently, and professionally."""
-
-        model=model,    )
-
-        tools=get_chapter_writing_tools(),
-
-        system_prompt=_build_system_prompt(spec)
-
-    )def create_review_agent(model: ChatGoogleGenerativeAI):
-
-    """
-
-    Stage 5: Review Agent
-
-def create_review_coordinator_agent(model: ChatGoogleGenerativeAI) -> Any:    Executes iterative critical reading with specialized review tools.
-
-    """    Performs 3 complete review loops for comprehensive quality assurance.
-
-    Stage 5: Review Coordinator Agent    """
-
-    Orchestrates 10 specialized review personas for comprehensive feedback.    return create_agent(
-
-    Loads spec from agents.yaml > main_pipeline_agents > review_coordinator_agent        model=model,
-
-    """        tools=get_review_tools(),
-
-    agents_config = get_agents_config()        system_prompt="""You are the Review and Critical Reading Agent.
-
-    spec = agents_config['main_pipeline_agents']['review_coordinator_agent']Your responsibility is to execute 3 iterative review loops:
-
-    
-
-    return create_agent(Loop 1: Tone, empathy, and clarity
-
-        model=model,Loop 2: Grammar, coherence, and flow
-
-        tools=get_review_tools(),Loop 3: Code examples, factuality, and consistency
-
-        system_prompt=_build_system_prompt(spec)
-
-    )In each loop, use specialized review tools.
-
-Identify improvements and suggest corrections while maintaining author voice."""
+        system_prompt=_build_system_prompt(spec)    Stage 4A: Deep Research Agent3. Balanced chapters in size
 
     )
 
-def create_critical_reading_coordinator_agent(model: ChatGoogleGenerativeAI) -> Any:
+    Queries Context7 MCP, vectorizes research, stores in Supabase RAG.4. Well-defined introduction, body, and conclusion
 
-    """
 
-    Stage 6: Critical Reading Coordinator Agentdef create_technical_reviewer_agent(model: ChatGoogleGenerativeAI):
+
+# VIRTUAL READERS (5)    Loads spec from agents.yaml > main_pipeline_agents > deep_research_agent
+
+
+
+def create_curious_beginner_agent(model: ChatGoogleGenerativeAI) -> Any:    Uses research_model (Gemini 2.5 Pro, temp 0.3)Generate a hierarchical outline in Markdown with estimated words per chapter."""
+
+    """Virtual Reader: Curious Beginner - Assess clarity and accessibility."""
+
+    agents_config = get_agents_config()    """    )
+
+    spec = agents_config['virtual_readers']['curious_beginner']
+
+        agents_config = get_agents_config()
+
+    return create_agent(
+
+        model=model,    spec = agents_config['main_pipeline_agents']['deep_research_agent']
+
+        tools=[],
+
+        system_prompt=_build_system_prompt(spec)    def create_chapter_agent(model: ChatGoogleGenerativeAI):
+
+    )
+
+    return create_agent(    """
+
+
+
+def create_technical_professional_agent(model: ChatGoogleGenerativeAI) -> Any:        model=model,    Stage 4: Chapter Writing Agent
+
+    """Virtual Reader: Technical Professional - Verify depth and relevance."""
+
+    agents_config = get_agents_config()        tools=get_deep_research_tools(),    Writes high-quality, didactic content with RAG research and word count respect.
+
+    spec = agents_config['virtual_readers']['technical_professional']
+
+            system_prompt=_build_system_prompt(spec)    """
+
+    return create_agent(
+
+        model=model,    )    return create_agent(
+
+        tools=[],
+
+        system_prompt=_build_system_prompt(spec)        model=model,
+
+    )
+
+        tools=get_chapter_writing_tools(),
+
+
+
+def create_didactic_educator_agent(model: ChatGoogleGenerativeAI) -> Any:def create_chapter_agent(model: ChatGoogleGenerativeAI) -> Any:        system_prompt="""You are the Chapter Writing Agent.
+
+    """Virtual Reader: Didactic Educator - Check pedagogical structure."""
+
+    agents_config = get_agents_config()    """Your responsibility is to write high-quality, didactic, contextualized content.
+
+    spec = agents_config['virtual_readers']['didactic_educator']
+
+        Stage 4B: Chapter Writing Agent
+
+    return create_agent(
+
+        model=model,    Writes didactic content with RAG research integration.Consider:
+
+        tools=[],
+
+        system_prompt=_build_system_prompt(spec)    Loads spec from agents.yaml > main_pipeline_agents > chapter_writing_agent1. Consult RAG for accurate information and avoid hallucinations
+
+    )
+
+    """2. Maintain the author's "voice" (tone, humor, empathy)
+
+
+
+def create_domain_specialist_agent(model: ChatGoogleGenerativeAI) -> Any:    agents_config = get_agents_config()3. Respect the word limit allocated for each chapter
+
+    """Virtual Reader: Domain Specialist - Validate cross-disciplinary coherence."""
+
+    agents_config = get_agents_config()    spec = agents_config['main_pipeline_agents']['chapter_writing_agent']4. Include practical examples and didactic content
+
+    spec = agents_config['virtual_readers']['domain_specialist']
+
+        
+
+    return create_agent(
+
+        model=model,    return create_agent(Write clearly, fluently, and professionally."""
+
+        tools=[],
+
+        system_prompt=_build_system_prompt(spec)        model=model,    )
+
+    )
+
+        tools=get_chapter_writing_tools(),
+
+
+
+def create_reflective_reader_agent(model: ChatGoogleGenerativeAI) -> Any:        system_prompt=_build_system_prompt(spec)
+
+    """Virtual Reader: Reflective Reader - Assess empathy and impact."""
+
+    agents_config = get_agents_config()    )def create_review_agent(model: ChatGoogleGenerativeAI):
+
+    spec = agents_config['virtual_readers']['reflective_reader']
+
+        """
+
+    return create_agent(
+
+        model=model,    Stage 5: Review Agent
+
+        tools=[],
+
+        system_prompt=_build_system_prompt(spec)def create_review_coordinator_agent(model: ChatGoogleGenerativeAI) -> Any:    Executes iterative critical reading with specialized review tools.
+
+    )
+
+    """    Performs 3 complete review loops for comprehensive quality assurance.
+
+
+
+__all__ = [    Stage 5: Review Coordinator Agent    """
+
+    # Main pipeline agents
+
+    "create_ideation_agent",    Orchestrates 10 specialized review personas for comprehensive feedback.    return create_agent(
+
+    "create_title_agent",
+
+    "create_structure_agent",    Loads spec from agents.yaml > main_pipeline_agents > review_coordinator_agent        model=model,
+
+    "create_deep_research_agent",
+
+    "create_chapter_agent",    """        tools=get_review_tools(),
+
+    "create_review_coordinator_agent",
+
+    "create_critical_reading_coordinator_agent",    agents_config = get_agents_config()        system_prompt="""You are the Review and Critical Reading Agent.
+
+    "create_editing_agent",
+
+    "create_finalization_agent",    spec = agents_config['main_pipeline_agents']['review_coordinator_agent']Your responsibility is to execute 3 iterative review loops:
+
+    "create_publication_agent",
+
+    # Review personas    
+
+    "create_technical_reviewer_agent",
+
+    "create_editorial_reviewer_agent",    return create_agent(Loop 1: Tone, empathy, and clarity
+
+    "create_content_stylist_agent",
+
+    "create_governance_agent",        model=model,Loop 2: Grammar, coherence, and flow
+
+    "create_ethics_validator_agent",
+
+    "create_author_stories_reviewer_agent",        tools=get_review_tools(),Loop 3: Code examples, factuality, and consistency
+
+    "create_author_positioning_reviewer_agent",
+
+    "create_author_vision_reviewer_agent",        system_prompt=_build_system_prompt(spec)
+
+    "create_code_examples_reviewer_agent",
+
+    "create_research_validator_agent",    )In each loop, use specialized review tools.
+
+    # Virtual readers
+
+    "create_curious_beginner_agent",Identify improvements and suggest corrections while maintaining author voice."""
+
+    "create_technical_professional_agent",
+
+    "create_didactic_educator_agent",    )
+
+    "create_domain_specialist_agent",
+
+    "create_reflective_reader_agent",def create_critical_reading_coordinator_agent(model: ChatGoogleGenerativeAI) -> Any:
+
+    # Helpers
+
+    "execute_agent",    """
+
+    "execute_review_personas",
+
+]    Stage 6: Critical Reading Coordinator Agentdef create_technical_reviewer_agent(model: ChatGoogleGenerativeAI):
+
 
     Orchestrates 5 virtual readers for iterative feedback (1 cycle MVP).    """
 
