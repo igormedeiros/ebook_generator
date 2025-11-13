@@ -181,66 +181,73 @@ Output Format:
 
 ## Pipeline Stages
 
-The Ebook Generator follows this 9-stage pipeline:
+The Ebook Generator follows this 9-stage pipeline with independent agent specifications:
+
+**Key Architecture Pattern**: Agents are defined independently in `specs/agents.yaml` (not per-stage). Pipeline stages in `specs/pipeline.yaml` reference agents via the `agent` field.
 
 ### Stage 1: Ideation
-- Agent: `create_ideation_agent()`
-- Tools: Ideation-specific tools
+- Agent ID: `ideation_agent` (specs/agents.yaml > main_pipeline_agents)
 - Config: `specs/pipeline.yaml` > `stage_1_ideation`
+- Agent Model: Gemini 2.5 Flash (0.7 temperature)
 - Output: Central idea, problem definition, target audience
 
 ### Stage 2: Title Generation
-- Agent: `create_title_agent()`
-- Tools: Title generation tools
+- Agent ID: `title_agent`
 - Config: `specs/pipeline.yaml` > `stage_2_title`
+- Agent Model: Gemini 2.5 Flash
 - Output: 3 Amazon-optimized title options
 
 ### Stage 3: Structure
-- Agent: `create_structure_agent()`
-- Tools: Structure and outline tools
+- Agent ID: `structure_agent`
 - Config: `specs/pipeline.yaml` > `stage_3_structure`
+- Agent Model: Gemini 2.5 Flash
 - Output: Hierarchical table of contents in Markdown
 
 ### Stage 4A: Deep Research
-- Agent: `create_deep_research_agent()`
-- Tools: Context7 MCP, vectorization, RAG storage
+- Agent ID: `deep_research_agent`
 - Config: `specs/pipeline.yaml` > `stage_4a_deep_research`
+- Agent Model: Gemini 2.5 Pro (0.3 temperature)
+- Tools: Context7 MCP, vectorization, RAG storage
 - Output: Vectorized research in rag_external
 
 ### Stage 4B: Chapter Writing
-- Agent: `create_chapter_agent()`
-- Tools: Writing tools + RAG integration
+- Agent ID: `chapter_writing_agent`
 - Config: `specs/pipeline.yaml` > `stage_4b_chapter_writing`
+- Agent Model: Gemini 2.5 Flash
+- Tools: Writing + RAG integration
 - Output: Didactic content chapters
 
-### Stage 5: Review (with 10 Specialized Personas)
-- Function: `execute_review_personas(model, content) -> dict`
-- Config: `specs/personas.yaml` + `specs/pipeline.yaml` > `stage_5_review`
-- Personas: Technical, Editorial, Stylist, Governance, Ethics, Author Stories, Author Positioning, Author Vision, Code Reviewer, Research Validator
+### Stage 5: Specialized Review (10 Personas)
+- Agent ID: `review_coordinator_agent`
+- Config: `specs/pipeline.yaml` > `stage_5_review`
+- Agent Model: Gemini 2.5 Pro
+- Review Personas: Technical, Editorial, Stylist, Governance, Ethics, Author Stories, Author Positioning, Author Vision, Code Reviewer, Research Validator
 - Output: Structured feedback by persona (10 perspectives)
 
 ### Stage 6: Critical Reading & Iteration (3 Cycles)
-- Function: `execute_critical_reading_iterations(model, content)`
-- Config: `specs/personas.yaml` + `specs/pipeline.yaml` > `stage_6_critical_reading`
+- Agent ID: `critical_reading_coordinator_agent`
+- Config: `specs/pipeline.yaml` > `stage_6_critical_reading`
+- Agent Model: Gemini 2.5 Pro
 - Virtual Readers: Curious Beginner, Technical Professional, Educator, Specialist, Reflective
 - Output: Refined content with reader validation
 
 ### Stage 7: Editing
-- Agent: `create_editing_agent()`
-- Tools: Editing and formatting tools
+- Agent ID: `editing_agent`
 - Config: `specs/pipeline.yaml` > `stage_7_editing`
+- Agent Model: Gemini 2.5 Flash
 - Output: Validated and formatted document
 
 ### Stage 8: Finalization
-- Agent: `create_finalization_agent()`
-- Tools: Cover and metadata tools
+- Agent ID: `finalization_agent`
 - Config: `specs/pipeline.yaml` > `stage_8_finalization`
+- Agent Model: Gemini 2.5 Flash
 - Output: Cover concept and validated metadata
 
 ### Stage 9: Publication
-- Agent: `create_publication_agent()`
-- Tools: Export tools (DOCX, EPUB, PDF, JSON)
+- Agent ID: `publication_agent`
 - Config: `specs/pipeline.yaml` > `stage_9_publication`
+- Agent Model: Gemini 2.5 Flash
+- Tools: Export tools (DOCX, EPUB, PDF, JSON)
 - Output: Publication-ready package
 
 ## File Organization
@@ -255,11 +262,10 @@ src/
 └── __init__.py           # Package initialization
 
 specs/
-├── pipeline.yaml         # 9-stage pipeline parameters
+├── pipeline.yaml         # 9-stage parameters with agent ID mappings
+├── agents.yaml           # 25 independent agent specifications (main + review + readers)
 ├── config.yaml           # Portuguese strings and messages (centralized)
 ├── models.yaml           # Gemini model configuration
-├── agents.yaml           # 25 agent specifications (main + review + readers)
-├── personas.yaml         # 10 review personas + 5 virtual readers (deprecated, use agents.yaml)
 ├── tools.yaml            # Tool specifications (30+)
 ├── book.yaml             # Generated from input validation (gitignore)
 └── README.md             # Specs documentation

@@ -1,9 +1,11 @@
 # Agent specifications for Ebook Generator 1.0
-# All 25 agents defined with their roles, responsibilities, and configurations
+# All 25 agents defined independently of any pipeline stage
+# Pipeline configuration (pipeline.yaml) maps each stage to the appropriate agent via agent_id
 
-# Main Pipeline Agents (9 agents for 9 stages)
+# Main Pipeline Agents (9 agents)
+# Note: These agents are referenced by pipeline stages via agent_id
 main_pipeline_agents:
-  stage_1_ideation:
+  ideation_agent:
     name: "Ideation Agent"
     model: "write_model"  # Gemini 2.5 Flash
     role: "Ideation Specialist"
@@ -26,7 +28,7 @@ main_pipeline_agents:
     timeout_seconds: 120
     max_tokens: 4000
 
-  stage_2_title:
+  title_agent:
     name: "Title Generation Agent"
     model: "write_model"  # Gemini 2.5 Flash
     role: "Title Strategist"
@@ -49,7 +51,7 @@ main_pipeline_agents:
     timeout_seconds: 90
     max_tokens: 2000
 
-  stage_3_structure:
+  structure_agent:
     name: "Structure Agent"
     model: "write_model"  # Gemini 2.5 Flash
     role: "Content Architect"
@@ -72,7 +74,7 @@ main_pipeline_agents:
     timeout_seconds: 120
     max_tokens: 8000
 
-  stage_4a_deep_research:
+  deep_research_agent:
     name: "Deep Research Agent"
     model: "research_model"  # Gemini 2.5 Pro
     role: "Research Specialist"
@@ -97,7 +99,7 @@ main_pipeline_agents:
     timeout_seconds: 600
     max_tokens: 12000
 
-  stage_4b_chapter_writing:
+  chapter_writing_agent:
     name: "Chapter Writing Agent"
     model: "write_model"  # Gemini 2.5 Flash
     role: "Content Writer"
@@ -108,7 +110,7 @@ main_pipeline_agents:
       - "Author Voice"
       - "Reader Engagement"
     process:
-      - "Retrieve RAG context from stage_4a"
+      - "Retrieve RAG context from deep research phase"
       - "Load author stories and positioning from knowledge base"
       - "Write chapter following outline"
       - "Integrate research naturally"
@@ -124,7 +126,7 @@ main_pipeline_agents:
     timeout_seconds: 300
     max_tokens: 10000
 
-  stage_5_review:
+  review_coordinator_agent:
     name: "Review Coordinator Agent"
     model: "research_model"  # Gemini 2.5 Pro
     role: "Review Orchestrator"
@@ -150,7 +152,7 @@ main_pipeline_agents:
     timeout_seconds: 600
     max_tokens: 8000
 
-  stage_6_critical_reading:
+  critical_reading_coordinator_agent:
     name: "Critical Reading Coordinator"
     model: "research_model"  # Gemini 2.5 Pro
     role: "Iteration Specialist"
@@ -175,7 +177,7 @@ main_pipeline_agents:
     timeout_seconds: 900
     max_tokens: 12000
 
-  stage_7_editing:
+  editing_agent:
     name: "Editing Agent"
     model: "write_model"  # Gemini 2.5 Flash
     role: "Editor"
@@ -198,7 +200,7 @@ main_pipeline_agents:
     timeout_seconds: 180
     max_tokens: 8000
 
-  stage_8_finalization:
+  finalization_agent:
     name: "Finalization Agent"
     model: "write_model"  # Gemini 2.5 Flash
     role: "Production Specialist"
@@ -221,7 +223,7 @@ main_pipeline_agents:
     timeout_seconds: 120
     max_tokens: 4000
 
-  stage_9_publication:
+  publication_agent:
     name: "Publication Agent"
     model: "write_model"  # Gemini 2.5 Flash
     role: "Export Specialist"

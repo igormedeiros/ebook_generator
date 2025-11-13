@@ -114,13 +114,21 @@ Build an automated ebook generation system integrating Python, LangChain 1.0, Go
 12. **Export** - Desired formats and KDP preparation
 
 All parameters are managed in:
-- `specs/pipeline.yaml` - 9-stage parameters (defaults and constraints)
-- `specs/config.yaml` - Portuguese strings and messages
+- `specs/pipeline.yaml` - 9-stage parameters with agent ID mappings (defaults and constraints)
+- `specs/agents.yaml` - 25 independent agent specifications (9 pipeline + 10 review + 5 readers)
+- `specs/config.yaml` - Portuguese strings and messages (centralized)
 - `specs/models.yaml` - AI model configuration
-- `specs/personas.yaml` - Persona and reader specifications
 - `specs/tools.yaml` - Tool definitions
 - `specs/book.yaml` - Generated from user input validation (auto-generated, not committed)
 - `input/book_input.yaml` - User-provided book specification (user fills this)
+
+### Key Architecture Pattern
+
+**Agents are NOT defined per stage** - Instead:
+1. All agents are defined in `specs/agents.yaml` independently (25 agent specs)
+2. Pipeline stages are defined in `specs/pipeline.yaml` with stage-specific parameters
+3. Each stage references an agent via the `agent` field in `pipeline.yaml`
+4. This separation allows agents to be reused or reconfigured without modifying pipeline definitions
 
 ---
 
@@ -705,40 +713,59 @@ Success Criteria:
 
 ### 3.2 Multi-Agent System
 
+**Architecture Pattern**: Agents are defined independently in `specs/agents.yaml`, not per-stage. Pipeline stages defined in `specs/pipeline.yaml` reference agents via `agent` field.
+
 #### 9 Main Pipeline Agents
-1. `create_ideation_agent()` - Stage 1
-2. `create_title_agent()` - Stage 2
-3. `create_structure_agent()` - Stage 3
-4. `create_deep_research_agent()` - Stage 4A (NEW)
-5. `create_chapter_agent()` - Stage 4B
-6. `create_review_agent()` - Stage 5 orchestration
-7. `create_editing_agent()` - Stage 7
-8. `create_finalization_agent()` - Stage 8
-9. `create_publication_agent()` - Stage 9
+Defined in `specs/agents.yaml` > `main_pipeline_agents`:
+1. `ideation_agent` - Stage 1: Ideation (Flash)
+2. `title_agent` - Stage 2: Title Generation (Flash)
+3. `structure_agent` - Stage 3: Structure & Outline (Flash)
+4. `deep_research_agent` - Stage 4A: Deep Research (Pro)
+5. `chapter_writing_agent` - Stage 4B: Chapter Writing (Flash)
+6. `review_coordinator_agent` - Stage 5: Review Coordination (Pro)
+7. `critical_reading_coordinator_agent` - Stage 6: Critical Reading (Pro)
+8. `editing_agent` - Stage 7: Editing (Flash)
+9. `finalization_agent` - Stage 8: Finalization (Flash)
+10. `publication_agent` - Stage 9: Publication (Flash)
 
-#### Specialized Review Agents (10)
-1. `create_technical_reviewer_agent()`
-2. `create_editorial_reviewer_agent()`
-3. `create_content_stylist_agent()`
-4. `create_governance_agent()`
-5. `create_ethics_validator_agent()`
-6. `create_author_stories_reviewer_agent()`
-7. `create_author_positioning_reviewer_agent()`
-8. `create_author_vision_opinions_reviewer_agent()`
-9. `create_examples_exercises_reviewer_agent()` (NEW)
-10. `create_research_references_validator_agent()` (NEW)
+#### Specialized Review Personas (10)
+Defined in `specs/agents.yaml` > `review_personas`:
+1. `technical_reviewer` - Code quality & framework validation
+2. `editorial_reviewer` - Clarity, tone, flow
+3. `content_stylist` - Formatting & visual hierarchy
+4. `governance_qa` - Compliance & metadata
+5. `ethics_validator` - Bias & disclaimer validation
+6. `author_stories_reviewer` - Narrative balance validation (RAG: author_stories)
+7. `author_positioning_reviewer` - Authority & positioning (RAG: author_positioning)
+8. `author_vision_reviewer` - Vision & opinion alignment (RAG: author_vision_opinions)
+9. `code_examples_reviewer` - Code execution & GitHub collection
+10. `research_validator` - Source credibility & fact-checking
 
-#### Virtual Reader Agents (5)
-1. `create_curious_beginner_reader()` - New to topic perspective
-2. `create_technical_professional_reader()` - Expert validation perspective
-3. `create_didactic_educator_reader()` - Teaching methodology perspective
-4. `create_domain_specialist_reader()` - Cross-disciplinary perspective
-5. `create_reflective_reader()` - General audience perspective
+#### Virtual Reader Personas (5)
+Defined in `specs/agents.yaml` > `virtual_readers`:
+1. `curious_beginner` - New learner perspective (Flash)
+2. `technical_professional` - Expert validation (Pro)
+3. `didactic_educator` - Methodology perspective (Flash)
+4. `domain_specialist` - Cross-disciplinary view (Pro)
+5. `reflective_reader` - General audience (Flash)
 
-#### Orchestration Agents (1)
-1. `create_coordinator_superagent()` - Full pipeline orchestration and execution management
+**Total Agents**: 25 (9 main + 10 review + 5 virtual readers)
 
-**Total Agents**: 25 (9 main + 10 review + 5 virtual readers + 1 coordinator)
+**Configuration**:
+```yaml
+# specs/pipeline.yaml
+stage_1_ideation:
+  name: "Ideação"
+  agent: "ideation_agent"  # References agents.yaml
+  parameters: {...}
+
+# specs/agents.yaml
+main_pipeline_agents:
+  ideation_agent:
+    name: "Ideation Agent"
+    model: "write_model"
+    responsibility: "..."
+```
 
 ### 3.3 Tool System (30+ Specialized Tools)
 

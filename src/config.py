@@ -154,6 +154,26 @@ def get_agents_config() -> Dict[str, Any]:
     return load_yaml_config("agents.yaml")
 
 
+def get_agent_for_stage(stage_name: str) -> str:
+    """
+    Retorna o agent ID para um dado estágio do pipeline.
+    
+    Args:
+        stage_name: Nome do estágio (e.g., 'stage_1_ideation')
+        
+    Returns:
+        str: Agent ID (e.g., 'ideation_agent')
+        
+    Raises:
+        ValueError: Se o estágio não existir
+    """
+    pipeline_config = get_pipeline_config()
+    if stage_name not in pipeline_config.get("stages", {}):
+        raise ValueError(f"Unknown stage: {stage_name}")
+    
+    return pipeline_config["stages"][stage_name].get("agent")
+
+
 # ============================================================================
 # Models (Dual-Model Strategy)
 # ============================================================================
@@ -380,6 +400,7 @@ __all__ = [
     "get_personas_config",
     "get_tools_config",
     "get_agents_config",
+    "get_agent_for_stage",
     "setup_logging",
     "get_logger",
     "print_panel",

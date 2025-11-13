@@ -36,10 +36,10 @@ All pipeline parameters are externalized to YAML configuration files:
 
 ```
 specs/
-├── pipeline.yaml         # 9-stage parameter definitions (defaults + constraints)
+├── pipeline.yaml         # 9-stage definitions with agent mappings
+├── agents.yaml           # 25 independent agent specifications (NEW)
 ├── config.yaml           # Portuguese strings, messages, labels
 ├── models.yaml           # Gemini model configuration
-├── personas.yaml         # 10 review personas + 5 virtual readers
 ├── tools.yaml            # 30+ tool specifications
 ├── book.yaml             # Generated from input validation (gitignore)
 └── README.md             # Configuration documentation
@@ -47,6 +47,34 @@ specs/
 input/
 └── book_input.yaml       # User-provided book specification
 ```
+
+**Key Principle**: **Agents are defined independently of stages**
+- `agents.yaml` contains 25 agent specifications without stage associations
+- `pipeline.yaml` defines 9 stages with parameters and agent references
+- Pipeline maps stages to agents via the `agent` field in each stage definition
+
+Example:
+```yaml
+# specs/agents.yaml
+main_pipeline_agents:
+  ideation_agent:
+    name: "Ideation Agent"
+    model: "write_model"
+    role: "Ideation Specialist"
+    ...
+
+# specs/pipeline.yaml
+stages:
+  stage_1_ideation:
+    name: "Ideação"
+    agent: "ideation_agent"  # Reference from agents.yaml
+    parameters: {...}
+```
+
+**Benefits**:
+- Agents are reusable across stages if needed
+- Agents can be added, modified, or reconfigured without changing stages
+- Clean separation of concerns (agent definition vs. pipeline orchestration)
 
 **Key Files**:
 

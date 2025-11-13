@@ -5,6 +5,7 @@ stages:
   stage_1_ideation:
     name: "Ideação"
     description: "Gera a essência do livro e promessa de transformação"
+    agent: "ideation_agent"  # Reference to agents.yaml > main_pipeline_agents > ideation_agent
     parameters:
       topic:
         type: string
@@ -43,6 +44,7 @@ stages:
   stage_2_title:
     name: "Geração de Títulos"
     description: "Gera 3 opções de título otimizados para Amazon"
+    agent: "title_agent"  # Reference to agents.yaml > main_pipeline_agents > title_agent
     parameters:
       title_count:
         type: integer
@@ -74,6 +76,7 @@ stages:
   stage_3_structure:
     name: "Estrutura e Outline"
     description: "Cria índice hierárquico com distribuição de palavras"
+    agent: "structure_agent"  # Reference to agents.yaml > main_pipeline_agents > structure_agent
     parameters:
       outline_depth:
         type: integer
@@ -105,6 +108,7 @@ stages:
   stage_4a_deep_research:
     name: "Pesquisa Profunda"
     description: "Pesquisa externa com Context7 MCP Server"
+    agent: "deep_research_agent"  # Reference to agents.yaml > main_pipeline_agents > deep_research_agent
     parameters:
       query_types:
         type: array
@@ -146,6 +150,7 @@ stages:
   stage_4b_chapter_writing:
     name: "Escrita de Capítulos"
     description: "Escreve capítulos com conteúdo baseado em pesquisa"
+    agent: "chapter_writing_agent"  # Reference to agents.yaml > main_pipeline_agents > chapter_writing_agent
     parameters:
       chapter_template:
         type: string
@@ -187,6 +192,7 @@ stages:
   stage_5_review:
     name: "Revisão Especializada"
     description: "Revisão por 10 personas especializados"
+    agent: "review_coordinator_agent"  # Reference to agents.yaml > main_pipeline_agents > review_coordinator_agent
     parameters:
       active_personas:
         type: array
@@ -214,6 +220,7 @@ stages:
   stage_6_critical_reading:
     name: "Leitura Crítica e Iteração"
     description: "3 ciclos de feedback de leitores virtuais e revisão"
+    agent: "critical_reading_coordinator_agent"  # Reference to agents.yaml > main_pipeline_agents > critical_reading_coordinator_agent
     parameters:
       iteration_cycles:
         type: integer
@@ -250,6 +257,7 @@ stages:
   stage_7_editing:
     name: "Edição e Formatação"
     description: "Formatação final e validação Markdown"
+    agent: "editing_agent"  # Reference to agents.yaml > main_pipeline_agents > editing_agent
     parameters:
       markdown_standard:
         type: string
@@ -276,6 +284,7 @@ stages:
   stage_8_finalization:
     name: "Finalização e Capa"
     description: "Geração dinâmica de capa e metadados"
+    agent: "finalization_agent"  # Reference to agents.yaml > main_pipeline_agents > finalization_agent
     parameters:
       cover_style:
         type: string
@@ -306,6 +315,7 @@ stages:
   stage_9_publication:
     name: "Publicação e Exportação"
     description: "Exportação para múltiplos formatos"
+    agent: "publication_agent"  # Reference to agents.yaml > main_pipeline_agents > publication_agent
     parameters:
       export_formats:
         type: array
