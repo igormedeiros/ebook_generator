@@ -23,13 +23,24 @@ Build an automated ebook generation system integrating Python, LangChain 1.0, Go
 
 ## 2. Main Functionalities
 
-### Flexible Input
-- User provides topic, problem, target audience or provides a `.md` file with mandatory specifications:
-  - Desired word count
-  - Language style (empathetic, technical, informal, etc.)
-  - Author name
-  - Target audience, tone and complexity
-- The parser adapts the generation pipeline according to the specifications in the `.md` file
+### Flexible Input with Validation
+- User provides book specification in `input/book_input.yaml` with mandatory fields:
+  - `topic` (string): Main topic
+  - `target_audience` (string): Target audience description
+  - `word_count_target` (integer): Desired word count
+  - Optional: `transformation_promise`, `reading_level`, stage overrides
+  
+- Input Validator checks `input/book_input.yaml`:
+  - Validates mandatory fields presence
+  - Validates field types and ranges against `specs/pipeline.yaml`
+  - Prompts user interactively if any required field is missing/invalid
+  - Generates `specs/book.yaml` from validated input
+  
+- Generated `specs/book.yaml`:
+  - Merges `input/book_input.yaml` with defaults from `specs/pipeline.yaml`
+  - Applies user stage-specific overrides
+  - Ready for 9-stage pipeline execution
+  - Not committed to git (generated at runtime)
 
 ### Central Idea & Transformation
 - Agent synthesizes the essence of the book and the promise to the reader based on provided data
@@ -102,13 +113,14 @@ Build an automated ebook generation system integrating Python, LangChain 1.0, Go
 11. **Visual Generation** - Summary and cover
 12. **Export** - Desired formats and KDP preparation
 
-All parameters are managed in `specs/` folder:
-- `pipeline.yaml` - 9-stage parameters
-- `config.yaml` - Portuguese strings and messages
-- `models.yaml` - AI model configuration
-- `personas.yaml` - Persona and reader specifications
-- `tools.yaml` - Tool definitions
-- `examples/` - Pre-configured templates
+All parameters are managed in:
+- `specs/pipeline.yaml` - 9-stage parameters (defaults and constraints)
+- `specs/config.yaml` - Portuguese strings and messages
+- `specs/models.yaml` - AI model configuration
+- `specs/personas.yaml` - Persona and reader specifications
+- `specs/tools.yaml` - Tool definitions
+- `specs/book.yaml` - Generated from user input validation (auto-generated, not committed)
+- `input/book_input.yaml` - User-provided book specification (user fills this)
 
 ---
 

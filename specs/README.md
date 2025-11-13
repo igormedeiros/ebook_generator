@@ -6,17 +6,16 @@ Esta pasta contém todas as configurações e especificações parametrizáveis 
 
 ```
 specs/
-├── pipeline.yaml          # Parâmetros dos 9 estágios do pipeline
+├── pipeline.yaml          # Parâmetros dos 9 estágios (padrões + constraints)
 ├── config.yaml            # Strings em português e mensagens centralizadas
-├── models.yaml            # Configuração de modelos IA (Gemini)
+├── models.yaml            # Configuração de modelos Gemini
 ├── personas.yaml          # 10 personas de revisão + 5 leitores virtuais
 ├── tools.yaml             # Especificação de todas as tools (30+)
-├── README.md              # Este arquivo
-└── examples/              # Exemplos de configuração por tipo de ebook
-    ├── academic_book.yaml
-    ├── tech_guide.yaml
-    ├── health_wellness.yaml
-    └── business_book.yaml
+├── book.yaml              # GERADO: Merged config from input validation
+└── README.md              # Este arquivo
+
+input/
+└── book_input.yaml        # USUÁRIO: Preenche com especificações do livro
 ```
 
 ## 🎯 Arquivos de Configuração
@@ -69,75 +68,44 @@ Inventário completo de ferramentas:
 - **tools**: 30+ tools com parâmetros detalhados
 - **defaults**: Configurações padrão (rag_top_k, timeout, retries)
 
-## 📊 Exemplos de Configuração
+## 🎯 Fluxo de Entrada
 
-Pasta `examples/` contém 4 templates pré-configurados:
+### 1. Usuário preenche `input/book_input.yaml`
 
-### `academic_book.yaml`
-- Foco: Pesquisa acadêmica e rigor
-- Personas: Technical, Editorial, Research Validator
-- Leitores: Technical Professional, Domain Specialist, Educator
-- Formato: PDF + EPUB
-- Word Count: 45.000
+```yaml
+topic: "Python para Análise de Dados"
+target_audience: "Cientistas de dados iniciantes"
+word_count_target: 25000
+transformation_promise: "Dominar análise de dados com Python"
+reading_level: "intermediary"
 
-### `tech_guide.yaml`
-- Foco: Tutorial prático com código
-- Personas: Technical, Code Reviewer
-- Leitores: Technical Professional, Curious Beginner, Educator
-- Formato: EPUB + PDF + DOCX
-- Word Count: 25.000
-
-### `health_wellness.yaml`
-- Foco: Bem-estar e saúde
-- Personas: Editorial, Ethics, Author Stories
-- Leitores: Curious Beginner, Reflective Reader
-- Includes: Medical disclaimers, HIPAA compliance
-- Word Count: 20.000
-
-### `business_book.yaml`
-- Foco: Empreendedorismo e negócios
-- Personas: Technical, Editorial, Author Positioning
-- Leitores: Technical Professional, Reflective Reader
-- Includes: Case studies, frameworks, templates
-- Word Count: 30.000
-
-## 🚀 Como Usar
-
-### Executar com configuração padrão:
-```python
-from src.main import run_ebook_pipeline
-from specs import load_pipeline_config
-
-config = load_pipeline_config("pipeline.yaml")
-result = run_ebook_pipeline(
-    topic="Python para Análise",
-    audience="Cientistas de dados",
-    word_count_target=config['stage_1']['word_count_target']
-)
+# stage_overrides: (opcional)
+#   stage_5_review:
+#     threshold_score: 0.85
 ```
 
-### Executar com exemplo pré-configurado:
-```python
-from src.main import run_ebook_pipeline
-from specs import load_example_config
+### 2. Input Validator processa
 
-config = load_example_config("tech_guide")
+```
+1. Carrega input/book_input.yaml
+2. Valida campos obrigatórios
+3. Valida tipos e ranges
+4. Prompta usuário se algum campo falta/inválido
+5. Gera specs/book.yaml (merged config)
+6. Retorna validado para pipeline
+```
+
+### 3. Pipeline executa com `specs/book.yaml`
+
+```python
+from src.input_validator import validate_book_input
+from src.main import run_ebook_pipeline
+
+config = validate_book_input()  # Carrega e valida
 result = run_ebook_pipeline(**config['input'])
 ```
 
-### Personalizar configuração:
-```python
-from specs import load_pipeline_config, merge_overrides
-
-base_config = load_pipeline_config("pipeline.yaml")
-custom = {
-    'stage_4b_chapter_writing': {
-        'author_voice_weight': 0.8,
-        'example_count': 5
-    }
-}
-final_config = merge_overrides(base_config, custom)
-```
+## 📋 Campos de Entrada (input/book_input.yaml)
 
 ## 📝 Logging e Output
 
@@ -177,30 +145,30 @@ stage_4b_chapter_writing:
     description: "Descrição"
 ```
 
-### Adicionar novo persona:
+### Customizar input do livro:
 ```yaml
-review_personas:
-  meu_revisor:
-    name: "Meu Revisor"
-    expertise_areas: [...]
-```
-
-### Adicionar novo exemplo:
-```bash
-cp specs/examples/tech_guide.yaml specs/examples/meu_tipo_livro.yaml
-# Editar conforme necessário
+# input/book_input.yaml
+topic: "Seu tópico"
+target_audience: "Seu público"
+word_count_target: 30000
+stage_overrides:
+  stage_5_review:
+    threshold_score: 0.9  # Mais rigoroso
 ```
 
 ## ✅ Validação
 
-Todos os arquivos YAML devem passar por validação:
+Input Validator valida `input/book_input.yaml` automaticamente:
 
 ```python
-from specs import validate_config
+from src.input_validator import validate_book_input
 
-errors = validate_config("pipeline.yaml")
-if errors:
-    print(f"Erros de validação: {errors}")
+try:
+    config = validate_book_input()
+    print(f"✓ Configuração válida")
+except ValueError as e:
+    print(f"✗ Erro: {e}")
+    # Usuário será prompts interativamente para corrigir
 ```
 
 ## 📖 Documentação Relacionada

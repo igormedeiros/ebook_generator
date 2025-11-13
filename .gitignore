@@ -18,6 +18,10 @@ wheels/
 .env
 .venv/
 venv/
+
+# Generated configuration (not committed)
+specs/book.yaml
+output/
 env/
 
 # Editors

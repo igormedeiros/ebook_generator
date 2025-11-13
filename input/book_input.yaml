@@ -1,0 +1,31 @@
+# Especificação de Livro - Ebook Generator 1.0
+# Preencha os campos obrigatórios e opcionais conforme necessário
+
+# Campos Obrigatórios
+topic: ""  # Tópico principal do livro (ex: "Python para Análise de Dados")
+target_audience: ""  # Público-alvo (ex: "Cientistas de dados iniciantes")
+word_count_target: 15000  # Contagem de palavras desejada (5000-100000)
+
+# Campos Opcionais
+transformation_promise: ""  # Promessa de transformação para o leitor (opcional)
+reading_level: "intermediary"  # beginner | intermediary | advanced | expert
+
+# Overrides de Estágios (opcional)
+# Descomente e customize conforme necessário
+# stage_overrides:
+#   stage_1_ideation:
+#     reading_level: "beginner"
+#   
+#   stage_2_title:
+#     title_count: 3
+#     seo_keywords: ["keyword1", "keyword2"]
+#   
+#   stage_4b_chapter_writing:
+#     author_voice_weight: 0.7
+#     example_count: 3
+#   
+#   stage_5_review:
+#     threshold_score: 0.85
+#   
+#   stage_9_publication:
+#     export_formats: ["epub", "pdf"]

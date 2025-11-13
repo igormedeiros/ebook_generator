@@ -30,34 +30,44 @@
 
 ## 2. Architectural Components
 
-### 2.1 Configuration System (`specs/`)
+### 2.1 Configuration System (`specs/` and `input/`)
 
 All pipeline parameters are externalized to YAML configuration files:
 
 ```
 specs/
-├── pipeline.yaml         # 9-stage parameter definitions
+├── pipeline.yaml         # 9-stage parameter definitions (defaults + constraints)
 ├── config.yaml           # Portuguese strings, messages, labels
 ├── models.yaml           # Gemini model configuration
 ├── personas.yaml         # 10 review personas + 5 virtual readers
 ├── tools.yaml            # 30+ tool specifications
-├── README.md             # Configuration documentation
-└── examples/             # Pre-configured templates
-    ├── academic_book.yaml
-    ├── tech_guide.yaml
-    ├── health_wellness.yaml
-    └── business_book.yaml
+├── book.yaml             # Generated from input validation (gitignore)
+└── README.md             # Configuration documentation
+
+input/
+└── book_input.yaml       # User-provided book specification
 ```
 
 **Key Files**:
 
-1. **pipeline.yaml** - Parameters for each of 9 stages:
+1. **input/book_input.yaml** - User-provided specification:
+   - Mandatory: `topic`, `target_audience`, `word_count_target`
+   - Optional: `transformation_promise`, `reading_level`, `stage_overrides`
+   - Validated at pipeline start
+   - User prompted interactively for missing/invalid fields
+   
+2. **specs/book.yaml** - Generated from input validation:
+   - Merges `input/book_input.yaml` with `specs/pipeline.yaml` defaults
+   - Applies stage-specific overrides
+   - Ready for pipeline execution
+   - Not committed (regenerated on each run)
+
+3. **pipeline.yaml** - Parameters for each of 9 stages:
    - Word count targets, outline depth, persona activation, iteration cycles, export formats
    - Each stage has configurable parameters with types, defaults, ranges
    
-2. **config.yaml** - Centralized Portuguese content:
+4. **config.yaml** - Centralized Portuguese content:
    - 100+ messages (pipeline events, agent operations, validation results)
-   - Labels for UI and reporting
    - System prompts for agents
    - Table titles and icons
    
@@ -76,7 +86,53 @@ specs/
    - 30+ tool specifications with parameters
    - Default values and constraints
 
-### 2.2 Configuration Loader (`src/config_loader.py`)
+### 2.2 Input Validator (`src/input_validator.py`)
+
+Validates and converts user input to pipeline configuration:
+
+```python
+from src.input_validator import (
+    validate_book_input,          # Validate input/book_input.yaml
+    prompt_missing_fields,        # Prompt user for missing fields
+    generate_book_config          # Generate specs/book.yaml
+)
+```
+
+**Validation Flow**:
+
+1. Load `input/book_input.yaml` (user-provided)
+2. Check mandatory fields: `topic`, `target_audience`, `word_count_target`
+3. Validate field types against `specs/pipeline.yaml` definitions
+4. Validate ranges (e.g., word_count_target min/max)
+5. If missing/invalid fields:
+   - Display error message with field requirements
+   - Prompt user interactively to provide missing values
+   - Validate input again
+6. Merge validated input with defaults from `specs/pipeline.yaml`
+7. Generate `specs/book.yaml` (merged configuration)
+8. Return validated config ready for pipeline execution
+
+**Example Interactive Prompt**:
+
+```
+❌ Validação falhou - campos obrigatórios faltando:
+
+📋 Campos Obrigatórios:
+  • topic (string): Tópico principal do ebook
+    Exemplo: "Python para Análise de Dados"
+    
+  • target_audience (string): Público-alvo
+    Exemplo: "Cientistas de dados iniciantes"
+    
+  • word_count_target (integer): Contagem de palavras
+    Range: 5000 - 100000
+    Padrão: 15000
+
+🔧 Preencha os campos abaixo:
+topic: _
+```
+
+### 2.3 Configuration Loader (`src/config_loader.py`)
 
 Provides unified interface for loading and accessing all configurations:
 
@@ -125,7 +181,7 @@ print_panel(
 )
 ```
 
-### 2.3 MD Input Parser
+### 2.4 MD Input Parser
 ```
 Function: Interpret and validate .md file with specifications
 Input: .md file with mandatory fields
@@ -139,7 +195,7 @@ Output: Validated global configurations
 Responsibility: Propagate configurations throughout the pipeline
 ```
 
-### 2.2 Main Agents (9 + 10 Reviewers + 5 Virtual Readers + 1 Coordinator)
+### 2.5 Main Agents (9 + 10 Reviewers + 5 Virtual Readers + 1 Coordinator)
 
 #### 1. Agent: Central Idea
 - **Responsibility**: Generate book essence according to input/parameters
