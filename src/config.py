@@ -144,6 +144,16 @@ def get_tools_config() -> Dict[str, Any]:
     return load_yaml_config("tools.yaml")
 
 
+def get_agents_config() -> Dict[str, Any]:
+    """
+    Carrega configuração de agents (agents.yaml).
+    
+    Returns:
+        dict: Especificação de todos os 25 agents (9 pipeline + 10 review + 5 readers)
+    """
+    return load_yaml_config("agents.yaml")
+
+
 # ============================================================================
 # Models (Dual-Model Strategy)
 # ============================================================================
@@ -369,6 +379,7 @@ __all__ = [
     "get_models_config",
     "get_personas_config",
     "get_tools_config",
+    "get_agents_config",
     "setup_logging",
     "get_logger",
     "print_panel",

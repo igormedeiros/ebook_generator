@@ -258,7 +258,8 @@ specs/
 ├── pipeline.yaml         # 9-stage pipeline parameters
 ├── config.yaml           # Portuguese strings and messages (centralized)
 ├── models.yaml           # Gemini model configuration
-├── personas.yaml         # 10 review personas + 5 virtual readers
+├── agents.yaml           # 25 agent specifications (main + review + readers)
+├── personas.yaml         # 10 review personas + 5 virtual readers (deprecated, use agents.yaml)
 ├── tools.yaml            # Tool specifications (30+)
 ├── book.yaml             # Generated from input validation (gitignore)
 └── README.md             # Specs documentation
