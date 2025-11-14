@@ -852,6 +852,48 @@ All code must pass:
 - Only update individual task checkboxes when work is done
 - Keep the file clean and focused on actionable tasks
 
+### CRITICAL: No Communication of Work Done
+
+**⚠️ CRITICAL RULE - ALWAYS ENFORCE ⚠️**
+
+**NEVER** generate summaries, status reports, or narratives about work completed unless **explicitly requested by the user**.
+
+This includes:
+- ❌ "Here's what I did..." summaries
+- ❌ "In this session we accomplished..." reports
+- ❌ "I've implemented X, Y, Z..." lists
+- ❌ "Progress update: 5/10 tasks completed"
+- ❌ "The work is complete. Here's what was done:"
+- ❌ Explanations of changes made (unless user asks specifically)
+
+**The ONLY exception**: User explicitly requests:
+- "summarize what you did"
+- "give me a status report"
+- "what was completed?"
+- "explain the changes"
+- Similar explicit requests
+
+**Correct behavior**:
+1. Complete work silently
+2. Update TODO.md checkboxes
+3. Make git commits with descriptive messages
+4. Return to user with short confirmation (if needed) or just finish
+
+**Example of WRONG output** (never do this):
+```
+✅ COMPLETED WORK SUMMARY
+- Implemented LLM fallback mechanism
+- Added Groq integration
+- Updated 3 files
+- Made 1 git commit
+[... long explanation ...]
+```
+
+**Example of RIGHT output** (do this):
+```
+Done. Fallback mechanism implemented and committed.
+```
+
 ### Commit Workflow
 - After completing tasks from TODO.md: **Always commit changes** with descriptive message
 - Format: `git commit -m "feat/fix: description of completed tasks"`
@@ -887,3 +929,48 @@ The complete Product Requirements Document (v1.0) defines:
 - ≥95% factuality (via RAG + validation)
 - 100% Amazon KDP compatibility
 - ≥90% user satisfaction
+
+---
+
+## CRITICAL Communication Rules
+
+**⚠️ ENFORCE THESE STRICTLY ⚠️**
+
+### Never Generate Unsolicited Summaries
+
+**NEVER** create work summaries, progress reports, or status updates unless explicitly requested.
+
+**What triggers explicit requests**:
+- "summarize"
+- "status"
+- "progress"
+- "what did you do"
+- "explain the changes"
+- "give me a report"
+- Similar questions from user
+
+**All other times**: Work silently, commit with descriptive messages, wait for instructions.
+
+### Silent Completion Pattern
+
+When completing work WITHOUT explicit request for summary:
+1. ✅ Do the work
+2. ✅ Update TODO.md
+3. ✅ Make descriptive git commit
+4. ✅ Brief confirmation only: "Done." or "Committed."
+5. ❌ NO explanations, no lists, no narratives
+
+### When to Communicate
+
+**Communicate when**:
+- User asks explicitly
+- Critical errors occur
+- User's attention needed
+- Blocking issues found
+
+**Don't communicate when**:
+- Completing routine tasks
+- Implementing features
+- Running tests
+- Making commits
+- Updating configurations
