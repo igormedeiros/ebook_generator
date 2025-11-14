@@ -56,36 +56,68 @@ Output Format:
 
 
 def execute_agent(agent: Any, query: str) -> str:
-    """Execute an agent with a query and return the response as a string."""
+    """Execute an agent with a query and return the response as a string with visual feedback."""
+    from rich.spinner import Spinner
+    from rich.console import Console
+    
+    console = Console()
     try:
-        response = agent.invoke({
-            "messages": [{"role": "user", "content": query}]
-        })
+        logger.debug(f"🤖 Pensamento do agente...")
+        with console.status("[bold cyan]⏳ Processando com IA...[/bold cyan]", spinner="dots"):
+            response = agent.invoke({
+                "messages": [{"role": "user", "content": query}]
+            })
         
         if isinstance(response, dict):
             if "output" in response:
-                return response["output"]
+                result = response["output"]
+                logger.debug(f"✅ Agente concluiu processamento")
+                return result
             elif "messages" in response:
                 messages = response.get("messages", [])
-                return messages[-1].content if messages else ""
+                if messages:
+                    result = messages[-1].content
+                    logger.debug(f"✅ Agente concluiu processamento")
+                    return result
         
+        logger.debug(f"✅ Agente concluiu processamento")
         return str(response)
     except Exception as e:
-        logger.error(f"Agent execution error: {str(e)}")
+        logger.error(f"❌ Erro na execução do agente: {str(e)}")
         return f"Error executing agent: {str(e)}"
 
 
-def execute_review_personas(personas_agents: dict, content: str) -> dict:
-    """Execute all review personas on content and collect feedback."""
+def execute_review_personas(coordinator_agent: Any, query: str, personas_agents: dict) -> dict:
+    """Execute all review personas on content and collect feedback with progress bar."""
+    from rich.progress import Progress, SpinnerColumn, TextColumn
+    
+    logger.info(f"🔍 Executando revisão com {len(personas_agents)} personas especializadas...")
     feedback = {}
-    for persona_name, agent in personas_agents.items():
-        try:
-            query = f"Review the following content:\n\n{content[:1000]}\n\nProvide detailed feedback."
-            response = execute_agent(agent, query)
-            feedback[persona_name] = response
-        except Exception as e:
-            logger.error(f"Error executing {persona_name}: {str(e)}")
-            feedback[persona_name] = f"Error: {str(e)}"
+    
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        transient=True,
+    ) as progress:
+        task = progress.add_task(f"[cyan]Revisão em andamento...", total=len(personas_agents))
+        
+        for persona_name, agent in personas_agents.items():
+            try:
+                progress.update(task, description=f"[cyan]📋 {persona_name}...[/cyan]")
+                logger.info(f"📝 Persona: {persona_name}")
+                
+                query_persona = f"[{persona_name}] Review and provide specialized feedback:\n\n{query[:1500]}"
+                response = execute_agent(agent, query_persona)
+                feedback[persona_name] = response
+                logger.debug(f"✅ {persona_name} - Revisão concluída")
+                
+            except Exception as e:
+                logger.error(f"❌ Erro com {persona_name}: {str(e)}")
+                feedback[persona_name] = f"Error: {str(e)}"
+            
+            progress.advance(task)
+    
+    logger.info(f"✅ Revisão com {len(personas_agents)} personas concluída")
     return feedback
 
 

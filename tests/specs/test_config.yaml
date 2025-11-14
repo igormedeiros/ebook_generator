@@ -1,0 +1,6 @@
+messages:
+  pipeline_start: "Iniciando o pipeline..."
+  pipeline_complete: "Pipeline concluído."
+labels:
+  topic: "Tópico"
+  audience: "Público-alvo"

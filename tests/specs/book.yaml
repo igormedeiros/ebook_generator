@@ -1,0 +1,7 @@
+metadata:
+  topic: ""
+  target_audience: "Beginners"
+  author_name: "Test Author"
+parameters:
+  word_count_target: 10000
+  transformation_promise: ""

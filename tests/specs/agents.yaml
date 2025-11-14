@@ -1,0 +1,25 @@
+main_pipeline_agents:
+  ideation_agent:
+    name: "Ideation Agent"
+    role: "Creative Strategist"
+    responsibility: "To generate the core concept for the ebook."
+    focus_areas:
+      - "Central Idea"
+      - "Problem Definition"
+    process:
+      - "Analyze Input"
+      - "Synthesize Core Concept"
+    output_format: "JSON with 'idea', 'problem', 'promise'"
+  # Add other agent specs as needed for tests
+review_personas:
+  technical_reviewer:
+    name: "Technical Reviewer"
+    role: "Python Engineer"
+    responsibility: "To validate technical accuracy."
+    focus_areas:
+      - "Code Examples"
+      - "Framework Versions"
+    process:
+      - "Review Code"
+      - "Check Accuracy"
+    output_format: "JSON with 'score', 'feedback'"

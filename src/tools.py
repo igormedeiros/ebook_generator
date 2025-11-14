@@ -28,12 +28,19 @@ def search_knowledge_base(query: str) -> str:
     Search the knowledge base for relevant information.
     Uses Supabase pgvector for semantic similarity search.
     """
+    from .config import get_logger
+    logger = get_logger(__name__)
+    logger.info(f"🔎 [RAG] Buscando na knowledge base: '{query[:80]}...'")
+    
     if not supabase_client:
+        logger.warning(f"⚠️  [RAG] Supabase não configurado - usando resultados padrão")
         return f"Search results for '{query}': Supabase not configured - using default results"
 
     try:
+        logger.debug(f"📊 Gerando embedding para query...")
         embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
         query_embedding = embeddings.embed_query(query)
+        logger.debug(f"✅ Embedding gerado - buscando similaridade no pgvector...")
         
         results = supabase_client.rpc(
             "match_documents",
@@ -45,7 +52,9 @@ def search_knowledge_base(query: str) -> str:
         ).execute()
 
         if results.data:
+            logger.info(f"✅ [RAG] Encontrados {len(results.data)} documentos relevantes")
             return f"Search results for '{query}': Found {len(results.data)} relevant documents in knowledge base"
+        logger.info(f"ℹ️  [RAG] Nenhuma informação relevante encontrada")
         return f"Search results for '{query}': No relevant information found"
     except Exception as e:
         return f"Search results for '{query}': Error accessing knowledge base - {str(e)}"
@@ -64,12 +73,19 @@ def retrieve_rag_context(query: str, max_results: int = 3) -> str:
     Returns:
         str: Formatted RAG context or error message
     """
+    from .config import get_logger
+    logger = get_logger(__name__)
+    logger.info(f"📚 [RAG] Recuperando contexto (máx {max_results} resultados): '{query[:80]}...'")
+    
     if not supabase_client:
+        logger.warning(f"⚠️  [RAG] Supabase não configurado - usando contexto padrão")
         return f"RAG context for '{query}': Supabase not configured - using default context"
     
     try:
+        logger.debug(f"🔍 Gerando embedding para contexto...")
         embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
         query_embedding = embeddings.embed_query(query)
+        logger.debug(f"✅ Embedding gerado - buscando {max_results} documentos...")
         
         results = supabase_client.rpc(
             "match_documents",
@@ -81,6 +97,7 @@ def retrieve_rag_context(query: str, max_results: int = 3) -> str:
         ).execute()
         
         if results.data:
+            logger.info(f"✅ [RAG] Encontrados {len(results.data)} documentos para contexto")
             context = f"RAG context for '{query}':\n"
             for i, result in enumerate(results.data, 1):
                 context += f"{i}. Source: {result.get('source', 'Unknown')}\n"

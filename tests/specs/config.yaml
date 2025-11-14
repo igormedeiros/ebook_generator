@@ -1,0 +1,12 @@
+input_prompts:
+  prompt_metadata_topic: "Enter the topic:"
+  prompt_parameters_transformation_promise: "Enter the transformation promise:"
+validation_messages:
+  file_not_found: "File not found."
+  invalid_yaml: "Invalid YAML."
+  missing_field: "Missing field."
+  field_cannot_be_empty: "Field cannot be empty."
+  word_count_integer_error: "Word count must be an integer."
+  word_count_range_error: "Word count must be between 5000 and 100000."
+  reading_level_error: "Invalid reading level."
+  string_not_empty_error: "Field cannot be empty."
