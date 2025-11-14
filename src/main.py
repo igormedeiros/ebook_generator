@@ -162,12 +162,22 @@ def run_ebook_pipeline(
             logger.info(f"📊 Nível de leitura: {reading_level}")
             logger.info("=" * 70)
             
-            show_stage_status(0, "Inicialização", "Carregando modelos Gemini...")
-            write_model = get_model()
-            logger.info(f"✅ Modelo de escrita: {type(write_model).__name__}")
+            show_stage_status(0, "Inicialização", "Carregando modelos com suporte a fallback...")
             
-            research_model = get_research_model()
-            logger.info(f"✅ Modelo de pesquisa: {type(research_model).__name__}")
+            try:
+                from .config import get_model_with_fallback, get_research_model_with_fallback
+                write_model = get_model_with_fallback()
+                logger.info(f"✅ Modelo de escrita (com fallback): {type(write_model).__name__}")
+                
+                research_model = get_research_model_with_fallback()
+                logger.info(f"✅ Modelo de pesquisa (com fallback): {type(research_model).__name__}")
+            except Exception as e:
+                logger.warning(f"⚠️  Fallback não disponível, usando padrão: {str(e)}")
+                write_model = get_model()
+                logger.info(f"✅ Modelo de escrita (padrão): {type(write_model).__name__}")
+                
+                research_model = get_research_model()
+                logger.info(f"✅ Modelo de pesquisa (padrão): {type(research_model).__name__}")
 
             # Splash screen
             print_pipeline_start(topic, target_audience, word_count_target)
@@ -209,7 +219,7 @@ def run_ebook_pipeline(
             logger.info("🤖 Executando agente (Gemini 2.5 Flash)...")
             ideation_output = execute_agent(ideation_agent, ideation_prompt)
             logger.info(f"✅ Ideação concluída")
-            logger.info(f"📤 Saída: {ideation_output[:150]}...")
+            logger.info(f"\n📤 RESULTADO DA IDEAÇÃO:\n{'-' * 70}\n{ideation_output}\n{'-' * 70}\n")
             
             results["stage_1_ideation"] = {"output": ideation_output}
             print_stage_complete(1)
@@ -243,7 +253,7 @@ def run_ebook_pipeline(
             logger.info("🤖 Executando agente (Gemini 2.5 Flash)...")
             title_output = execute_agent(title_agent, title_prompt)
             logger.info(f"✅ Títulos gerados")
-            logger.info(f"📤 Saída: {title_output[:150]}...")
+            logger.info(f"\n📤 RESULTADO DOS TÍTULOS:\n{'-' * 70}\n{title_output}\n{'-' * 70}\n")
             
             results["stage_2_title"] = {"output": title_output}
             print_stage_complete(2)
@@ -276,7 +286,7 @@ def run_ebook_pipeline(
             logger.info("🤖 Executando agente (Gemini 2.5 Flash)...")
             structure_output = execute_agent(structure_agent, structure_prompt)
             logger.info(f"✅ Estrutura criada")
-            logger.info(f"📤 Saída: {structure_output[:150]}...")
+            logger.info(f"\n📤 RESULTADO DA ESTRUTURA:\n{'-' * 70}\n{structure_output}\n{'-' * 70}\n")
             
             results["stage_3_structure"] = {"output": structure_output}
             print_stage_complete(3)
@@ -307,7 +317,7 @@ def run_ebook_pipeline(
             logger.info("📚 [RAG] Será utilizado para Context7 MCP e Supabase pgvector")
             deep_research_output = execute_agent(deep_research_agent, deep_research_prompt)
             logger.info(f"✅ Pesquisa profunda concluída")
-            logger.info(f"📤 Saída: {deep_research_output[:150]}...")
+            logger.info(f"\n📤 RESULTADO DA PESQUISA PROFUNDA:\n{'-' * 70}\n{deep_research_output}\n{'-' * 70}\n")
             
             results["stage_4a_deep_research"] = {"output": deep_research_output}
             print_stage_complete(4)
@@ -338,7 +348,7 @@ def run_ebook_pipeline(
             logger.info("🤖 Executando agente (Gemini 2.5 Flash)...")
             chapter_output = execute_agent(chapter_agent, chapter_prompt)
             logger.info(f"✅ Capítulos escritos")
-            logger.info(f"📤 Saída: {chapter_output[:150]}...")
+            logger.info(f"\n📤 RESULTADO DOS CAPÍTULOS:\n{'-' * 70}\n{chapter_output}\n{'-' * 70}\n")
             
             results["stage_4b_chapter_writing"] = {"output": chapter_output}
             print_stage_complete(5)
@@ -373,6 +383,11 @@ def run_ebook_pipeline(
             review_output = execute_review_personas(review_coordinator, review_prompt, personas)
             logger.info(f"✅ Revisão concluída com 10 personas")
             logger.info(f"📤 Feedback recebido de: {len(review_output)} personas")
+            logger.info(f"\n📤 RESULTADO DA REVISÃO:\n{'-' * 70}")
+            for persona, feedback_text in review_output.items():
+                logger.info(f"\n👤 {persona}:")
+                logger.info(f"{feedback_text}")
+            logger.info(f"{'-' * 70}\n")
             
             results["stage_5_review"] = {"output": review_output}
             print_stage_complete(6)
@@ -408,6 +423,11 @@ def run_ebook_pipeline(
             critical_output = execute_review_personas(critical_reading, critical_prompt, virtual_readers)
             logger.info(f"✅ Leitura crítica concluída")
             logger.info(f"📤 Feedback de {len(critical_output)} leitores virtuais")
+            logger.info(f"\n📤 RESULTADO DA LEITURA CRÍTICA:\n{'-' * 70}")
+            for reader, feedback_text in critical_output.items():
+                logger.info(f"\n👁️  {reader}:")
+                logger.info(f"{feedback_text}")
+            logger.info(f"{'-' * 70}\n")
             
             results["stage_6_critical_reading"] = {"output": critical_output}
             print_stage_complete(7)
@@ -437,7 +457,7 @@ def run_ebook_pipeline(
             logger.info("🤖 Executando agente de edição (Gemini 2.5 Flash)...")
             editing_output = execute_agent(editing_agent, editing_prompt)
             logger.info(f"✅ Edição concluída")
-            logger.info(f"📤 Saída: {editing_output[:150]}...")
+            logger.info(f"\n📤 RESULTADO DA EDIÇÃO:\n{'-' * 70}\n{editing_output}\n{'-' * 70}\n")
             
             results["stage_7_editing"] = {"output": editing_output}
             print_stage_complete(8)
@@ -467,7 +487,7 @@ def run_ebook_pipeline(
             logger.info("🤖 Executando agente de finalização (Gemini 2.5 Flash)...")
             finalization_output = execute_agent(finalization_agent, finalization_prompt)
             logger.info(f"✅ Finalização concluída")
-            logger.info(f"📤 Saída: {finalization_output[:150]}...")
+            logger.info(f"\n📤 RESULTADO DA FINALIZAÇÃO:\n{'-' * 70}\n{finalization_output}\n{'-' * 70}\n")
             
             results["stage_8_finalization"] = {"output": finalization_output}
             print_stage_complete(9)
@@ -499,7 +519,7 @@ def run_ebook_pipeline(
             logger.info("🔗 Integração: Pandoc para conversão, KDP para publicação")
             publication_output = execute_agent(publication_agent, publication_prompt)
             logger.info(f"✅ Publicação concluída")
-            logger.info(f"📤 Saída: {publication_output[:150]}...")
+            logger.info(f"\n📤 RESULTADO DA PUBLICAÇÃO:\n{'-' * 70}\n{publication_output}\n{'-' * 70}\n")
             
             results["stage_9_publication"] = {"output": publication_output}
             print_stage_complete(9)

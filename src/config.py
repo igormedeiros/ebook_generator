@@ -184,13 +184,16 @@ def get_model() -> ChatGoogleGenerativeAI:
     Initialize and return the writing model (Gemini 2.5 Flash).
     Uses Gemini 2.5 Flash for fast, creative text generation and iterative refinement.
     
+    NOTE: Now with automatic fallback support. If this fails, system will try
+    Gemini Pro, then Groq as fallback.
+    
     Configuration:
     - Model: gemini-2.5-flash
-    - Temperature: 0.7 (balanced creativity and consistency)
+    - Temperature: 0.7 (balanced creativity/consistency)
     - top_p: 0.95
     - top_k: 40
     
-    Used for: Writing, revision, creativity-focused tasks
+    Used for: Writing, chapter generation, title generation, creative tasks
     
     Returns:
         ChatGoogleGenerativeAI: Configured Gemini 2.5 Flash model
@@ -213,11 +216,15 @@ def get_model() -> ChatGoogleGenerativeAI:
 
 def get_research_model() -> ChatGoogleGenerativeAI:
     """
-    Initialize and return the research model (Gemini 2.5 Pro).
-    Uses Gemini 2.5 Pro for deep analysis, RAG retrieval, and semantic search.
+    Initialize and return the research model (Gemini 2.5 Flash for free tier).
+    
+    NOTE: Currently using Gemini 2.5 Flash instead of Pro for demonstration.
+    This is because free tier limits Pro to 2 req/min vs Flash with 15 req/min.
+    
+    When using paid tier, change model to "gemini-2.5-pro" for better accuracy.
     
     Configuration:
-    - Model: gemini-2.5-pro
+    - Model: gemini-2.5-flash (changed from pro for free tier)
     - Temperature: 0.3 (focused on precision and factuality)
     - top_p: 0.95
     - top_k: 40
@@ -225,7 +232,7 @@ def get_research_model() -> ChatGoogleGenerativeAI:
     Used for: Research, RAG integration, fact-checking, semantic analysis
     
     Returns:
-        ChatGoogleGenerativeAI: Configured Gemini 2.5 Pro model
+        ChatGoogleGenerativeAI: Configured Gemini model
     
     Raises:
         ValueError: If GOOGLE_API_KEY environment variable not set
@@ -235,12 +242,50 @@ def get_research_model() -> ChatGoogleGenerativeAI:
         raise ValueError("GOOGLE_API_KEY environment variable not set")
     
     return ChatGoogleGenerativeAI(
-        model="gemini-2.5-pro",
+        model="gemini-2.5-flash",  # Flash for higher free tier quota (15 req/min vs 2)
         google_api_key=api_key,
         temperature=0.3,  # Focused on precision and factuality for RAG
         top_p=0.95,
         top_k=40,
     )
+
+
+def get_model_with_fallback():
+    """
+    Get writing model with automatic fallback to multiple providers.
+    
+    Sequence:
+    1. Gemini 2.5 Flash (primary)
+    2. Gemini 2.5 Pro (secondary)
+    3. Groq LLaMA 3 70B (fallback)
+    
+    Returns:
+        LLM model from the first available provider
+    
+    Raises:
+        RuntimeError: If all providers are unavailable
+    """
+    from .llm_fallback import get_write_model_with_fallback
+    return get_write_model_with_fallback()
+
+
+def get_research_model_with_fallback():
+    """
+    Get research model with automatic fallback to multiple providers.
+    
+    Sequence:
+    1. Gemini 2.5 Pro (primary - high accuracy)
+    2. Gemini 2.5 Flash (secondary)
+    3. Groq LLaMA 3 70B (fallback)
+    
+    Returns:
+        LLM model from the first available provider
+    
+    Raises:
+        RuntimeError: If all providers are unavailable
+    """
+    from .llm_fallback import get_research_model_with_fallback
+    return get_research_model_with_fallback()
 
 
 # ============================================================================

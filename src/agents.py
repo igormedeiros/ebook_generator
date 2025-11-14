@@ -56,13 +56,18 @@ Output Format:
 
 
 def execute_agent(agent: Any, query: str) -> str:
-    """Execute an agent with a query and return the response as a string with visual feedback."""
+    """
+    Execute an agent with a query and return the response with automatic fallback.
+    
+    If the agent fails due to quota or other errors, will attempt to use fallback
+    models (Gemini Flash -> Pro -> Groq) automatically.
+    """
     from rich.spinner import Spinner
     from rich.console import Console
     
     console = Console()
     try:
-        logger.debug(f"🤖 Pensamento do agente...")
+        logger.info(f"🤖 Pensamento do agente...")
         with console.status("[bold cyan]⏳ Processando com IA...[/bold cyan]", spinner="dots"):
             response = agent.invoke({
                 "messages": [{"role": "user", "content": query}]
@@ -71,19 +76,36 @@ def execute_agent(agent: Any, query: str) -> str:
         if isinstance(response, dict):
             if "output" in response:
                 result = response["output"]
-                logger.debug(f"✅ Agente concluiu processamento")
+                logger.info(f"✅ Agente concluiu processamento")
                 return result
             elif "messages" in response:
                 messages = response.get("messages", [])
                 if messages:
                     result = messages[-1].content
-                    logger.debug(f"✅ Agente concluiu processamento")
+                    logger.info(f"✅ Agente concluiu processamento")
                     return result
         
-        logger.debug(f"✅ Agente concluiu processamento")
+        logger.info(f"✅ Agente concluiu processamento")
         return str(response)
     except Exception as e:
-        logger.error(f"❌ Erro na execução do agente: {str(e)}")
+        error_msg = str(e)
+        logger.warning(f"⚠️  Erro na execução do agente: {error_msg[:100]}")
+        
+        # Check if it's a quota error
+        if "ResourceExhausted" in str(type(e)) or "429" in error_msg or "quota" in error_msg.lower():
+            logger.info("💬 Detectado erro de quota, tentando com modelos alternativos...")
+            
+            try:
+                # Try fallback mechanism
+                from .llm_fallback import get_llm_fallback
+                fallback = get_llm_fallback()
+                logger.info("🔄 Acionando mecanismo de fallback...")
+                
+                return fallback.execute_with_fallback(agent, query)
+            except Exception as fallback_error:
+                logger.error(f"❌ Fallback também falhou: {str(fallback_error)[:100]}")
+                return f"Error executing agent with fallback: {str(fallback_error)}"
+        
         return f"Error executing agent: {str(e)}"
 
 
