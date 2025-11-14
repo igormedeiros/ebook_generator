@@ -5,52 +5,100 @@ writing, review personas, and publication exports with colorful TUI.
 """
 
 import sys
+from pathlib import Path
 from typing import Any, Dict
 from rich.progress import Progress, BarColumn, TextColumn, SpinnerColumn
 
 from langchain_google_genai import ChatGoogleGenerativeAI
 
-from .agents import (
-    create_author_positioning_reviewer_agent,
-    create_author_stories_reviewer_agent,
-    create_author_vision_reviewer_agent,
-    create_chapter_agent,
-    create_code_examples_reviewer_agent,
-    create_content_stylist_agent,
-    create_critical_reading_coordinator_agent,
-    create_curious_beginner_agent,
-    create_deep_research_agent,
-    create_didactic_educator_agent,
-    create_domain_specialist_agent,
-    create_editing_agent,
-    create_editorial_reviewer_agent,
-    create_ethics_validator_agent,
-    create_finalization_agent,
-    create_governance_agent,
-    create_ideation_agent,
-    create_publication_agent,
-    create_reflective_reader_agent,
-    create_review_coordinator_agent,
-    create_research_validator_agent,
-    create_structure_agent,
-    create_technical_professional_agent,
-    create_technical_reviewer_agent,
-    create_title_agent,
-    execute_agent,
-    execute_review_personas,
-)
-from .config import (
-    get_logger,
-    get_model,
-    get_research_model,
-    print_stage_header,
-    print_stage_complete,
-    print_pipeline_start,
-    print_pipeline_complete,
-    print_error_panel,
-    get_message,
-    get_config,
-)
+try:
+    from .agents import (
+        create_author_positioning_reviewer_agent,
+        create_author_stories_reviewer_agent,
+        create_author_vision_reviewer_agent,
+        create_chapter_agent,
+        create_code_examples_reviewer_agent,
+        create_content_stylist_agent,
+        create_critical_reading_coordinator_agent,
+        create_curious_beginner_agent,
+        create_deep_research_agent,
+        create_didactic_educator_agent,
+        create_domain_specialist_agent,
+        create_editing_agent,
+        create_editorial_reviewer_agent,
+        create_ethics_validator_agent,
+        create_finalization_agent,
+        create_governance_agent,
+        create_ideation_agent,
+        create_publication_agent,
+        create_reflective_reader_agent,
+        create_review_coordinator_agent,
+        create_research_validator_agent,
+        create_structure_agent,
+        create_technical_professional_agent,
+        create_technical_reviewer_agent,
+        create_title_agent,
+        execute_agent,
+        execute_review_personas,
+    )
+    from .config import (
+        get_logger,
+        get_model,
+        get_research_model,
+        print_stage_header,
+        print_stage_complete,
+        print_pipeline_start,
+        print_pipeline_complete,
+        print_error_panel,
+        get_message,
+        get_config,
+    )
+except ImportError:
+    # Allow running as a script (python src/main.py) by injecting project root into sys.path
+    project_root = Path(__file__).resolve().parents[1]
+    if str(project_root) not in sys.path:
+        sys.path.insert(0, str(project_root))
+    from src.agents import (
+        create_author_positioning_reviewer_agent,
+        create_author_stories_reviewer_agent,
+        create_author_vision_reviewer_agent,
+        create_chapter_agent,
+        create_code_examples_reviewer_agent,
+        create_content_stylist_agent,
+        create_critical_reading_coordinator_agent,
+        create_curious_beginner_agent,
+        create_deep_research_agent,
+        create_didactic_educator_agent,
+        create_domain_specialist_agent,
+        create_editing_agent,
+        create_editorial_reviewer_agent,
+        create_ethics_validator_agent,
+        create_finalization_agent,
+        create_governance_agent,
+        create_ideation_agent,
+        create_publication_agent,
+        create_reflective_reader_agent,
+        create_review_coordinator_agent,
+        create_research_validator_agent,
+        create_structure_agent,
+        create_technical_professional_agent,
+        create_technical_reviewer_agent,
+        create_title_agent,
+        execute_agent,
+        execute_review_personas,
+    )
+    from src.config import (
+        get_logger,
+        get_model,
+        get_research_model,
+        print_stage_header,
+        print_stage_complete,
+        print_pipeline_start,
+        print_pipeline_complete,
+        print_error_panel,
+        get_message,
+        get_config,
+    )
 
 logger = get_logger(__name__)
 
