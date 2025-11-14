@@ -138,8 +138,21 @@ def run_ebook_pipeline(
     }
 
     try:
+        logger.info("=" * 70)
+        logger.info("INICIANDO PIPELINE DE EBOOK GENERATOR 1.0")
+        logger.info("=" * 70)
+        logger.info(f"Tópico: {topic}")
+        logger.info(f"Público-alvo: {target_audience}")
+        logger.info(f"Meta de palavras: {word_count_target}")
+        logger.info(f"Nível de leitura: {reading_level}")
+        logger.info("=" * 70)
+        
+        logger.info("Inicializando modelos Gemini...")
         write_model = get_model()
+        logger.info(f"✅ Modelo de escrita inicializado: {type(write_model).__name__}")
+        
         research_model = get_research_model()
+        logger.info(f"✅ Modelo de pesquisa inicializado: {type(research_model).__name__}")
 
         # Splash screen
         print_pipeline_start(topic, target_audience, word_count_target)
@@ -147,9 +160,16 @@ def run_ebook_pipeline(
         # Stage 1 — Ideation
         stage_title = get_message("stage_1_title", "Estágio 1: Ideação")
         stage_desc = get_message("stage_1_start", "Gerando ideia central...")
+        logger.info(f"\n{'=' * 70}")
+        logger.info("ESTÁGIO 1: IDEAÇÃO")
+        logger.info(f"{'=' * 70}")
+        logger.info("Criando agente de ideação...")
         print_stage_header(1, stage_title, stage_desc)
         
+        logger.info("Criando agente de ideação...")
         ideation_agent = create_ideation_agent(write_model)
+        logger.info(f"✅ Agente criado: {type(ideation_agent).__name__}")
+        
         promise_context = (
             transformation_promise
             if transformation_promise
@@ -157,7 +177,11 @@ def run_ebook_pipeline(
         )
         
         # Get prompt template from config
+        logger.info("Carregando templates de prompts...")
         agent_prompts = get_config("agent_prompts")
+        logger.info(f"✅ Templates carregados")
+        
+        logger.info("Montando prompt para o agente...")
         ideation_prompt = agent_prompts["ideation_prompt_template"].format(
             topic=topic,
             target_audience=target_audience,
@@ -165,148 +189,281 @@ def run_ebook_pipeline(
             reading_level=reading_level,
             promise_context=promise_context,
         )
+        logger.info(f"✅ Prompt montado (tamanho: {len(ideation_prompt)} chars)")
+        
+        logger.info("Executando agente de ideação (chamando Gemini API)...")
         ideation_output = execute_agent(ideation_agent, ideation_prompt)
+        logger.info(f"✅ Ideação concluída")
+        logger.info(f"Saída (resumo): {ideation_output[:200]}...")
+        
         results["stage_1_ideation"] = {"output": ideation_output}
         print_stage_complete(1)
-        logger.info("Stage 1 complete")
+        logger.info(f"✅ ESTÁGIO 1 CONCLUÍDO")
 
         if not run_all_stages:
             results["pipeline_status"] = "partial"
             return results
 
         # Stage 2 — Title Generation
+        logger.info(f"\n{'=' * 70}")
+        logger.info("ESTÁGIO 2: GERAÇÃO DE TÍTULOS")
+        logger.info(f"{'=' * 70}")
         stage_title = get_message("stage_2_title", "Estágio 2: Geração de Títulos")
         stage_desc = get_message("stage_2_start", "Pesquisando bestsellers...")
         print_stage_header(2, stage_title, stage_desc)
         
+        logger.info("Criando agente de geração de títulos...")
         title_agent = create_title_agent(write_model)
+        logger.info(f"✅ Agente criado: {type(title_agent).__name__}")
+        
+        logger.info("Montando prompt com saída da ideação...")
         title_prompt = agent_prompts["title_prompt_template"].format(
             ideation_output=ideation_output
         )
+        logger.info(f"✅ Prompt montado (tamanho: {len(title_prompt)} chars)")
+        
+        logger.info("Executando agente de títulos (chamando Gemini API)...")
         title_output = execute_agent(title_agent, title_prompt)
+        logger.info(f"✅ Títulos gerados")
+        logger.info(f"Saída (resumo): {title_output[:200]}...")
+        
         results["stage_2_title"] = {"output": title_output}
         print_stage_complete(2)
-        logger.info("Stage 2 complete")
+        logger.info(f"✅ ESTÁGIO 2 CONCLUÍDO")
 
         # Stage 3 — Structure
+        logger.info(f"\n{'=' * 70}")
+        logger.info("ESTÁGIO 3: ESTRUTURA & OUTLINE")
+        logger.info(f"{'=' * 70}")
         stage_title = get_message("stage_3_title", "Estágio 3: Estrutura & Outline")
         stage_desc = get_message("stage_3_start", "Criando índice hierárquico...")
         print_stage_header(3, stage_title, stage_desc)
         
+        logger.info("Criando agente de estrutura...")
         structure_agent = create_structure_agent(write_model)
+        logger.info(f"✅ Agente criado: {type(structure_agent).__name__}")
+        
+        logger.info("Montando prompt com contexto de ideação...")
         structure_prompt = agent_prompts["structure_prompt_template"].format(
             topic=topic,
             target_audience=target_audience,
             word_count_target=word_count_target,
             ideation_output=ideation_output,
         )
+        logger.info(f"✅ Prompt montado (tamanho: {len(structure_prompt)} chars)")
+        
+        logger.info("Executando agente de estrutura (chamando Gemini API)...")
         structure_output = execute_agent(structure_agent, structure_prompt)
+        logger.info(f"✅ Estrutura criada")
+        logger.info(f"Saída (resumo): {structure_output[:200]}...")
+        
         results["stage_3_structure"] = {"output": structure_output}
         print_stage_complete(3)
-        logger.info("Stage 3 complete")
+        logger.info(f"✅ ESTÁGIO 3 CONCLUÍDO")
 
         # Stage 4A — Deep Research
+        logger.info(f"\n{'=' * 70}")
+        logger.info("ESTÁGIO 4A: PESQUISA PROFUNDA")
+        logger.info(f"{'=' * 70}")
         stage_title = get_message("stage_4a_title", "Estágio 4A: Pesquisa Profunda")
         stage_desc = get_message("stage_4a_start", "Consultando Context7 MCP...")
         print_stage_header(4, stage_title, stage_desc)
         
+        logger.info("Criando agente de pesquisa profunda...")
         deep_research_agent = create_deep_research_agent(research_model)
+        logger.info(f"✅ Agente criado: {type(deep_research_agent).__name__}")
+        
+        logger.info("Montando prompt com estrutura...")
         deep_research_prompt = agent_prompts["deep_research_prompt_template"].format(
             structure_output=structure_output
         )
+        logger.info(f"✅ Prompt montado (tamanho: {len(deep_research_prompt)} chars)")
+        
+        logger.info("Executando agente de pesquisa (chamando Gemini 2.5 Pro API)...")
         deep_research_output = execute_agent(deep_research_agent, deep_research_prompt)
+        logger.info(f"✅ Pesquisa profunda concluída")
+        logger.info(f"Saída (resumo): {deep_research_output[:200]}...")
+        
         results["stage_4a_deep_research"] = {"output": deep_research_output}
         print_stage_complete(4)
-        logger.info("Stage 4A complete")
+        logger.info(f"✅ ESTÁGIO 4A CONCLUÍDO")
 
         # Stage 4B — Chapter Writing
+        logger.info(f"\n{'=' * 70}")
+        logger.info("ESTÁGIO 4B: ESCRITA DE CAPÍTULOS")
+        logger.info(f"{'=' * 70}")
         stage_title = get_message("stage_4b_title", "Estágio 4B: Escrita de Capítulos")
         stage_desc = get_message("stage_4b_start", "Escrevendo conteúdo didático...")
         print_stage_header(4, "Estágio 4B: Escrita de Capítulos", stage_desc)
         
+        logger.info("Criando agente de escrita de capítulos...")
         chapter_agent = create_chapter_agent(write_model)
+        logger.info(f"✅ Agente criado: {type(chapter_agent).__name__}")
+        
+        logger.info("Montando prompt com estrutura e pesquisa...")
         chapter_prompt = agent_prompts["chapter_writing_prompt_template"].format(
             structure_output=structure_output,
             deep_research_output=deep_research_output,
         )
+        logger.info(f"✅ Prompt montado (tamanho: {len(chapter_prompt)} chars)")
+        
+        logger.info("Executando agente de escrita (chamando Gemini API)...")
         chapter_output = execute_agent(chapter_agent, chapter_prompt)
+        logger.info(f"✅ Capítulos escritos")
+        logger.info(f"Saída (resumo): {chapter_output[:200]}...")
+        
         results["stage_4b_chapter_writing"] = {"output": chapter_output}
         print_stage_complete(5)  # Counting 4B as stage 5
-        logger.info("Stage 4B complete")
+        logger.info(f"✅ ESTÁGIO 4B CONCLUÍDO")
 
         # Stage 5 — Specialized Review
+        logger.info(f"\n{'=' * 70}")
+        logger.info("ESTÁGIO 5: REVISÃO ESPECIALIZADA")
+        logger.info(f"{'=' * 70}")
         stage_title = get_message("stage_5_title", "Estágio 5: Revisão Especializada")
         stage_desc = get_message("stage_5_start", "Executando revisões de 10 personas...")
         print_stage_header(5, stage_title, stage_desc)
         
+        logger.info("Criando agente coordenador de revisões...")
         review_coordinator = create_review_coordinator_agent(research_model)
+        logger.info(f"✅ Coordenador criado: {type(review_coordinator).__name__}")
+        
+        logger.info("Construindo personas de revisão (10 especialistas)...")
         personas = _build_review_persona_agents(write_model, research_model)
+        logger.info(f"✅ {len(personas)} personas criadas")
+        
+        logger.info("Montando prompt de revisão...")
         review_prompt = agent_prompts["review_prompt_template"].format(
             chapter_output=chapter_output
         )
+        logger.info(f"✅ Prompt montado (tamanho: {len(review_prompt)} chars)")
+        
+        logger.info("Executando revisões especializadas (chamando Gemini Pro API)...")
         review_output = execute_review_personas(review_coordinator, review_prompt, personas)
+        logger.info(f"✅ Revisão concluída com {len(personas)} personas")
+        logger.info(f"Saída (resumo): {review_output[:200]}...")
+        
         results["stage_5_review"] = {"output": review_output}
         print_stage_complete(6)  # Counting as stage 6
-        logger.info("Stage 5 complete")
+        logger.info(f"✅ ESTÁGIO 5 CONCLUÍDO")
 
         # Stage 6 — Critical Reading & Iteration
+        logger.info(f"\n{'=' * 70}")
+        logger.info("ESTÁGIO 6: LEITURA CRÍTICA & ITERAÇÃO")
+        logger.info(f"{'=' * 70}")
         stage_title = get_message("stage_6_title", "Estágio 6: Leitura Crítica")
         stage_desc = get_message("stage_6_start", "Simulando 5 leitores virtuais...")
         print_stage_header(6, stage_title, stage_desc)
         
+        logger.info("Criando agente coordenador de leitura crítica...")
         critical_reading = create_critical_reading_coordinator_agent(research_model)
+        logger.info(f"✅ Coordenador criado: {type(critical_reading).__name__}")
+        
+        logger.info("Construindo leitores virtuais (5 personas de leitura)...")
         virtual_readers = _build_virtual_reader_agents(write_model, research_model)
+        logger.info(f"✅ {len(virtual_readers)} leitores virtuais criados")
+        
+        logger.info("Montando prompt de leitura crítica...")
         critical_prompt = agent_prompts["critical_reading_prompt_template"].format(
             review_output=review_output
         )
+        logger.info(f"✅ Prompt montado (tamanho: {len(critical_prompt)} chars)")
+        
+        logger.info("Executando leitura crítica com 3 ciclos de iteração (chamando Gemini Pro API)...")
         critical_output = execute_review_personas(critical_reading, critical_prompt, virtual_readers)
+        logger.info(f"✅ Leitura crítica concluída com {len(virtual_readers)} leitores")
+        logger.info(f"Saída (resumo): {critical_output[:200]}...")
+        
         results["stage_6_critical_reading"] = {"output": critical_output}
         print_stage_complete(7)  # Counting as stage 7
-        logger.info("Stage 6 complete")
+        logger.info(f"✅ ESTÁGIO 6 CONCLUÍDO")
 
         # Stage 7 — Editing
+        logger.info(f"\n{'=' * 70}")
+        logger.info("ESTÁGIO 7: EDIÇÃO & FORMATAÇÃO")
+        logger.info(f"{'=' * 70}")
         stage_title = get_message("stage_7_title", "Estágio 7: Edição & Formatação")
         stage_desc = get_message("stage_7_start", "Refinando estilos...")
         print_stage_header(7, stage_title, stage_desc)
         
+        logger.info("Criando agente de edição...")
         editing_agent = create_editing_agent(write_model)
+        logger.info(f"✅ Agente criado: {type(editing_agent).__name__}")
+        
+        logger.info("Montando prompt com saída de leitura crítica...")
         editing_prompt = agent_prompts["editing_prompt_template"].format(
             critical_output=critical_output
         )
+        logger.info(f"✅ Prompt montado (tamanho: {len(editing_prompt)} chars)")
+        
+        logger.info("Executando agente de edição (chamando Gemini API)...")
         editing_output = execute_agent(editing_agent, editing_prompt)
+        logger.info(f"✅ Edição concluída")
+        logger.info(f"Saída (resumo): {editing_output[:200]}...")
+        
         results["stage_7_editing"] = {"output": editing_output}
         print_stage_complete(8)  # Counting as stage 8
-        logger.info("Stage 7 complete")
+        logger.info(f"✅ ESTÁGIO 7 CONCLUÍDO")
 
         # Stage 8 — Finalization & Cover
+        logger.info(f"\n{'=' * 70}")
+        logger.info("ESTÁGIO 8: FINALIZAÇÃO & CAPA")
+        logger.info(f"{'=' * 70}")
         stage_title = get_message("stage_8_title", "Estágio 8: Finalização & Capa")
         stage_desc = get_message("stage_8_start", "Gerando capa e metadados...")
         print_stage_header(8, stage_title, stage_desc)
         
+        logger.info("Criando agente de finalização...")
         finalization_agent = create_finalization_agent(write_model)
+        logger.info(f"✅ Agente criado: {type(finalization_agent).__name__}")
+        
+        logger.info("Montando prompt com conteúdo editado...")
         finalization_prompt = agent_prompts["finalization_prompt_template"].format(
             editing_output=editing_output
         )
+        logger.info(f"✅ Prompt montado (tamanho: {len(finalization_prompt)} chars)")
+        
+        logger.info("Executando agente de finalização (chamando Gemini API)...")
         finalization_output = execute_agent(finalization_agent, finalization_prompt)
+        logger.info(f"✅ Finalização concluída")
+        logger.info(f"Saída (resumo): {finalization_output[:200]}...")
+        
         results["stage_8_finalization"] = {"output": finalization_output}
         print_stage_complete(9)  # Counting as stage 9
-        logger.info("Stage 8 complete")
+        logger.info(f"✅ ESTÁGIO 8 CONCLUÍDO")
 
         # Stage 9 — Publication & Export
+        logger.info(f"\n{'=' * 70}")
+        logger.info("ESTÁGIO 9: PUBLICAÇÃO & EXPORTAÇÃO")
+        logger.info(f"{'=' * 70}")
         stage_title = get_message("stage_9_title", "Estágio 9: Publicação & Exportação")
         stage_desc = get_message("stage_9_start", "Exportando para DOCX, EPUB, PDF, JSON...")
         print_stage_header(9, stage_title, stage_desc)
         
+        logger.info("Criando agente de publicação...")
         publication_agent = create_publication_agent(write_model)
+        logger.info(f"✅ Agente criado: {type(publication_agent).__name__}")
+        
+        logger.info("Montando prompt com conteúdo finalizado...")
         publication_prompt = agent_prompts["publication_prompt_template"].format(
             editing_output_excerpt=editing_output[:2000]
         )
+        logger.info(f"✅ Prompt montado (tamanho: {len(publication_prompt)} chars)")
+        
+        logger.info("Executando agente de publicação (chamando Gemini API)...")
+        logger.info("Formatos suportados: DOCX, EPUB, PDF, JSON")
         publication_output = execute_agent(publication_agent, publication_prompt)
+        logger.info(f"✅ Publicação concluída")
+        logger.info(f"Saída (resumo): {publication_output[:200]}...")
+        
         results["stage_9_publication"] = {"output": publication_output}
         print_stage_complete(9)
-        logger.info("Stage 9 complete")
+        logger.info(f"✅ ESTÁGIO 9 CONCLUÍDO")
 
         # Final summary
+        logger.info(f"\n{'=' * 70}")
+        logger.info("PIPELINE CONCLUÍDO COM SUCESSO")
+        logger.info(f"{'=' * 70}")
         results["pipeline_status"] = "completed"
         results["summary"] = {
             "topic": topic,
