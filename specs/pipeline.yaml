@@ -1,7 +1,7 @@
 stages:
   stage_1_document_spec:
     name: "Documento de Especificação"
-    description: "Superagente Editor-Chefe consolida DEL com ideia, promessa e direcionadores."
+    description: "Superagente Editor-Chefe consolida BRD com ideia, promessa e direcionadores."
     agent: "document_spec_agent"
     parameters:
       topic:
@@ -34,10 +34,10 @@ stages:
     description: "Expande promessa, define problema central e voz editorial."
     agent: "ideation_agent"
     parameters:
-      del_id:
+      brd_id:
         type: string
         required: true
-        description: "Identificador do DEL gerado no estágio 1"
+        description: "Identificador do BRD gerado no estágio 1"
       include_market_scan:
         type: boolean
         default: true

@@ -1,11 +1,6 @@
 import unittest
 from unittest.mock import patch, MagicMock
 
-# Temporarily add src to path to allow imports
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
-
 from src.config import (
     get_pipeline_config,
     get_agents_config,
@@ -13,6 +8,7 @@ from src.config import (
     get_research_model,
 )
 from src.agents import (
+    create_document_spec_agent,
     create_ideation_agent,
     create_title_agent,
     create_structure_agent,
@@ -22,6 +18,7 @@ from src.agents import (
     create_critical_reading_coordinator_agent,
     create_editing_agent,
     create_finalization_agent,
+    create_publication_agent,
 )
 from src.tools import (
     get_ideation_tools,
@@ -59,13 +56,13 @@ class TestE2EPipeline(unittest.TestCase):
     @patch('src.config.get_research_model')
     @patch('src.config.get_agents_config')
     def test_agent_creation(self, mock_agents_config, mock_research_model, mock_write_model, mock_create_agent):
-        """Test that all 9 pipeline agents can be created."""
+        """Test that all pipeline agents can be created."""
         mock_agents_config.return_value = {
             "main_pipeline_agents": {
-                "ideation_agent": {}, "title_agent": {}, "structure_agent": {},
+                "document_spec_agent": {}, "ideation_agent": {}, "title_agent": {}, "structure_agent": {},
                 "deep_research_agent": {}, "chapter_writing_agent": {},
                 "review_coordinator_agent": {}, "critical_reading_coordinator_agent": {},
-                "editing_agent": {}, "finalization_agent": {}
+                "editing_agent": {}, "finalization_agent": {}, "publication_agent": {}
             }
         }
         mock_write_model.return_value = MagicMock()
@@ -73,6 +70,7 @@ class TestE2EPipeline(unittest.TestCase):
         mock_create_agent.return_value = MagicMock()
 
         agents = {
+            "document_spec_agent": create_document_spec_agent(get_research_model()),
             "ideation_agent": create_ideation_agent(get_model()),
             "title_agent": create_title_agent(get_model()),
             "structure_agent": create_structure_agent(get_model()),
@@ -82,9 +80,10 @@ class TestE2EPipeline(unittest.TestCase):
             "critical_reading_coordinator_agent": create_critical_reading_coordinator_agent(get_research_model()),
             "editing_agent": create_editing_agent(get_model()),
             "finalization_agent": create_finalization_agent(get_model()),
+            "publication_agent": create_publication_agent(get_model()),
         }
 
-        self.assertEqual(len(agents), 9)
+        self.assertEqual(len(agents), 11)
         self.assertTrue(all(isinstance(agent, MagicMock) for agent in agents.values()))
 
     def test_tools_availability(self):

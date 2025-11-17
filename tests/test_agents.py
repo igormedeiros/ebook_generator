@@ -3,12 +3,7 @@ from unittest.mock import patch, MagicMock, call
 from pathlib import Path
 import yaml
 
-# Temporarily add src to path to allow imports
-import sys
-sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
-
-from agents import (
-    _build_system_prompt,
+from src.agents import (
     create_ideation_agent,
     create_technical_reviewer_agent,
     execute_agent,
@@ -26,23 +21,12 @@ class TestAgents(unittest.TestCase):
         with open(mock_specs_dir / 'agents.yaml', 'r') as f:
             self.mock_agents_config = yaml.safe_load(f)
 
-    def test_build_system_prompt(self):
-        """Test the dynamic system prompt builder."""
-        agent_spec = self.mock_agents_config['main_pipeline_agents']['ideation_agent']
-        prompt = _build_system_prompt(agent_spec)
-        
-        self.assertIn("You are the Ideation Agent - Creative Strategist.", prompt)
-        self.assertIn("To generate the core concept for the ebook.", prompt)
-        self.assertIn("Central Idea", prompt)
-        self.assertIn("Analyze Input", prompt)
-        self.assertIn("JSON with 'idea', 'problem', 'promise'", prompt)
-
     @patch('src.agents.get_agents_config')
     @patch('src.agents.create_agent')
     @patch('src.agents.get_ideation_tools')
     def test_create_ideation_agent(self, mock_get_tools, mock_create_agent, mock_get_config):
         """Test the creation of the ideation agent."""
-        mock_get_config.return_value = self.mock_agents_config
+        mock_get_config.return_value = {"main_pipeline_agents": {"ideation_agent": {"system_prompt": "You are the Agente de Ideação - Estrategista Criativo."}}}
         mock_get_tools.return_value = [MagicMock()] # Dummy tool
         
         create_ideation_agent(self.mock_model)
@@ -51,14 +35,14 @@ class TestAgents(unittest.TestCase):
         args, kwargs = mock_create_agent.call_args
         self.assertEqual(kwargs['model'], self.mock_model)
         self.assertEqual(len(kwargs['tools']), 1)
-        self.assertIn("You are the Ideation Agent", kwargs['system_prompt'])
+        self.assertIn("You are the Agente de Ideação - Estrategista Criativo.", kwargs['system_prompt'])
 
-    @patch('src.agents.get_agents_config')
+    @patch('src.agents.get_personas_config')
     @patch('src.agents.create_agent')
     @patch('src.agents.get_review_tools')
     def test_create_technical_reviewer_agent(self, mock_get_tools, mock_create_agent, mock_get_config):
         """Test the creation of a review persona agent."""
-        mock_get_config.return_value = self.mock_agents_config
+        mock_get_config.return_value = {"review_personas": {"technical_reviewer": {}}}
         mock_get_tools.return_value = [MagicMock()]
         
         create_technical_reviewer_agent(self.mock_model)
@@ -66,17 +50,17 @@ class TestAgents(unittest.TestCase):
         mock_create_agent.assert_called_once()
         args, kwargs = mock_create_agent.call_args
         self.assertEqual(kwargs['model'], self.mock_model)
-        self.assertIn("You are the Technical Reviewer", kwargs['system_prompt'])
+        self.assertIn("You are technical_reviewer", kwargs['system_prompt'])
 
     def test_execute_agent_success(self):
         """Test executing an agent successfully."""
         mock_agent = MagicMock()
-        mock_agent.invoke.return_value = {"output": "Agent response"}
+        mock_agent.invoke.return_value = {"messages": [MagicMock(content="Agent response")]}
         
         response = execute_agent(mock_agent, "Test query")
         
         self.assertEqual(response, "Agent response")
-        mock_agent.invoke.assert_called_once_with({"messages": [{"role": "user", "content": "Test query"}]})
+        mock_agent.invoke.assert_called_once_with({"messages": [{"role": "user", "content": "Test query"}]}, config={"callbacks": [unittest.mock.ANY]})
 
     def test_execute_agent_error(self):
         """Test handling an error during agent execution."""

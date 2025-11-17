@@ -1,12 +1,7 @@
 import unittest
 from unittest.mock import patch, MagicMock
 
-# Temporarily add src to path to allow imports
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
-
-from tools import (
+from src.tools import (
     search_knowledge_base,
     retrieve_rag_context,
     count_words,
@@ -113,17 +108,24 @@ class TestTools(unittest.TestCase):
         result = search_knowledge_base("test query")
         self.assertIn("Supabase not configured", result)
 
+    @patch('src.tools.GoogleGenerativeAIEmbeddings')
     @patch('src.tools.supabase_client')
-    def test_search_knowledge_base_with_supabase(self, mock_supabase_client):
+    def test_search_knowledge_base_with_supabase(self, mock_supabase_client, mock_embeddings):
         """Test RAG search with a mocked Supabase client."""
         mock_supabase_client.rpc.return_value.execute.return_value.data = [{'content': 'mock result'}]
+        mock_embeddings.return_value.embed_query.return_value = [0.1] * 768
         
-        # Mock the embeddings as well
-        with patch('src.tools.GoogleGenerativeAIEmbeddings') as mock_embeddings:
-            mock_embeddings.return_value.embed_query.return_value = [0.1] * 768
-            result = search_knowledge_base("test query")
-            self.assertIn("Found 1 relevant documents", result)
-            mock_supabase_client.rpc.assert_called_once()
+        result = search_knowledge_base("test query")
+        self.assertIn("Found 1 relevant documents", result)
+        mock_supabase_client.rpc.assert_called_once()
+
+    @patch('src.tools.search_knowledge_base')
+    def test_retrieve_rag_context(self, mock_search):
+        """Test the RAG context retrieval tool."""
+        mock_search.return_value = "Mocked search result"
+        context = retrieve_rag_context("test query", max_results=1)
+        self.assertIn("Mocked search result", context)
+        mock_search.assert_called_once_with("test query", max_results=1)
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,6 +1,6 @@
 tool_categories:
   ideation:
-    description: "Pesquisa rápida para DEL e ideação"
+    description: "Pesquisa rápida para BRD e ideação"
     tools:
       - search_knowledge_base
       - retrieve_rag_context

@@ -94,7 +94,7 @@ Camada 3 – Qualidade Editorial
 
 ### 6.1 Etapa 1 — Entrada
 
-O **Superagente Editor-Chefe** recebe tema, objetivo instrucional e público-alvo, gerando o **Documento de Especificação do Livro (DEL)** contendo ideia central, promessa de aprendizado, estilo didático e progressão de complexidade.
+O **Superagente Editor-Chefe** recebe tema, objetivo instrucional e público-alvo, gerando o **Book Requirements Document (BRD)** contendo ideia central, promessa de aprendizado, estilo didático e progressão de complexidade.
 
 ### 6.2 Etapa 2 — Ideação
 

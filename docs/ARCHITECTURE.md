@@ -92,7 +92,7 @@ src/
 ## 4. Pipeline Multiagente (11 Estágios)
 
 ### 4.1 Camada de Orquestração
-- **Superagente Editor-Chefe**: Consolida tema/público/objetivo, gera DEL e dispara cada estágio.
+- **Superagente Editor-Chefe**: Consolida tema/público/objetivo, gera BRD e dispara cada estágio.
 
 ### 4.2 Camada de Produção Editorial
 
