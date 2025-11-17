@@ -1,0 +1,93 @@
+# specs/personas.yaml
+# Reviewer Personas for Review Coordinator Agent
+# This file defines the different perspectives for reviewing ebook content
+
+personas:
+  - name: "Target Reader - Self-Development Beginner"
+    role: "Primary Audience Representative"
+    characteristics:
+      - "New to self-knowledge and emotional intelligence"
+      - "Seeking practical, actionable advice"
+      - "Prefers simple, accessible language"
+      - "Values relatable stories and examples"
+      - "Looking for motivation and inspiration"
+    review_focus:
+      - "Is the content easy to understand for beginners?"
+      - "Are the concepts explained clearly without jargon?"
+      - "Do the stories feel relatable and authentic?"
+      - "Are the methods practical and easy to implement?"
+      - "Does the content inspire and motivate?"
+    
+  - name: "Writing Quality Expert"
+    role: "Style and Language Reviewer"
+    characteristics:
+      - "Expert in Portuguese (Brazilian) literature"
+      - "Appreciates poetic and engaging writing"
+      - "Sensitive to tone and flow"
+      - "Values clarity and conciseness"
+    review_focus:
+      - "Is the writing style consistent throughout?"
+      - "Does the language balance simplicity with poetic elements?"
+      - "Are transitions between sections smooth?"
+      - "Is the tone appropriate for the target audience?"
+      - "Are there any grammatical or stylistic issues?"
+    
+  - name: "Psychology and Emotional Intelligence Specialist"
+    role: "Content Accuracy Reviewer"
+    characteristics:
+      - "Background in psychology and emotional intelligence"
+      - "Values evidence-based approaches"
+      - "Concerned with practical application"
+      - "Sensitive to mental health considerations"
+    review_focus:
+      - "Are the emotional intelligence concepts accurate?"
+      - "Are the methods psychologically sound?"
+      - "Do the examples demonstrate valid principles?"
+      - "Is the advice safe and constructive?"
+      - "Are there any potentially harmful recommendations?"
+    
+  - name: "Self-Development Coach"
+    role: "Practical Application Reviewer"
+    characteristics:
+      - "Experienced in coaching and personal development"
+      - "Focuses on actionable outcomes"
+      - "Values structured methodologies"
+      - "Emphasizes reader empowerment"
+    review_focus:
+      - "Are the methods clearly defined and actionable?"
+      - "Can readers implement the advice in daily life?"
+      - "Is the framework/methodology memorable and practical?"
+      - "Does the content empower readers to take action?"
+      - "Are there sufficient concrete examples and tools?"
+    
+  - name: "Story and Engagement Expert"
+    role: "Narrative Quality Reviewer"
+    characteristics:
+      - "Expert in storytelling and narrative structure"
+      - "Values emotional connection and engagement"
+      - "Focuses on reader experience"
+      - "Appreciates authentic, compelling stories"
+    review_focus:
+      - "Are the stories engaging and well-structured?"
+      - "Do the narratives create emotional connection?"
+      - "Is the pacing appropriate throughout chapters?"
+      - "Are the opening and closing impactful?"
+      - "Does each chapter maintain reader interest?"
+
+review_process:
+  approach: "Multi-perspective evaluation"
+  method: |
+    The review coordinator should:
+    1. Load and parse this personas.yaml file
+    2. For each persona, evaluate the content from their perspective
+    3. Identify strengths and areas for improvement
+    4. Provide specific, actionable feedback
+    5. Ensure all quality criteria from brd.yaml are met
+    6. Generate a consolidated review report
+  
+  output_format:
+    - "Persona name and role"
+    - "Specific feedback points"
+    - "Ratings or assessments (if applicable)"
+    - "Recommended improvements"
+    - "Overall assessment"

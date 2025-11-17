@@ -1,0 +1,112 @@
+# specs/brd.yaml
+# Business Requirements Document (BRD) for Ebook Generator
+# This is the canonical BRD referenced by all agents
+
+project:
+  name: "Ebook Generator - Self-Development Book"
+  description: "Generate a self-development ebook focused on self-knowledge and emotional intelligence"
+  target_audience: "Beginners in self-knowledge and emotional intelligence"
+  language: "Portuguese (Brazilian)"
+
+objectives:
+  primary: "Create a practical and inspiring self-development text for beginners"
+  secondary:
+    - "Motivate readers through relatable stories"
+    - "Teach new practices for emotional intelligence"
+    - "Inspire reflection on self-knowledge"
+    - "Provide actionable methods and frameworks"
+
+writing_style:
+  inspiration:
+    - "Roberto Shinyashiki's practical approach"
+    - "Pe. Fábio de Melo's emotional sensitivity (non-religious)"
+  tone: "Simple language with poetic touch"
+  approach: "Practical, motivational, and reflective"
+  characteristics:
+    - "Explores emotions and self-knowledge"
+    - "Uses engaging stories"
+    - "Provides concrete tools and methods"
+    - "Accessible to beginners"
+
+content_structure:
+  chapters:
+    - name: "Introdução"
+      purpose: "Present the theme and capture reader's attention"
+      elements:
+        - "Central theme introduction"
+        - "Reader expectations"
+        - "Importance of self-knowledge and emotional intelligence"
+        - "Engaging opening story"
+    
+    - name: "Problema"
+      purpose: "Describe challenges in self-knowledge and emotional management"
+      elements:
+        - "Common challenges people face"
+        - "Consequences of poor emotional management"
+        - "Impact on personal and professional life"
+        - "Practical examples"
+    
+    - name: "Identificação"
+      purpose: "Create emotional connection with readers"
+      elements:
+        - "Personal stories from the author"
+        - "Relatable experiences"
+        - "Emotional challenges faced"
+        - "How readers can apply lessons"
+    
+    - name: "Solução"
+      purpose: "Present practical method for readers to follow"
+      elements:
+        - "Named method with memorable acronym"
+        - "Step-by-step application guide"
+        - "Practical examples"
+        - "Daily implementation strategies"
+        - "Concrete tools for self-knowledge and emotional intelligence"
+    
+    - name: "Proteção"
+      purpose: "Alert about harmful behaviors"
+      elements:
+        - "Common pitfalls and traps"
+        - "Self-sabotaging behaviors"
+        - "How to avoid setbacks"
+        - "Maintaining focus on emotional development"
+    
+    - name: "Permissão"
+      purpose: "Provide psychological permission"
+      elements:
+        - "Reinforce readers deserve happiness"
+        - "Right to pursue personal best"
+        - "Inspiring phrases"
+        - "Belief in potential for change"
+        - "Safe space for growth"
+    
+    - name: "Potência"
+      purpose: "Encourage action and celebrate achievements"
+      elements:
+        - "Celebration of progress"
+        - "Motivation to embrace change"
+        - "Powerful and energizing language"
+        - "Empowerment and determination"
+        - "Continued journey encouragement"
+
+output_requirements:
+  format: "Markdown"
+  file: "result/ebook.md"
+  base_template: "templates/template.md"
+  no_json_output: true
+  validation:
+    - "Content must be in Portuguese (Brazilian)"
+    - "Must follow the 7-chapter structure"
+    - "Each chapter must have clear, practical content"
+    - "Must include engaging stories and examples"
+    - "Must provide actionable advice"
+
+quality_criteria:
+  - "Content is motivational and inspiring"
+  - "Language is simple yet poetic"
+  - "Stories are engaging and relatable"
+  - "Methods are practical and actionable"
+  - "Examples are clear and relevant"
+  - "Flow between chapters is smooth"
+  - "Tone is consistent throughout"
+  - "Meets target audience needs"
