@@ -1,90 +1,112 @@
-# Business Requirements Document (BRD)
-# Canonical source for ebook generator requirements
-# Path: specs/brd.yaml
+# specs/brd.yaml
+# Business Requirements Document (BRD) for Ebook Generator
+# This is the canonical BRD referenced by all agents
 
 project:
-  name: "Ebook Generator - Self-Development Content"
-  version: "0.1.0"
-  description: "AI-powered ebook generation system for self-development content in Portuguese"
+  name: "Ebook Generator - Self-Development Book"
+  description: "Generate a self-development ebook focused on self-knowledge and emotional intelligence"
+  target_audience: "Beginners in self-knowledge and emotional intelligence"
+  language: "Portuguese (Brazilian)"
 
-business_objectives:
-  primary: "Create high-quality self-development ebooks that inspire and guide readers in emotional intelligence and self-awareness"
+objectives:
+  primary: "Create a practical and inspiring self-development text for beginners"
   secondary:
-    - "Produce content in the style of Roberto Shinyashiki (practical approach) and Pe. Fábio de Melo (spiritual sensitivity)"
-    - "Target beginners in self-awareness and emotional intelligence"
-    - "Provide actionable practices and deep reflections"
-
-target_audience:
-  primary_persona:
-    pain: "Suffers from low self-esteem, feels insecure, and has difficulty accepting themselves, affecting personal and professional relationships"
-    desire: "Dreams of having self-confidence, wants to accept themselves without judgment, and improve personal and professional relationships"
-  
-  demographics:
-    - Portuguese-speaking readers
-    - Beginners in self-knowledge and emotional intelligence
-    - Seeking practical and inspirational guidance
-
-content_requirements:
-  structure:
-    format: "Markdown"
-    output_file: "result/ebook.md"
-    template: "templates/template.md"
-    words_per_paragraph: 70
-  
-  chapters:
-    - name: "Introdução"
-      description: "Introduction with engaging story about self-knowledge and emotional intelligence importance"
-    - name: "Problema"
-      description: "Challenges related to self-knowledge and emotional management"
-    - name: "Identificação"
-      description: "Personal stories creating emotional connection with readers"
-    - name: "Solução"
-      description: "Practical method with step-by-step approach (ideally with acronym)"
-    - name: "Proteção"
-      description: "Alert about self-sabotaging behaviors and how to avoid them"
-    - name: "Permissão"
-      description: "Psychological permission for readers to seek happiness"
-    - name: "Potência"
-      description: "Celebration and motivation to embrace change and apply learnings"
+    - "Motivate readers through relatable stories"
+    - "Teach new practices for emotional intelligence"
+    - "Inspire reflection on self-knowledge"
+    - "Provide actionable methods and frameworks"
 
 writing_style:
-  tone:
-    - "Motivational and reflective"
-    - "Simple language with poetic touch"
-    - "Emotional and engaging narrative"
-  
-  approach:
-    - "Practical like Roberto Shinyashiki"
-    - "Spiritually sensitive like Pe. Fábio de Melo (but non-religious)"
-    - "Use metaphors and engaging storytelling"
-  
-  structure:
-    - "Small sections with clear titles"
-    - "Start with inspirational story or anecdote"
-    - "End each section with concrete practice and personal reflection"
-    - "Include practical examples for daily application"
+  inspiration:
+    - "Roberto Shinyashiki's practical approach"
+    - "Pe. Fábio de Melo's emotional sensitivity (non-religious)"
+  tone: "Simple language with poetic touch"
+  approach: "Practical, motivational, and reflective"
+  characteristics:
+    - "Explores emotions and self-knowledge"
+    - "Uses engaging stories"
+    - "Provides concrete tools and methods"
+    - "Accessible to beginners"
 
-author_information:
-  name: "Igor S de Medeiros"
-  email: "igor@igormedeiros.com.br"
-  publisher: "Instituto Medeiros"
-  year: "2024"
+content_structure:
+  chapters:
+    - name: "Introdução"
+      purpose: "Present the theme and capture reader's attention"
+      elements:
+        - "Central theme introduction"
+        - "Reader expectations"
+        - "Importance of self-knowledge and emotional intelligence"
+        - "Engaging opening story"
+    
+    - name: "Problema"
+      purpose: "Describe challenges in self-knowledge and emotional management"
+      elements:
+        - "Common challenges people face"
+        - "Consequences of poor emotional management"
+        - "Impact on personal and professional life"
+        - "Practical examples"
+    
+    - name: "Identificação"
+      purpose: "Create emotional connection with readers"
+      elements:
+        - "Personal stories from the author"
+        - "Relatable experiences"
+        - "Emotional challenges faced"
+        - "How readers can apply lessons"
+    
+    - name: "Solução"
+      purpose: "Present practical method for readers to follow"
+      elements:
+        - "Named method with memorable acronym"
+        - "Step-by-step application guide"
+        - "Practical examples"
+        - "Daily implementation strategies"
+        - "Concrete tools for self-knowledge and emotional intelligence"
+    
+    - name: "Proteção"
+      purpose: "Alert about harmful behaviors"
+      elements:
+        - "Common pitfalls and traps"
+        - "Self-sabotaging behaviors"
+        - "How to avoid setbacks"
+        - "Maintaining focus on emotional development"
+    
+    - name: "Permissão"
+      purpose: "Provide psychological permission"
+      elements:
+        - "Reinforce readers deserve happiness"
+        - "Right to pursue personal best"
+        - "Inspiring phrases"
+        - "Belief in potential for change"
+        - "Safe space for growth"
+    
+    - name: "Potência"
+      purpose: "Encourage action and celebrate achievements"
+      elements:
+        - "Celebration of progress"
+        - "Motivation to embrace change"
+        - "Powerful and energizing language"
+        - "Empowerment and determination"
+        - "Continued journey encouragement"
 
-quality_standards:
-  - "Content must be original and avoid plagiarism"
-  - "Include evidence from scientific articles when possible"
-  - "Use inspirational stories showing theme importance"
-  - "Provide concrete tools for self-knowledge and emotional intelligence"
-  - "Language accessible to beginners while maintaining depth"
+output_requirements:
+  format: "Markdown"
+  file: "result/ebook.md"
+  base_template: "templates/template.md"
+  no_json_output: true
+  validation:
+    - "Content must be in Portuguese (Brazilian)"
+    - "Must follow the 7-chapter structure"
+    - "Each chapter must have clear, practical content"
+    - "Must include engaging stories and examples"
+    - "Must provide actionable advice"
 
-output_constraints:
-  forbidden:
-    - "JSON output format"
-    - "Technical jargon without explanation"
-    - "Religious content (spiritual but not religious)"
-  
-  required:
-    - "Output to result/ebook.md file"
-    - "Markdown formatting"
-    - "Portuguese language"
-    - "Personal touch with author's authentic voice"
+quality_criteria:
+  - "Content is motivational and inspiring"
+  - "Language is simple yet poetic"
+  - "Stories are engaging and relatable"
+  - "Methods are practical and actionable"
+  - "Examples are clear and relevant"
+  - "Flow between chapters is smooth"
+  - "Tone is consistent throughout"
+  - "Meets target audience needs"
