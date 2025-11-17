@@ -1,0 +1,39 @@
+name: Merge branches workflow
+
+on:
+  workflow_dispatch
+
+jobs:
+  merge_branches:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Configure git
+        run: |
+          git config --global user.email "igor@example.com"
+          git config --global user.name "Igor Medeiros"
+      
+      - name: Merge all branches into develop
+        run: |
+          git checkout develop
+          for branch in $(git branch -a | grep -v HEAD | grep -v develop | grep -v main | awk '{print $1}' | sed 's/remotes\/origin\///'); do
+            echo "Merging $branch into develop..."
+            git merge --allow-unrelated-histories -m "Merge $branch into develop" "origin/$branch" 2>/dev/null || true
+          done
+      
+      - name: Merge main into develop
+        run: |
+          git merge --allow-unrelated-histories -m "Merge main into develop" origin/main 2>/dev/null || true
+      
+      - name: Push develop
+        run: |
+          git push origin develop
+      
+      - name: Merge develop into main
+        run: |
+          git checkout main
+          git merge --allow-unrelated-histories -m "Merge develop into main" develop
+          git push origin main
