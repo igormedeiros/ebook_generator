@@ -40,6 +40,22 @@ def _load_book_metadata() -> dict:
     return content.get("metadata", {})
 
 
+def _build_markdown_payloads() -> list[dict[str, Any]]:
+    """Monta payloads a partir de arquivos markdown no diretório supabase."""
+    
+    supabase_dir = PROJECT_ROOT / "supabase"
+    payloads = []
+
+    for md_file in supabase_dir.glob("*.md"):
+        payloads.append({
+            "source": md_file.name,
+            "content": md_file.read_text(encoding="utf-8"),
+            "type": "markdown",
+        })
+    
+    return payloads
+
+
 def _build_author_payloads(author_name: str) -> tuple[list[dict[str, Any]], ...]:
     """Monta payloads para histórias, posicionamento e visão do autor."""
 
@@ -129,82 +145,44 @@ def _build_author_payloads(author_name: str) -> tuple[list[dict[str, Any]], ...]
     return stories, positioning, vision
 
 
-def _build_external_chunks(author_metadata: dict) -> list[dict[str, Any]]:
-    """Cria contextos externos para inserção na tabela rag_external."""
-
-    topic = author_metadata.get("topic", "Agentes de IA na saúde")
-    return [
-        {
-            "topic": topic,
-            "category": "estatistica",
-            "content": (
-                "Segundo relatório HIMSS 2024, 68% dos hospitais de grande porte já estudam "
-                "agentes especializados para acelerar triagens clínicas."),
-            "source": "HIMSS 2024",
-            "metadata": {
-                "credibility": 0.87,
-                "tags": ["estatistica", "triagem"],
-            },
-        },
-        {
-            "topic": topic,
-            "category": "caso_de_uso",
-            "content": (
-                "O Hospital Santa Aurora reduziu em 35% o tempo de resposta de teletriagem ao "
-                "combinar LangChain 1.0 com supervisão médica assíncrona."),
-            "source": "Estudo interno 2025",
-            "metadata": {
-                "credibility": 0.81,
-                "tags": ["case", "teletriagem"],
-            },
-        },
-    ]
-
-
-def _get_supabase_client() -> Client:
-    """Instancia o cliente Supabase usando variáveis de ambiente."""
-
-    url = os.getenv("NEXT_PUBLIC_SUPABASE_URL")
-    key = os.getenv("NEXT_PUBLIC_SUPABASE_ANON_KEY")
-    if not url or not key:
-        raise RuntimeError("SUPABASE_URL/KEY ausentes no ambiente")
-    return create_client(url, key)
-
-
-def _upsert(client: Client, table_name: str, rows: list[dict[str, Any]]) -> None:
-    """Executa upsert em uma tabela do Supabase."""
-
-    if not rows:
-        return
-    try:
-        client.table(table_name).upsert(rows).execute()
-        print(f"✅ {table_name}: {len(rows)} registros sincronizados")
-    except Exception as exc:  # noqa: BLE001
-        message = str(exc)
-        print(f"❌ Falha ao inserir em {table_name}: {message}")
-        if "PGRST205" in message or "Could not find the table" in message:
-            raise RuntimeError(
-                "Tabela inexistente. Execute scripts/supabase_schema.sql no Supabase "
-                "SQL Editor e rode o seed novamente."
-            ) from exc
-        raise
-
-
 def main() -> None:
-    """Executa o seed completo das tabelas RAG."""
+    """Ponto de entrada principal para o script de semeadura."""
 
     _load_env_file()
-    metadata = _load_book_metadata()
-    author_name = metadata.get("author_name", "Autor Desconhecido")
-    stories, positioning, vision = _build_author_payloads(author_name)
-    external = _build_external_chunks(metadata)
+    url = os.environ.get("NEXT_PUBLIC_SUPABASE_URL")
+    key = os.environ.get("NEXT_PUBLIC_SUPABASE_ANON_KEY")
 
-    client = _get_supabase_client()
-    _upsert(client, "rag_author_stories", stories)
-    _upsert(client, "rag_author_positioning", positioning)
-    _upsert(client, "rag_author_vision", vision)
-    _upsert(client, "rag_external", external)
-    print("🎯 Seed concluído.")
+    if not url or not key:
+        print("As variáveis de ambiente do Supabase não foram definidas.")
+        return
+
+    try:
+        supabase: Client = create_client(url, key)
+        print("Conexão com Supabase estabelecida.")
+
+        metadata = _load_book_metadata()
+        author_name = metadata.get("author", "Igor Medeiros")
+
+        stories, positioning, vision = _build_author_payloads(author_name)
+        markdown_payloads = _build_markdown_payloads()
+
+        print(f"Semeando {len(stories)} histórias do autor...")
+        supabase.table("rag_author_stories").upsert(stories).execute()
+
+        print(f"Semeando {len(positioning)} declarações de posicionamento...")
+        supabase.table("rag_author_positioning").upsert(positioning).execute()
+
+        print(f"Semeando {len(vision)} declarações de visão...")
+        supabase.table("rag_author_vision").upsert(vision).execute()
+
+        if markdown_payloads:
+            print(f"Semeando {len(markdown_payloads)} documentos markdown...")
+            supabase.table("rag_external").upsert(markdown_payloads).execute()
+
+        print("\\nSemeação concluída com sucesso!")
+
+    except Exception as e:
+        print(f"Ocorreu um erro durante a semeação: {e}")
 
 
 if __name__ == "__main__":

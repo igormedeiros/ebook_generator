@@ -3,18 +3,15 @@
 **Documento:** Especificação Arquitetural Oficial  
 **Versão:** 1.0 (Revisada)  
 **Atualização:** Novembro/2025  
-
-## Documentos Relacionados
-
-- **[PRD.md](./PRD.md)** – Diretrizes de produto, escopo e métricas.
-- **[ARCHITECTURE.md](./ARCHITECTURE.md)** – (este arquivo) visão técnica completa.
-- **[.github/copilot-instructions.md](../.github/copilot-instructions.md)** – Padrões de engenharia e governança.
+**Foco:** LangChain 1.0 para Iniciantes em Desenvolvimento de Aplicações com LLMs
 
 ---
 
 ## 1. Visão Técnica Geral
 
-O Ebook Generator 1.0 opera como uma **plataforma editorial multiagente**. O Superagente Editor-Chefe coordena agentes especializados em ideação, pesquisa, escrita, revisão e publicação, replicando o workflow de uma editora profissional. Toda a execução é dirigida por parâmetros YAML e pelo dual-model Gemini 2.5 (Flash para escrita; 2.5 padrão para pesquisa), garantindo rapidez criativa e rigor factual.
+O Ebook Generator 1.0 opera como uma **plataforma editorial multiagente**. O Superagente Editor-Chefe coordena agentes especializados em ideação, pesquisa, escrita didática, revisão e publicação, replicando o workflow de uma editora profissional. Toda a execução é dirigida por parâmetros YAML e pelo dual-model Gemini 2.5 (Flash para escrita; 2.5 padrão para pesquisa), garantindo rapidez criativa e rigor factual.
+
+Este sistema foi redesenhado para produzir ebooks técnico-educativos com foco em clareza didática, exemplos práticos de código e progressão do básico ao avançado.
 
 ---
 
@@ -27,12 +24,12 @@ O Ebook Generator 1.0 opera como uma **plataforma editorial multiagente**. O Sup
 - **CLI/TUI:** Rich + typer (sem FastAPI/Docker)
 
 ### Modelos e LLMs
-- **Gemini 2.5 Flash** – Escrita criativa, revisão textual, iterações (temp. 0.7)
+- **Gemini 2.5 Flash** – Escrita criativa e didática, revisão textual, iterações (temp. 0.7)
 - **Gemini 2.5** – Pesquisa profunda, RAG e análise factual (temp. 0.3)
 
 ### Persistência e RAG
 - **Supabase + Postgres** – Base operacional
-- **pgvector** – Armazena embeddings (`rag_author_*`, `rag_external`)
+- **pgvector** – Armazena embeddings (`rag_external` e recursos didáticos)
 - **Retriever LangChain** – Consulta dos vetores para os agentes
 
 ### Conversão e Publicação
@@ -50,144 +47,166 @@ Todos os parâmetros ficam fora do código:
 
 ```
 specs/
-├── pipeline.yaml      # Estágios e agentes do pipeline editoral
-├── agents.yaml        # 25 agentes independentes (principais + revisores + leitores)
-├── personas.yaml      # Perfis detalhados dos revisores e leitores
+├── pipeline.yaml      # Estágios e agentes da pipeline (11 estágios)
+├── agents.yaml        # Agentes independentes (produção + revisão + leitura crítica)
+├── personas.yaml      # Perfis de revisores e leitores virtuais
 ├── tools.yaml         # Definição das 30+ ferramentas
 ├── models.yaml        # Configuração do dual-model Gemini
-├── config.yaml        # Mensagens em português para a TUI/logs
-├── book.yaml          # Gerado após validação de entrada (gitignored)
-└── README.md          # Documentação das especificações
+├── config.yaml        # Mensagens em português
+├── book.yaml          # Gerado após validação (gitignored)
+└── README.md          # Documentação
 ```
 
-**Princípios-chave**:
-- Agentes são declarados em `agents.yaml` e reutilizados por múltiplos estágios.
-- `pipeline.yaml` apenas referencia IDs de agentes e parâmetros (ideação → publicação).
-- Strings em português ficam centralizadas em `config.yaml`.
-- `book.yaml` combina input do usuário com defaults validados.
+**Parâmetros principais para didática:**
+- `reading_level`: beginner (para público-alvo iniciante)
+- `example_count`: Número de exemplos de código por seção
+- `include_exercises`: Ativar exercícios práticos
+- `outline_depth`: Profundidade da estrutura hierárquica
 
 ### 3.2 Núcleo de Execução (`src/`)
 
 ```
 src/
-├── main.py             # Orquestração dos 11 passos editoriais
+├── main.py             # Orquestração dos 11 estágios
 ├── agents.py           # Factories create_agent() + prompts sistêmicos
 ├── tools.py            # Implementação @tool (RAG, pesquisa, formatação)
 ├── config.py           # Carregamento YAML, logging Rich, modelos Gemini
-├── input_validator.py  # Validação de input/book_input.yaml → specs/book.yaml
-├── llm_fallback.py     # Estratégia de fallback/resiliência de modelos
-└── __init__.py         # API pública do pacote
+├── input_validator.py  # Validação de input → specs/book.yaml
+├── llm_fallback.py     # Estratégia de fallback/resiliência
+└── __init__.py         # API pública
 ```
 
 ### 3.3 Validador de Entrada
 - Lê `input/book_input.yaml`.
-- Checa campos essenciais (tema, público, word count, promessa).
-- Solicita dados faltantes via prompts interativos Rich.
-- Gera `specs/book.yaml` com metadata + parâmetros prontos para a pipeline.
+- Checa campos essenciais (tema, público, objetivos).
+- Solicita dados faltantes via prompts Rich.
+- Gera `specs/book.yaml` com metadata + parâmetros didáticos.
 
 ### 3.4 Logging e Saída
 - Todo output usa `logging` + Rich (`print_panel`, `print_table`).
-- `get_logger()` centraliza formato, níveis e contexto.
-- `print()` é proibido para manter padrão visual e rastreabilidade.
+- `get_logger()` centraliza formato e níveis.
+- `print()` é proibido para manter padrão visual.
 
 ---
 
-## 4. Pipeline Multiagente
+## 4. Pipeline Multiagente (11 Estágios)
 
 ### 4.1 Camada de Orquestração
-- **Superagente Editor-Chefe**: Consolida tema/problema/público, gera Documento de Especificação do Livro (DEL) e dispara cada estágio.
+- **Superagente Editor-Chefe**: Consolida tema/público/objetivo, gera DEL e dispara cada estágio.
 
 ### 4.2 Camada de Produção Editorial
-1. **Agente da Ideia Central** – Refinamento da promessa e direcionadores de tom.
-2. **Agente de Título/Subtítulo** – Baseado em pesquisa Amazon/Google dos best-sellers.
-3. **Agente Estruturador** – Outline completo, distribuição de palavras e elementos didáticos.
-4. **Agente Pesquisador** – Google Search + Context7 + Supabase (armazenamento vetorial).
-5. **Agente Escritor** – Usa Gemini Flash, consulta RAG e aplica voz do autor.
+
+1. **Agente da Ideia Central** – Refina a promessa de aprendizado e direcionadores de tom didático.
+2. **Agente de Título/Subtítulo** – Pesquisa bestsellers, gera títulos otimizados com SEO.
+3. **Agente Estruturador** – Outline com progressão didática, distribuição de palavras e elementos (exemplos, exercícios).
+4. **Agente Pesquisador** – Google Search + Context7 + Supabase RAG para cada tópico.
+5. **Agente Escritor** – Usa Gemini Flash, consulta RAG, cria explicações didáticas com código comentado.
 
 ### 4.3 Camada de Qualidade Editorial
-6. **Superagente de Revisão** – Coordena 5 especialistas: Técnico, Editorial, Copidesque, Governança e Ética. Executa três iterações obrigatórias.
-7. **Superagente de Leitura Crítica** – Emula 5 leitores virtuais (iniciante, profissional, acadêmico, pragmático, cético) em três rodadas com foco diferente (clareza, precisão, engajamento).
-8. **Agente de Editoração** – Aplica padrões Markdown (ATX, 100 colunas, GFM) e organiza blocos de código, tabelas e chamadas.
-9. **Agente Capista** – Gera briefing visual e solicita arte à tool de imagem.
-10. **Agente de Finalização** – Monta sumário navegável, links internos e prepara conversões Pandoc.
-11. **Agente KDP** – Exporta arquivos (DOCX/EPUB/Markdown) e monta JSON de metadados, tags e descrições de marketing.
+
+6. **Superagente de Revisão** – Coordena 5 especialistas (técnico, editorial, copidesque, governança, ética). Três iterações.
+7. **Superagente de Leitura Crítica** – Simula 5 leitores virtuais em 3 ciclos de feedback.
+8. **Agente de Editoração** – Aplica padrões Markdown (ATX, 100 colunas, GFM).
+9. **Agente Capista** – Gera visual para capa.
+10. **Agente de Finalização** – Sumário navegável, links internos, conversões Pandoc.
+11. **Agente KDP** – JSON de metadados + exportação final.
 
 ---
 
 ## 5. RAG e Pesquisa
 
-### 5.1 Bases Vetoriais
-- **`rag_author_stories`** – Histórias e narrativas pessoais.
-- **`rag_author_positioning`** – Diferenciais e autoridade do autor.
-- **`rag_author_vision`** – Valores, ética e visão estratégica.
-- **`rag_external`** – Pesquisas coletadas pelo Agente Pesquisador (Google, papers, Amazon, guias).
-
-### 5.2 Fluxo de Pesquisa
-1. Agente Estruturador define capítulos/seções.
-2. Agente Pesquisador cria consultas (tipos: research, best_practices, case_studies, expert_perspectives).
-3. Resultados são normalizados, vectorizados (modelo `text-embedding-3-small`) e enviados para Supabase.
-4. Agente Escritor consome RAG segmentado por capítulo, respeitando `rag_context_limit`.
-5. Revisores Técnico e de Referências validam credibilidade (`credibility_threshold`).
-
-### 5.3 Esquema Supabase Simplificado
+### 5.1 Bases Vetoriais Reorganizadas
 
 ```sql
 CREATE TABLE rag_external (
   id BIGSERIAL PRIMARY KEY,
-  chapter_id VARCHAR(64),
-  topic TEXT,
   source TEXT,
   content TEXT NOT NULL,
+  type VARCHAR(50),
   embedding VECTOR(1536),
   created_at TIMESTAMP DEFAULT NOW()
 );
 ```
 
+**Tipos de conteúdo:**
+- `documentation`: Documentação oficial (LangChain, LLM APIs)
+- `tutorial`: Tutoriais e guias práticos
+- `code_example`: Exemplos de código reais
+- `best_practice`: Boas práticas e padrões
+- `case_study`: Estudos de caso
+
+### 5.2 Fluxo de Pesquisa Didática
+
+1. Estruturador define tópicos com progressão de complexidade.
+2. Pesquisador busca recursos documentados e exemplo de código.
+3. Escritor consome RAG segmentado, incluindo código nos exemplos.
+4. Revisor Técnico valida precisão e clareza.
+
 ---
 
 ## 6. Agentes, Ferramentas e Prompts
 
-- **agents.py** expõe `create_*_agent()` seguindo o padrão LangChain `create_agent(model, tools, system_prompt)`.
-- Cada agente possui **System Prompt** com papel, foco, processo e formato de saída (vide PRD).
-- **Ferramentas** (`tools.py`) usam `@tool`, com docstrings em inglês e strings de interface em português (quando expostas ao usuário).
-- Agrupamento de ferramentas por estágio (ideação, título, estrutura, pesquisa, escrita, revisão, finalização) permite reuse e testes unitários segmentados.
+- **agents.py** expõe `create_*_agent()` seguindo LangChain `create_agent(model, tools, system_prompt)`.
+- Cada agente possui **System Prompt** com papel didático, foco, processo e formato de saída.
+- **Ferramentas** (`tools.py`) usam `@tool`, com docstrings em inglês.
+- Agrupamento por estágio permite reuse e testes unitários.
+
+**Exemplo de ferramenta didática:**
+
+```python
+@tool
+def extract_code_snippet(topic: str, language: str = "python") -> dict:
+    """
+    Extract a practical, commented code example for a topic.
+    Used by the Escritor agent to provide executable examples.
+    
+    Args:
+        topic: The LangChain or Python concept to exemplify
+        language: Programming language (default: python)
+    
+    Returns:
+        dict with 'code', 'explanation', 'expected_output'
+    """
+```
 
 ---
 
 ## 7. Personas Especialistas e Leitores Virtuais
 
-### 7.1 Revisão Especializada (5 principais nesta versão)
-1. **Revisor Técnico** – Analisa código, frameworks e precisão factual.
-2. **Revisor Editorial** – Avalia clareza narrativa e adequação ao público.
-3. **Copidesque** – Padroniza estilo, gramática e consistência terminológica.
-4. **Governança** – Garante conformidade legal, LGPD, versões e citações.
-5. **Ética** – Monitora vieses, segurança e necessidade de disclaimers.
+### 7.1 Revisão Especializada (5 perfis)
+- **Técnico**: Precisão, código, boas práticas LangChain.
+- **Editorial**: Clareza, progressão didática, voz.
+- **Copidesque**: Estilo, padronização.
+- **Governança**: Conformidade, versões, citações.
+- **Ética**: Vieses, disclaimers sobre limitações de LLMs.
 
-*(Os demais perfis herdados do PRD continuam definidos em `personas.yaml` para expansão futura.)*
-
-### 7.2 Leitores Virtuais (5)
-- **Curioso Iniciante**, **Profissional Técnico**, **Educador Didático**, **Especialista de Domínio**, **Leitor Reflexivo** – cada um gera relatórios focados em clareza, profundidade, didática, aplicação prática e impacto emocional.
+### 7.2 Leitores Virtuais (5 perfis)
+- **Curioso Iniciante**: Busca fundamentação clara.
+- **Profissional Técnico**: Busca depth e boas práticas.
+- **Educador Didático**: Avalia eficácia da pedagogia.
+- **Especialista de Domínio**: Valida aplicações práticas.
+- **Leitor Reflexivo**: Conecta com relevância maior.
 
 ---
 
 ## 8. Padrões Operacionais
 
-- **Execução**: `uv run src/main.py` (ou módulos específicos). Nenhum uso direto de `python`.
+- **Execução**: `uv run src/main.py`. Nenhum uso direto de `python`.
 - **Dependências**: `uv sync` para instalar; `uv add` para novas libs.
 - **Logs**: `logger.info|warning|error|debug`, sem `print()`.
-- **Internacionalização**: Código e docstrings em inglês; strings exibidas em português via `get_message()`.
+- **Internacionalização**: Código em inglês; strings em português via `get_message()`.
 - **Conformidade**: Sem FastAPI/Docker; foco em CLI offline.
 
 ---
 
 ## 9. Dependências Externas
 
-- **Google Gemini API** – Modelos Flash e 2.5 (pesquisa, escrita, embeddings quando necessário).
-- **Supabase** – Banco Postgres, autenticação e vetores.
+- **Google Gemini API** – Modelos Flash e 2.5.
+- **Supabase** – Banco Postgres e vetores.
 - **Context7 MCP** – Pesquisa semântica externa.
-- **Ferramenta de Imagem** – Geração de capa a partir de prompt estruturado.
+- **Ferramenta de Imagem** – Geração de capa.
 - **Pandoc** – Conversões para DOCX/EPUB/PDF.
 
 ---
 
-Este documento reflete a arquitetura técnica alinhada ao PRD revisado, servindo como blueprint direto para implementação e auditorias futuras.
+Este documento reflete a arquitetura técnica redesenhada para Ebook Generator 1.0 com foco em didática e LangChain para iniciantes.
