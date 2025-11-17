@@ -1,0 +1,145 @@
+# User Personas for Ebook Content Review
+# Canonical source for reviewer personas
+# Path: specs/personas.yaml
+
+personas:
+  - name: "Maria - The Overwhelmed Professional"
+    profile:
+      age: 32
+      occupation: "Mid-level Manager"
+      education: "University Graduate"
+      location: "São Paulo, Brazil"
+    
+    pain_points:
+      - "Feels overwhelmed with professional and personal responsibilities"
+      - "Struggles with imposter syndrome"
+      - "Has difficulty setting boundaries"
+      - "Low self-esteem affecting decision-making"
+    
+    desires:
+      - "Wants to feel confident in her abilities"
+      - "Seeks better work-life balance"
+      - "Dreams of accepting herself without constant self-judgment"
+      - "Hopes to improve relationships with colleagues and family"
+    
+    reading_preferences:
+      - "Practical, actionable advice"
+      - "Real-life examples and stories"
+      - "Simple language, not academic"
+      - "Short sections that can be read in breaks"
+    
+    review_focus:
+      - "Is the content relatable to working professionals?"
+      - "Are the practices feasible for busy schedules?"
+      - "Does it address imposter syndrome and self-doubt?"
+      - "Is the language accessible and non-intimidating?"
+
+  - name: "João - The Young Seeker"
+    profile:
+      age: 24
+      occupation: "Recent Graduate / Entry-level"
+      education: "Recently completed University"
+      location: "Rio de Janeiro, Brazil"
+    
+    pain_points:
+      - "Uncertain about life direction and career path"
+      - "Struggles with anxiety about the future"
+      - "Difficulty understanding and managing emotions"
+      - "Feels disconnected from authentic self"
+    
+    desires:
+      - "Wants clarity on personal values and goals"
+      - "Seeks to understand himself better"
+      - "Hopes to develop emotional intelligence"
+      - "Wants tools to manage anxiety and stress"
+    
+    reading_preferences:
+      - "Inspirational and motivating content"
+      - "Modern, relatable examples"
+      - "Methods with clear steps"
+      - "Content that feels authentic, not preachy"
+    
+    review_focus:
+      - "Does this resonate with younger readers?"
+      - "Are the examples relevant to modern challenges?"
+      - "Is it inspirational without being overwhelming?"
+      - "Does it provide clear direction for beginners?"
+
+  - name: "Ana - The Life Transition Navigator"
+    profile:
+      age: 45
+      occupation: "Experienced Professional considering career change"
+      education: "University Graduate with professional experience"
+      location: "Belo Horizonte, Brazil"
+    
+    pain_points:
+      - "Facing major life transition (career, relationships, or personal crisis)"
+      - "Questioning past choices and life direction"
+      - "Struggling with fear of change"
+      - "Dealing with self-acceptance after setbacks"
+    
+    desires:
+      - "Wants courage to make necessary changes"
+      - "Seeks self-acceptance and forgiveness"
+      - "Hopes to rediscover personal purpose"
+      - "Wants to rebuild confidence after difficulties"
+    
+    reading_preferences:
+      - "Deep, reflective content"
+      - "Stories of overcoming adversity"
+      - "Acknowledgment of life's complexity"
+      - "Spiritual but not religious approach"
+    
+    review_focus:
+      - "Does this speak to readers facing transitions?"
+      - "Is there depth without being superficial?"
+      - "Are there stories of real transformation?"
+      - "Does it balance hope with acknowledging difficulties?"
+
+  - name: "Carlos - The Skeptical Pragmatist"
+    profile:
+      age: 38
+      occupation: "Engineer / Technical Professional"
+      education: "Technical/Engineering background"
+      location: "Curitiba, Brazil"
+    
+    pain_points:
+      - "Skeptical of self-help content"
+      - "Struggles to connect with emotions"
+      - "Difficulty in personal relationships due to emotional unavailability"
+      - "Believes emotional intelligence is 'soft skills' fluff"
+    
+    desires:
+      - "Wants evidence-based approaches"
+      - "Seeks practical tools, not just theory"
+      - "Hopes to improve relationships without 'touchy-feely' approaches"
+      - "Wants to understand emotions logically"
+    
+    reading_preferences:
+      - "Evidence and research-backed content"
+      - "Logical, step-by-step methods"
+      - "Minimal metaphors, more concrete examples"
+      - "Clear cause-and-effect explanations"
+    
+    review_focus:
+      - "Is there evidence or logic behind the methods?"
+      - "Are the practices concrete and specific?"
+      - "Does it avoid overly emotional or vague language?"
+      - "Will this convince skeptical readers to try?"
+
+review_guidelines:
+  criteria:
+    - accessibility: "Can beginners understand and apply this?"
+    - relevance: "Does this address real pain points of our personas?"
+    - practicality: "Are the tools and methods actionable?"
+    - authenticity: "Does this feel genuine and not preachy?"
+    - inclusivity: "Does this speak to diverse reader backgrounds?"
+    - inspiration: "Will this motivate readers to take action?"
+  
+  evaluation_questions:
+    - "Which persona(s) would find this most valuable?"
+    - "Are there persona pain points we're missing?"
+    - "Would a skeptical reader like Carlos engage with this?"
+    - "Is the language accessible to all education levels?"
+    - "Do the examples resonate across age groups?"
+    - "Is the content culturally appropriate for Brazilian readers?"
