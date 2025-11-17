@@ -1,5 +1,17 @@
 # <<titulo_do_livro>>
 
+----
+Manifesto de Acesso Justo e Democratização da Tecnologia em Saúde
+
+Este e-book possui uma versão comercial vendida na Amazon e, ao mesmo tempo, uma versão completa e gratuita disponibilizada no GitHub. Escolhi esse caminho porque acredito profundamente que tecnologia aplicada à saúde só faz sentido quando é acessível. A mesma lógica que defendo para hospitais — acesso equitativo a ferramentas modernas, independente de orçamento, origem ou contexto — também vale para desenvolvedores, estudantes e profissionais que querem entrar nessa área.
+
+Se você está lendo este material pela versão gratuita, saiba que isso faz parte da missão. Talvez você esteja começando na carreira, talvez esteja estudando com recursos limitados, talvez esteja buscando uma oportunidade de entrar no mercado de tecnologia em saúde. E se este livro te ajudar a dar um passo — conseguir um emprego, entender um conceito complexo, realizar um projeto, ou simplesmente enxergar um caminho possível — isso para mim já é uma honra.
+
+Ao mesmo tempo, manter projetos abertos exige tempo, foco e sustento. Por isso, a edição comercial existe. Se em algum momento você sentir que este conteúdo fez diferença real no seu caminho, considere adquirir a versão da Amazon como forma de apoio. Não é uma cobrança — é um gesto voluntário que me permite continuar produzindo materiais acessíveis e fomentar essa comunidade de devs que trabalham para democratizar o cuidado em saúde através da tecnologia.
+
+O mais importante é que o conhecimento circule, transforme e fortaleça quem deseja usar tecnologia para impactar vidas.
+Esse é o propósito. É por isso que escrevo. É por isso que esse projeto existe.
+
 
 ## Informações de Copyright
 © 2025 Igor Medeiros. Todos os direitos reservados.
