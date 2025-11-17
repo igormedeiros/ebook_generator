@@ -1,4 +1,7 @@
 name: Merge branches workflow
+permissions:
+  contents: write
+
 
 on:
   workflow_dispatch
