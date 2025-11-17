@@ -1,13 +1,9 @@
 import unittest
-from unittest.mock import patch, mock_open
+from unittest.mock import patch, mock_open, MagicMock
 import yaml
 from pathlib import Path
 
-# Temporarily add src to path to allow imports
-import sys
-sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
-
-from config import (
+from src.config import (
     load_yaml_config,
     get_config,
     get_message,
@@ -37,11 +33,11 @@ class TestConfig(unittest.TestCase):
             load_yaml_config('non_existent_file.yaml')
 
     @patch('src.config.SPECS_DIR', Path(__file__).parent / 'specs')
-    @patch('builtins.open', new_callable=mock_open, read_data='invalid_yaml: [')
-    def test_load_yaml_config_yaml_error(self, mock_file):
+    def test_load_yaml_config_yaml_error(self):
         """Test that YAMLError is raised for a malformed file."""
-        with self.assertRaises(yaml.YAMLError):
-            load_yaml_config('any_file.yaml')
+        with patch('builtins.open', mock_open(read_data='invalid_yaml: [')):
+            with self.assertRaises(yaml.YAMLError):
+                load_yaml_config('any_file.yaml')
 
     @patch('src.config.load_yaml_config')
     def test_get_config_section(self, mock_load_yaml):
@@ -97,13 +93,13 @@ class TestConfig(unittest.TestCase):
         """Test getting the agent for a specific stage."""
         mock_get_pipeline_config.return_value = {
             'stages': {
-                'stage_1_ideation': {
-                    'agent': 'ideation_agent'
+                'stage_1_document_spec': {
+                    'agent': 'document_spec_agent'
                 }
             }
         }
-        agent = get_agent_for_stage('stage_1_ideation')
-        self.assertEqual(agent, 'ideation_agent')
+        agent = get_agent_for_stage('stage_1_document_spec')
+        self.assertEqual(agent, 'document_spec_agent')
 
     @patch('src.config.get_pipeline_config')
     def test_get_agent_for_stage_not_found(self, mock_get_pipeline_config):
@@ -113,8 +109,13 @@ class TestConfig(unittest.TestCase):
             get_agent_for_stage('non_existent_stage')
 
     @patch.dict('os.environ', {'GOOGLE_API_KEY': 'test_api_key'})
-    def test_get_model_success(self):
+    @patch('src.config.ChatGoogleGenerativeAI')
+    def test_get_model_success(self, mock_chat_model):
         """Test getting the writing model successfully."""
+        mock_model_instance = MagicMock()
+        mock_model_instance.model_name = 'gemini-2.5-flash'
+        mock_chat_model.return_value = mock_model_instance
+
         model = get_model()
         self.assertIsNotNone(model)
         self.assertEqual(model.model_name, 'gemini-2.5-flash')
@@ -126,8 +127,13 @@ class TestConfig(unittest.TestCase):
             get_model()
 
     @patch.dict('os.environ', {'GOOGLE_API_KEY': 'test_api_key'})
-    def test_get_research_model_success(self):
+    @patch('src.config.ChatGoogleGenerativeAI')
+    def test_get_research_model_success(self, mock_chat_model):
         """Test getting the research model successfully."""
+        mock_model_instance = MagicMock()
+        mock_model_instance.model_name = 'gemini-2.5-pro'
+        mock_chat_model.return_value = mock_model_instance
+
         model = get_research_model()
         self.assertIsNotNone(model)
         self.assertEqual(model.model_name, 'gemini-2.5-pro')

@@ -1,14 +1,18 @@
 import unittest
 from unittest.mock import patch, MagicMock, call
+import os
 
-# Temporarily add src to path to allow imports
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
-
-from main import run_ebook_pipeline, _build_review_persona_agents, _build_virtual_reader_agents
+from src.main import run_ebook_pipeline, _build_review_persona_agents, _build_virtual_reader_agents
 
 class TestMainPipeline(unittest.TestCase):
+
+    def setUp(self):
+        """Set a dummy API key for tests."""
+        os.environ['GOOGLE_API_KEY'] = 'test-api-key'
+
+    def tearDown(self):
+        """Clean up the environment variable."""
+        del os.environ['GOOGLE_API_KEY']
 
     @patch('src.main.get_model')
     @patch('src.main.get_research_model')
@@ -18,6 +22,7 @@ class TestMainPipeline(unittest.TestCase):
     @patch('src.main.print_stage_header')
     @patch('src.main.print_stage_complete')
     @patch('src.main.print_pipeline_complete')
+    @patch('src.main.create_document_spec_agent')
     @patch('src.main.create_ideation_agent')
     @patch('src.main.create_title_agent')
     @patch('src.main.create_structure_agent')
@@ -34,6 +39,7 @@ class TestMainPipeline(unittest.TestCase):
         """Test a full run of the ebook pipeline."""
         # Mock the return values of agent executions
         mock_execute_agent.side_effect = [
+            "document_spec_output",
             "ideation_output",
             "title_output",
             "structure_output",
@@ -41,9 +47,9 @@ class TestMainPipeline(unittest.TestCase):
             "chapter_output",
             "editing_output",
             "finalization_output",
-            "publication_output",
+            {"publication": "output"},
         ]
-        mock_execute_review.side_effect = ["review_output", "critical_reading_output"]
+        mock_execute_review.side_effect = [{"review": "output"}, {"critical": "reading"}]
 
         # Mock config loader
         mock_get_config = args[10]
@@ -70,10 +76,10 @@ class TestMainPipeline(unittest.TestCase):
         )
 
         self.assertEqual(results['pipeline_status'], 'completed')
-        self.assertEqual(mock_execute_agent.call_count, 8)
+        self.assertEqual(mock_execute_agent.call_count, 9)
         self.assertEqual(mock_execute_review.call_count, 2)
-        self.assertIn('stage_1_ideation', results)
-        self.assertIn('stage_9_publication', results)
+        self.assertIn('stage_1_document_spec', results)
+        self.assertIn('stage_11_publication', results)
 
     @patch('src.main.get_model')
     @patch('src.main.get_research_model')
@@ -82,13 +88,13 @@ class TestMainPipeline(unittest.TestCase):
     @patch('src.main.print_pipeline_start')
     @patch('src.main.print_stage_header')
     @patch('src.main.print_stage_complete')
-    @patch('src.main.create_ideation_agent')
+    @patch('src.main.create_document_spec_agent')
     @patch('src.main.execute_agent')
-    def test_run_partial_pipeline(self, mock_execute_agent, mock_create_ideation_agent, *args):
+    def test_run_partial_pipeline(self, mock_execute_agent, mock_create_document_spec_agent, *args):
         """Test running only the first stage of the pipeline."""
-        mock_execute_agent.return_value = "ideation_output"
+        mock_execute_agent.return_value = "document_spec_output"
         mock_get_config = args[5]
-        mock_get_config.return_value = {"agent_prompts": {"ideation_prompt_template": "{topic}"}}
+        mock_get_config.return_value = {"agent_prompts": {"document_spec_prompt_template": "{topic}"}}
 
         results = run_ebook_pipeline(
             topic="Test Topic",
@@ -98,8 +104,8 @@ class TestMainPipeline(unittest.TestCase):
 
         self.assertEqual(results['pipeline_status'], 'partial')
         mock_execute_agent.assert_called_once()
-        self.assertIn('stage_1_ideation', results)
-        self.assertNotIn('stage_2_title', results)
+        self.assertIn('stage_1_document_spec', results)
+        self.assertNotIn('stage_2_ideation', results)
 
     @patch('src.main.get_model', side_effect=Exception("Test Exception"))
     @patch('src.main.print_error_panel')

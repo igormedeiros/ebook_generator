@@ -337,7 +337,7 @@ def _resolve_title_and_subtitle(
 
 
 def _render_blueprint_section(doc_spec_data: Any, ideation_data: Any) -> str:
-    """Cria resumo textual da DEL e da ideação."""
+    """Cria resumo textual da BRD e da ideação."""
 
     lines: list[str] = []
     doc_spec = _ensure_dict(doc_spec_data)
@@ -718,11 +718,11 @@ def run_ebook_pipeline(
             # Splash screen
             print_pipeline_start(topic, target_audience, word_count_target)
 
-            # Stage 1 — Documento de Especificação (DEL)
-            progress.update(overall_task, description="[bold cyan]1️⃣  Documento de Especificação[/bold cyan]")
-            show_stage_status(1, "Documento de Especificação", "Consolidando DEL...")
-            stage_title = get_message("stage_1_title", "Estágio 1: Documento de Especificação")
-            stage_desc = get_message("stage_1_start", "Consolidando DEL...")
+            # Stage 1 — Book Requirements Document (BRD)
+            progress.update(overall_task, description="[bold cyan]1️⃣  Book Requirements Document[/bold cyan]")
+            show_stage_status(1, "Book Requirements Document", "Consolidando BRD...")
+            stage_title = get_message("stage_1_title", "Estágio 1: Book Requirements Document")
+            stage_desc = get_message("stage_1_start", "Consolidando BRD...")
             logger.info(f"\n{'=' * 70}")
             logger.info("ESTÁGIO 1: DOCUMENTO DE ESPECIFICAÇÃO")
             logger.info(f"{'=' * 70}")
@@ -732,7 +732,7 @@ def run_ebook_pipeline(
             agent_prompts = get_config("agent_prompts")
             logger.info("✅ Templates carregados")
 
-            logger.info("🤖 Criando agente DEL...")
+            logger.info("🤖 Criando agente BRD...")
             document_spec_agent = _prepare_agent(create_document_spec_agent, research_model, "research")
             logger.info(f"✅ Agente criado: {type(document_spec_agent).__name__}")
 
@@ -740,7 +740,7 @@ def run_ebook_pipeline(
             author_bio = kwargs.get("author_bio", "")
             extra_notes = kwargs.get("extra_notes", "")
 
-            logger.info("🔧 Montando prompt do DEL...")
+            logger.info("🔧 Montando prompt do BRD...")
             document_spec_prompt = agent_prompts["document_spec_prompt_template"].format(
                 topic=topic,
                 target_audience=target_audience,
@@ -752,7 +752,7 @@ def run_ebook_pipeline(
             )
             logger.info(f"✅ Prompt ({len(document_spec_prompt)} chars)")
 
-            logger.info("🤖 Executando agente DEL (Gemini 2.5 Pro)...")
+            logger.info("🤖 Executando agente BRD (Gemini 2.5 Pro)...")
             _show_agent_debug(
                 agent_name="Document Specification Agent",
                 stage_label=stage_title,
@@ -761,8 +761,8 @@ def run_ebook_pipeline(
                 prompt_preview=document_spec_prompt,
             )
             document_spec_output = execute_agent(document_spec_agent, document_spec_prompt)
-            logger.info("✅ DEL gerado")
-            logger.info(f"\n📤 RESULTADO DO DEL:\n{'-' * 70}\n{document_spec_output}\n{'-' * 70}\n")
+            logger.info("✅ BRD gerado")
+            logger.info(f"\n📤 RESULTADO DO BRD:\n{'-' * 70}\n{document_spec_output}\n{'-' * 70}\n")
             print_agent_output(stage_title, document_spec_output)
 
             results["stage_1_document_spec"] = {"output": document_spec_output}
@@ -805,7 +805,7 @@ def run_ebook_pipeline(
                 promise_context=promise_context,
             )
             ideation_prompt = (
-                f"{ideation_prompt}\n\nDEL Context:\n{document_spec_output}"
+                f"{ideation_prompt}\n\nBRD Context:\n{document_spec_output}"
             )
             logger.info(f"✅ Prompt ({len(ideation_prompt)} chars)")
 

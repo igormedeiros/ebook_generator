@@ -10,8 +10,8 @@ messages:
   
   # Estágios - com descrições detalhadas
   stage_1_title: "Estágio 1: Documento de Especificação"
-  stage_1_start: "Consolidando DEL com ideia, promessa e direcionadores do autor..."
-  stage_1_complete: "✓ DEL gerado com sucesso"
+  stage_1_start: "Consolidando BRD com ideia, promessa e direcionadores do autor..."
+  stage_1_complete: "✓ BRD gerado com sucesso"
   
   stage_2_title: "Estágio 2: Ideação"
   stage_2_start: "Desdobrando promessa e definindo problema central..."
@@ -182,7 +182,7 @@ prompts:
 agent_prompts:
   # Estágio 1: Document Specification
   document_spec_prompt_template: |
-    Produce a Livro Specification (DEL) in JSON with keys blueprint_id, idea_brief,
+    Produce a Livro Specification (BRD) in JSON with keys blueprint_id, idea_brief,
     promise, audience_profile, tone_guide, visual_references. Inputs:
     Topic: {topic}
     Audience: {target_audience}

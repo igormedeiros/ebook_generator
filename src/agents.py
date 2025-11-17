@@ -149,7 +149,10 @@ def _create_pipeline_agent(agent_key: str, model: ChatGoogleGenerativeAI) -> Any
     if not tools_factory:
         raise ValueError(f"No tools configured for agent {agent_key}")
 
-    system_prompt = _build_system_prompt(spec)
+    system_prompt = spec.get("system_prompt")
+    if not system_prompt:
+        raise ValueError(f"No system_prompt configured for agent {agent_key}")
+
     return create_agent(
         model=model,
         tools=tools_factory(),
@@ -204,32 +207,6 @@ def _build_virtual_reader_prompt(reader_id: str, reader_spec: dict) -> str:
     )
 
 
-def _build_system_prompt(agent_spec: dict) -> str:
-    """Build dynamic system prompt from agent YAML specification."""
-    name = agent_spec.get('name', 'Agent')
-    role = agent_spec.get('role', 'Specialist')
-    responsibility = agent_spec.get('responsibility', 'assist with the pipeline')
-    focus_areas = agent_spec.get('focus_areas', [])
-    process = agent_spec.get('process', [])
-    output_format = agent_spec.get('output_format', 'Provide structured output')
-
-    focus_areas_text = "\n".join(f"  {i+1}. {area}" for i, area in enumerate(focus_areas))
-    process_text = "\n".join(f"  - {step}" for step in process)
-
-    prompt = f"""You are the {name} - {role}.
-
-Your responsibility is to {responsibility}.
-
-Focus Areas:
-{focus_areas_text}
-
-Process:
-{process_text}
-
-Output Format:
-{output_format}"""
-
-    return prompt
 
 
 def execute_agent(agent: Any, query: str, max_retries: int = 2) -> str:
@@ -318,7 +295,7 @@ def execute_review_personas(coordinator_agent: Any, query: str, personas_agents:
 
 
 def create_document_spec_agent(model: ChatGoogleGenerativeAI) -> Any:
-    """Etapa 1: Documento de Especificação (DEL)."""
+    """Etapa 1: Book Requirements Document (BRD)."""
 
     return _create_pipeline_agent("document_spec_agent", model)
 

@@ -123,29 +123,10 @@ def retrieve_rag_context(query: str, max_results: int = 3) -> str:
         return f"RAG context for '{query}': Supabase not configured - using default context"
     
     try:
-        logger.debug(f"🔍 Gerando embedding para contexto...")
-        embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
-        query_embedding = embeddings.embed_query(query)
-        logger.debug(f"✅ Embedding gerado - buscando {max_results} documentos...")
-        
-        results = supabase_client.rpc(
-            "match_documents",
-            {
-                "query_embedding": query_embedding,
-                "match_threshold": 0.78,
-                "match_count": max_results,
-            },
-        ).execute()
-        
-        if results.data:
-            logger.info(f"✅ [RAG] Encontrados {len(results.data)} documentos para contexto")
-            context = f"RAG context for '{query}':\n"
-            for i, result in enumerate(results.data, 1):
-                context += f"{i}. Source: {result.get('source', 'Unknown')}\n"
-                context += f"   Content: {result.get('content', '')[:200]}...\n"
-            return context
-        
-        return f"RAG context for '{query}': No relevant documents found"
+        search_results = search_knowledge_base(query)
+        if "No relevant information found" in search_results:
+            return f"RAG context for '{query}': No relevant documents found"
+        return search_results
     except Exception as e:
         return f"RAG context for '{query}': Error retrieving from Supabase - {str(e)}"
 
