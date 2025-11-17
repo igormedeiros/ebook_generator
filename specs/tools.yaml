@@ -1,380 +1,328 @@
-# Configuração de Ferramentas (Tools) - Ebook Generator 1.0
-
 tool_categories:
   ideation:
-    description: "Ferramentas para Estágio 1: Ideação"
+    description: "Pesquisa rápida para DEL e ideação"
     tools:
       - search_knowledge_base
       - retrieve_rag_context
-      - validate_audience_fit
-      - generate_value_proposition
 
   title_generation:
-    description: "Ferramentas para Estágio 2: Geração de Títulos"
+    description: "Otimização de título/subtítulo"
     tools:
-      - search_bestsellers
-      - optimize_for_amazon_seo
-      - validate_title_length
-      - check_amazon_compliance
+      - generate_amazon_optimized_title
+      - validate_title_seo
+      - search_knowledge_base
 
   structure:
-    description: "Ferramentas para Estágio 3: Estrutura"
+    description: "Geração de outline e validações"
     tools:
       - generate_outline
-      - calculate_word_distribution
-      - validate_didactic_progression
-      - create_chapter_definitions
+      - count_words
+      - validate_structure
 
-  deep_research:
-    description: "Ferramentas para Estágio 4A: Pesquisa Profunda"
+  research:
+    description: "Pesquisa externa e vetorização"
     tools:
       - query_context7_mcp
       - perform_deep_research
       - vectorize_research
       - store_in_rag_external
-      - validate_source_credibility
+      - retrieve_rag_context
 
   writing:
-    description: "Ferramentas para Estágio 4B: Escrita"
+    description: "Escrita com contexto e voz do autor"
     tools:
-      - retrieve_rag_external_research
-      - retrieve_author_stories_rag
-      - retrieve_author_positioning_rag
-      - retrieve_author_vision_rag
-      - generate_chapter_content
-      - validate_content_quality
+      - retrieve_rag_context
+      - retrieve_author_stories
+      - retrieve_author_positioning
+      - retrieve_author_vision
+      - format_markdown
+      - count_words
 
   review:
-    description: "Ferramentas para Estágio 5: Revisão"
+    description: "Revisão especializada e leitores virtuais"
     tools:
-      - execute_review_personas
-      - aggregate_feedback
-      - prioritize_issues
-      - generate_review_report
-
-  critical_reading:
-    description: "Ferramentas para Estágio 6: Leitura Crítica"
-    tools:
-      - execute_critical_reading_iterations
-      - analyze_reader_feedback
-      - prioritize_refinements
-      - measure_improvement
+      - review_tone_and_engagement
+      - review_clarity_and_empathy
+      - review_grammar_and_style
+      - review_logical_flow
+      - review_code_examples
+      - validate_content_quality
 
   editing:
-    description: "Ferramentas para Estágio 7: Edição"
+    description: "Edição e acabamento"
     tools:
-      - validate_markdown
-      - fix_formatting
-      - check_heading_hierarchy
-      - ensure_consistency
+      - format_markdown
+      - validate_content_quality
+      - validate_structure
 
   finalization:
-    description: "Ferramentas para Estágio 8: Finalização"
+    description: "Capa, metadata e resumo KDP"
     tools:
       - generate_cover
-      - compile_metadata
-      - generate_summary
-      - create_toc
-      - generate_glossary
+      - generate_kdp_metadata
+      - validate_content_quality
 
   publication:
-    description: "Ferramentas para Estágio 9: Publicação"
+    description: "Exportação e pacote KDP"
     tools:
       - export_to_docx
       - export_to_epub
       - export_to_pdf
       - export_to_json
-      - validate_kdp_compliance
-      - prepare_for_publication
+      - generate_kdp_metadata
 
 tools:
-  # Ideation Tools
   search_knowledge_base:
-    description: "Busca na base de conhecimento por tópicos relacionados"
+    description: "Busca semântica em Supabase"
     parameters:
       query:
         type: string
         required: true
-        description: "Query de busca"
-      limit:
-        type: integer
-        default: 5
-        description: "Número máximo de resultados"
 
   retrieve_rag_context:
-    description: "Recupera contexto de RAG para enriquecimento"
+    description: "Recupera contexto vetorial"
     parameters:
       query:
         type: string
         required: true
-      source:
-        type: string
-        enum: ["external", "author_stories", "author_positioning", "author_vision"]
-      top_k:
+      max_results:
         type: integer
         default: 3
 
-  # Title Generation Tools
-  search_bestsellers:
-    description: "Pesquisa bestsellers em nicho específico"
+  generate_amazon_optimized_title:
+    description: "Cria título sugerido com foco em SEO"
     parameters:
-      category:
+      topic:
         type: string
         required: true
-      limit:
-        type: integer
-        default: 10
+      target_audience:
+        type: string
+        required: true
 
-  optimize_for_amazon_seo:
-    description: "Otimiza título para algoritmo de busca Amazon"
+  validate_title_seo:
+    description: "Verifica pontuação de SEO do título"
     parameters:
       title:
         type: string
         required: true
-      keywords:
-        type: array
-        item_type: string
-      category:
-        type: string
 
-  # Structure Tools
   generate_outline:
-    description: "Gera outline hierárquico do livro"
+    description: "Gera outline básico com capítulos"
     parameters:
-      central_idea:
+      topic:
         type: string
         required: true
       word_count_target:
         type: integer
         required: true
-      chapter_count:
-        type: integer
-      didactic_progression:
-        type: boolean
-        default: true
 
-  calculate_word_distribution:
-    description: "Calcula distribuição de palavras entre capítulos"
+  count_words:
+    description: "Conta palavras de um texto"
     parameters:
-      total_words:
-        type: integer
+      content:
+        type: string
         required: true
-      chapter_count:
-        type: integer
-        required: true
-      weights:
-        type: object
-        description: "Pesos customizados por seção"
 
-  # Deep Research Tools
+  validate_structure:
+    description: "Valida presença de intro/conclusão e contagem"
+    parameters:
+      outline:
+        type: object
+        required: true
+
   query_context7_mcp:
-    description: "Consulta Context7 MCP Server para bases de conhecimento"
+    description: "Consulta Context7 MCP"
     parameters:
       topic:
         type: string
         required: true
-      query_types:
-        type: array
-        item_type: string
-        enum: ["research", "trends", "case_studies", "expert_perspectives"]
-      source_limit:
-        type: integer
-        default: 5
+      query_type:
+        type: string
+        default: "research"
 
   perform_deep_research:
-    description: "Executa pesquisa profunda usando Gemini 2.5 Pro"
+    description: "Agrupa achados externos"
     parameters:
       topic:
         type: string
         required: true
       research_depth:
         type: string
-        enum: ["quick", "standard", "comprehensive"]
-      sources:
-        type: array
-        item_type: object
+        default: "standard"
 
   vectorize_research:
-    description: "Vetoriza resultados de pesquisa com embeddings Gemini"
+    description: "Gera embeddings e metadados"
     parameters:
-      research_content:
-        type: string
-        required: true
-      topic:
-        type: string
-        required: true
-      chapter_id:
-        type: string
+      research_findings:
+        type: object
         required: true
 
   store_in_rag_external:
-    description: "Armazena pesquisa vetorizada em rag_external"
+    description: "Registra vetores em Supabase"
     parameters:
-      vectors:
-        type: array
-        required: true
-      metadata:
+      vectorized_data:
         type: object
         required: true
-      table:
-        type: string
-        default: "rag_external"
-
-  # Writing Tools
-  retrieve_rag_external_research:
-    description: "Recupera pesquisa vetorizada do rag_external"
-    parameters:
-      chapter_topic:
-        type: string
-        required: true
-      top_k:
-        type: integer
-        default: 3
-
-  retrieve_author_stories_rag:
-    description: "Recupera histórias do autor de rag_author_stories"
-    parameters:
       topic:
         type: string
         required: true
-      relevance_threshold:
-        type: number
-        default: 0.7
 
-  generate_chapter_content:
-    description: "Gera conteúdo de capítulo com contexto RAG"
+  retrieve_author_stories:
+    description: "Recupera histórias autorais"
     parameters:
-      chapter_outline:
-        type: object
-        required: true
-      research_context:
-        type: array
-        item_type: object
-      author_context:
-        type: object
-
-  # Review Tools
-  execute_review_personas:
-    description: "Executa revisão com todos os 10 personas"
-    parameters:
-      content:
+      author_name:
         type: string
         required: true
-      active_personas:
-        type: array
-        item_type: string
-        default: ["all"]
-
-  aggregate_feedback:
-    description: "Agrega feedback de múltiplos personas"
-    parameters:
-      feedback:
-        type: array
-        item_type: object
-        required: true
-      strategy:
-        type: string
-        enum: ["majority", "consensus", "weighted"]
-        default: "weighted"
-
-  # Critical Reading Tools
-  execute_critical_reading_iterations:
-    description: "Executa 3 ciclos de leitura crítica com leitores virtuais"
-    parameters:
-      content:
-        type: string
-        required: true
-      active_readers:
-        type: array
-        item_type: string
-        default: ["all"]
-      iteration_count:
+      max_results:
         type: integer
         default: 3
 
-  analyze_reader_feedback:
-    description: "Analisa feedback de leitores virtuais"
+  retrieve_author_positioning:
+    description: "Posicionamento do autor"
     parameters:
-      feedback:
-        type: array
-        item_type: object
+      author_name:
+        type: string
         required: true
-      iteration:
+      max_results:
         type: integer
+        default: 3
 
-  # Editing Tools
-  validate_markdown:
-    description: "Valida sintaxe Markdown do documento"
+  retrieve_author_vision:
+    description: "Visão/valores do autor"
+    parameters:
+      author_name:
+        type: string
+        required: true
+      max_results:
+        type: integer
+        default: 3
+
+  format_markdown:
+    description: "Adiciona título e separador em Markdown"
+    parameters:
+      title:
+        type: string
+        required: true
+      content:
+        type: string
+        required: true
+
+  validate_content_quality:
+    description: "Retorna métricas simples de qualidade"
     parameters:
       content:
         type: string
         required: true
-      standard:
-        type: string
-        enum: ["commonmark", "gfm", "github"]
-        default: "commonmark"
 
-  fix_formatting:
-    description: "Corrige formatação do documento"
+  review_tone_and_engagement:
+    description: "Checklist de tom/engajamento"
     parameters:
       content:
         type: string
         required: true
-      rules:
-        type: object
 
-  # Publication Tools
+  review_clarity_and_empathy:
+    description: "Checklist de clareza"
+    parameters:
+      content:
+        type: string
+        required: true
+
+  review_grammar_and_style:
+    description: "Checklist de gramática"
+    parameters:
+      content:
+        type: string
+        required: true
+
+  review_logical_flow:
+    description: "Checklist de coerência"
+    parameters:
+      content:
+        type: string
+        required: true
+
+  review_code_examples:
+    description: "Checklist de exemplos de código"
+    parameters:
+      content:
+        type: string
+        required: true
+
+  generate_cover:
+    description: "Retorna mensagem de capa gerada"
+    parameters:
+      title:
+        type: string
+        required: true
+      subtitle:
+        type: string
+        required: true
+      author:
+        type: string
+        required: true
+
   export_to_docx:
-    description: "Exporta para formato DOCX"
+    description: "Exportação mock DOCX"
     parameters:
       content:
         type: string
         required: true
-      output_path:
+      title:
         type: string
         required: true
-      include_metadata:
-        type: boolean
-        default: true
 
   export_to_epub:
-    description: "Exporta para formato EPUB"
+    description: "Exportação mock EPUB"
     parameters:
       content:
         type: string
         required: true
-      output_path:
+      title:
+        type: string
+        required: true
+
+  export_to_pdf:
+    description: "Exportação mock PDF"
+    parameters:
+      content:
+        type: string
+        required: true
+      title:
+        type: string
+        required: true
+
+  export_to_json:
+    description: "Exportação mock JSON"
+    parameters:
+      content:
+        type: string
+        required: true
+      title:
         type: string
         required: true
       metadata:
         type: object
+        required: false
 
-  export_to_pdf:
-    description: "Exporta para formato PDF"
+  generate_kdp_metadata:
+    description: "Gera JSON de metadados KDP"
     parameters:
-      content:
+      title:
         type: string
         required: true
-      output_path:
+      author:
         type: string
         required: true
-      template:
-        type: string
-        enum: ["standard", "colored", "minimal"]
-
-  validate_kdp_compliance:
-    description: "Valida compatibilidade com KDP Amazon"
-    parameters:
-      content:
+      category:
         type: string
         required: true
-      strict_mode:
-        type: boolean
-        default: true
+      keywords:
+        type: array
+        item_type: string
+        required: true
 
 defaults:
   rag_top_k: 5
-  timeout_seconds: 300
-  max_retries: 3
-  retry_delay_seconds: 5
+  timeout_seconds: 180
   token_limit_per_call: 4096

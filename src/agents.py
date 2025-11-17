@@ -7,11 +7,15 @@ Agents are spec-driven from agents.yaml and include:
 - 5 virtual reader personas
 """
 
-from typing import Any
+import time
+from typing import Any, Callable, Dict, Optional
 from langchain.agents import create_agent
+from langchain_core.callbacks import BaseCallbackHandler
 from langchain_google_genai import ChatGoogleGenerativeAI
+from rich.console import Console
+from rich.status import Status
 
-from .config import get_agents_config, get_logger
+from .config import get_agents_config, get_logger, get_personas_config
 from .tools import (
     get_ideation_tools,
     get_title_tools,
@@ -25,6 +29,179 @@ from .tools import (
 )
 
 logger = get_logger(__name__)
+
+RETRYABLE_KEYWORDS = (
+    "serviceunavailable",
+    "failed to connect",
+    "handshake read failed",
+    "timeout",
+    "deadline exceeded",
+    "temporarily unavailable",
+    "unavailable",
+)
+
+PERSONA_WRITE_MODEL_IDS = {
+    "editorial_reviewer",
+    "content_stylist",
+    "author_stories_didactics",
+}
+
+VIRTUAL_READER_WRITE_MODEL_IDS = {
+    "curious_beginner",
+    "didactic_educator",
+    "reflective_reader",
+}
+
+PIPELINE_AGENT_TOOLS: Dict[str, Callable[[], list]] = {
+    "document_spec_agent": get_ideation_tools,
+    "ideation_agent": get_ideation_tools,
+    "title_agent": get_title_tools,
+    "structure_agent": get_structure_tools,
+    "deep_research_agent": get_deep_research_tools,
+    "chapter_writing_agent": get_chapter_writing_tools,
+    "review_coordinator_agent": get_review_tools,
+    "critical_reading_coordinator_agent": get_review_tools,
+    "editing_agent": get_editing_tools,
+    "finalization_agent": get_finalization_tools,
+    "publication_agent": get_publication_tools,
+}
+
+
+class StreamingCallbackHandler(BaseCallbackHandler):
+    """Rich-powered callback handler that streams tokens in real time."""
+
+    def __init__(self, console: Console, status_text: str):
+        self.console = console
+        self.status_text = status_text
+        self._status: Optional[Status] = None
+        self._buffer: list[str] = []
+        self._stream_started = False
+        self._enabled = getattr(console, "is_terminal", True)
+
+    def __enter__(self) -> "StreamingCallbackHandler":
+        self._status = self.console.status(self.status_text, spinner="dots")
+        self._status.__enter__()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        if self._status:
+            self._status.__exit__(exc_type, exc_val, exc_tb)
+            self._status = None
+        if self._stream_started:
+            self.console.print()
+
+    def _append_text(self, text: str) -> None:
+        if not text:
+            return
+        self._buffer.append(text)
+        if self._enabled:
+            self.console.print(text, end="", style="white", highlight=False)
+            self.console.file.flush()
+            self._stream_started = True
+
+    def on_llm_start(self, *args, **kwargs) -> None:  # noqa: ANN002, ANN003
+        if self._status:
+            self._status.update("[bold cyan]🟢 Streaming da IA...[/bold cyan]")
+
+    def on_llm_new_token(self, token: str, **kwargs: Any) -> None:
+        self._append_text(token)
+
+    def on_llm_end(self, *args, **kwargs) -> None:  # noqa: ANN002, ANN003
+        if self._status:
+            self._status.update("[bold green]✅ Resposta recebida[/bold green]")
+
+    def on_llm_error(self, error: Exception, **kwargs: Any) -> None:
+        if self._status:
+            self._status.update("[bold red]❌ Erro no modelo[/bold red]")
+
+    @property
+    def streamed_text(self) -> str:
+        """Return concatenated streamed tokens."""
+
+        return "".join(self._buffer)
+
+    @property
+    def has_stream(self) -> bool:
+        """Return True when at least one token was streamed."""
+
+        return bool(self._buffer)
+
+
+def _error_matches(error: Exception, keywords: tuple[str, ...]) -> bool:
+    """Check whether error text contains any keyword."""
+
+    text = f"{type(error)} {error}".lower()
+    return any(keyword in text for keyword in keywords)
+
+
+def _is_retryable_error(error: Exception) -> bool:
+    """Return True when the exception is transient and worth retrying."""
+
+    return _error_matches(error, RETRYABLE_KEYWORDS)
+
+
+def _create_pipeline_agent(agent_key: str, model: ChatGoogleGenerativeAI) -> Any:
+    """Create an agent using YAML specs and mapped tools."""
+
+    agents_config = get_agents_config()
+    spec = agents_config["main_pipeline_agents"][agent_key]
+    tools_factory = PIPELINE_AGENT_TOOLS.get(agent_key)
+    if not tools_factory:
+        raise ValueError(f"No tools configured for agent {agent_key}")
+
+    system_prompt = _build_system_prompt(spec)
+    return create_agent(
+        model=model,
+        tools=tools_factory(),
+        system_prompt=system_prompt,
+    )
+
+
+def _build_persona_prompt(persona_id: str, persona_spec: dict) -> str:
+    """Create a system prompt for review personas."""
+
+    name = persona_spec.get("name", persona_id)
+    role = persona_spec.get("role", "Reviewer")
+    expertise = persona_spec.get("expertise_areas", [])
+    criteria = persona_spec.get("evaluation_criteria", [])
+    rag_source = persona_spec.get("rag_source")
+
+    expertise_text = "\n".join(f"- {item}" for item in expertise) or "- General expertise"
+    criteria_text = "\n".join(f"- {item}" for item in criteria) or "- Evaluate overall quality"
+    rag_text = (
+        f"\nUse the '{rag_source}' RAG source whenever you need additional context."
+        if rag_source
+        else ""
+    )
+
+    return (
+        f"You are {name}, acting as a {role}.\n"
+        f"Focus Areas:\n{expertise_text}\n\n"
+        f"Evaluation Criteria:\n{criteria_text}{rag_text}\n\n"
+        "Return JSON with keys score (0-100), feedback (string), highlights (array), issues (array)."
+    )
+
+
+def _build_virtual_reader_prompt(reader_id: str, reader_spec: dict) -> str:
+    """Create prompt for virtual reader personas."""
+
+    name = reader_spec.get("name", reader_id)
+    profile = reader_spec.get("profile", "Reader persona")
+    focus_areas = reader_spec.get("focus_areas", [])
+    validation_focus = reader_spec.get("validation_focus", [])
+
+    focus_text = "\n".join(f"- {item}" for item in focus_areas) or "- General comprehension"
+    validation_text = (
+        "\n".join(f"- {item}" for item in validation_focus)
+        if validation_focus
+        else "- Flag confusing or weak sections"
+    )
+
+    return (
+        f"You are {name}, {profile}.\n"
+        f"Focus Areas:\n{focus_text}\n\nValidation Focus:\n{validation_text}\n\n"
+        "Return JSON with keys score (0-100), positives (array), concerns (array), suggestions (array)."
+    )
 
 
 def _build_system_prompt(agent_spec: dict) -> str:
@@ -55,58 +232,55 @@ Output Format:
     return prompt
 
 
-def execute_agent(agent: Any, query: str) -> str:
-    """
-    Execute an agent with a query and return the response with automatic fallback.
-    
-    If the agent fails due to quota or other errors, will attempt to use fallback
-    models (Gemini Flash -> Pro -> Groq) automatically.
-    """
-    from rich.spinner import Spinner
-    from rich.console import Console
-    
+def execute_agent(agent: Any, query: str, max_retries: int = 2) -> str:
+    """Execute an agent with basic retry logic."""
     console = Console()
-    try:
-        logger.info(f"🤖 Pensamento do agente...")
-        with console.status("[bold cyan]⏳ Processando com IA...[/bold cyan]", spinner="dots"):
-            response = agent.invoke({
-                "messages": [{"role": "user", "content": query}]
-            })
-        
-        if isinstance(response, dict):
-            if "output" in response:
-                result = response["output"]
-                logger.info(f"✅ Agente concluiu processamento")
-                return result
-            elif "messages" in response:
-                messages = response.get("messages", [])
-                if messages:
-                    result = messages[-1].content
-                    logger.info(f"✅ Agente concluiu processamento")
+    max_attempts = max(1, max_retries) + 1
+    last_error: Exception | None = None
+
+    for attempt in range(1, max_attempts + 1):
+        try:
+            logger.info(f"🤖 Pensamento do agente... (tentativa {attempt}/{max_attempts})")
+            payload = {"messages": [{"role": "user", "content": query}]}
+            handler = StreamingCallbackHandler(console, "[bold cyan]⏳ Processando com IA...[/bold cyan]")
+            with handler:
+                response = agent.invoke(payload, config={"callbacks": [handler]})
+
+            if isinstance(response, dict):
+                if "output" in response:
+                    result = response["output"]
+                    logger.info("✅ Agente concluiu processamento")
                     return result
-        
-        logger.info(f"✅ Agente concluiu processamento")
-        return str(response)
-    except Exception as e:
-        error_msg = str(e)
-        logger.warning(f"⚠️  Erro na execução do agente: {error_msg[:100]}")
-        
-        # Check if it's a quota error
-        if "ResourceExhausted" in str(type(e)) or "429" in error_msg or "quota" in error_msg.lower():
-            logger.info("💬 Detectado erro de quota, tentando com modelos alternativos...")
-            
-            try:
-                # Try fallback mechanism
-                from .llm_fallback import get_llm_fallback
-                fallback = get_llm_fallback()
-                logger.info("🔄 Acionando mecanismo de fallback...")
-                
-                return fallback.execute_with_fallback(agent, query)
-            except Exception as fallback_error:
-                logger.error(f"❌ Fallback também falhou: {str(fallback_error)[:100]}")
-                return f"Error executing agent with fallback: {str(fallback_error)}"
-        
-        return f"Error executing agent: {str(e)}"
+                if "messages" in response:
+                    messages = response.get("messages", [])
+                    if messages:
+                        result = messages[-1].content
+                        logger.info("✅ Agente concluiu processamento")
+                        return result
+
+            logger.info("✅ Agente concluiu processamento")
+            return str(response)
+        except Exception as exc:  # noqa: BLE001
+            last_error = exc
+            error_msg = str(exc)
+            if attempt < max_attempts and _is_retryable_error(exc):
+                wait_seconds = min(5 * attempt, 20)
+                logger.warning(
+                    "🔁 Erro transitório (tentativa %s/%s): %s",
+                    attempt,
+                    max_attempts,
+                    error_msg[:140],
+                )
+                logger.info(f"⏳ Aguardando {wait_seconds}s antes de tentar novamente...")
+                time.sleep(wait_seconds)
+                continue
+
+            logger.warning(f"⚠️  Erro na execução do agente: {error_msg[:160]}")
+            return f"Error executing agent: {error_msg}"
+
+    if last_error:
+        return f"Error executing agent: {last_error}"
+    return "Error executing agent: unknown failure"
 
 
 def execute_review_personas(coordinator_agent: Any, query: str, personas_agents: dict) -> dict:
@@ -143,516 +317,220 @@ def execute_review_personas(coordinator_agent: Any, query: str, personas_agents:
     return feedback
 
 
-def create_ideation_agent(model: ChatGoogleGenerativeAI) -> Any:
-    """Stage 1: Ideation Agent - Generate central idea and problem definition."""
-    agents_config = get_agents_config()
-    spec = agents_config['main_pipeline_agents']['ideation_agent']
-    
-    system_prompt = """You are the Ideation Agent, a specialist in creative and strategic thinking.
-Your responsibility is to generate a comprehensive and compelling concept for an ebook.
+def create_document_spec_agent(model: ChatGoogleGenerativeAI) -> Any:
+    """Etapa 1: Documento de Especificação (DEL)."""
 
-You must follow this process:
-1.  **Analyze the Input**: Carefully review the user's input for the topic, target audience, and word count.
-2.  **Explore the Knowledge Base**: Use the `search_knowledge_base` tool to gather initial information and context about the topic.
-3.  **Deepen Understanding with RAG**: Use the `retrieve_rag_context` tool to get more specific and detailed information about the topic.
-4.  **Synthesize the Core Concept**: Based on the gathered information, define the following:
-    *   **Central Idea**: A concise and powerful statement that captures the essence of the book.
-    *   **Problem Definition**: The specific problem that the book will solve for the reader.
-    *   **Target Audience Insight**: A deeper understanding of the target audience's needs, pain points, and desires.
-    *   **Transformation Promise**: The tangible transformation or outcome that the reader will achieve after reading the book.
-5.  **Format the Output**: Present the final output as a JSON object with the keys 'idea', 'problem', 'promise', and 'audience_insight'.
-"""
-    
-    return create_agent(
-        model=model,
-        tools=get_ideation_tools(),
-        system_prompt=system_prompt
-    )
+    return _create_pipeline_agent("document_spec_agent", model)
+
+
+def create_ideation_agent(model: ChatGoogleGenerativeAI) -> Any:
+    """Etapa 2: Agente de Ideação."""
+
+    return _create_pipeline_agent("ideation_agent", model)
 
 
 def create_title_agent(model: ChatGoogleGenerativeAI) -> Any:
-    """Stage 2: Title Generation Agent - Generate Amazon-optimized titles."""
-    agents_config = get_agents_config()
-    spec = agents_config['main_pipeline_agents']['title_agent']
-    
-    system_prompt = """You are the Title Generation Agent, a specialist in marketing and SEO for books.
-Your responsibility is to generate three compelling and Amazon-optimized titles for an ebook.
+    """Etapa 3: Estratégia de Título."""
 
-You must follow this process:
-1.  **Analyze the Core Concept**: Carefully review the central idea, problem definition, and target audience provided.
-2.  **Research the Market**: Use the `search_knowledge_base` tool to research existing book titles in the same category.
-3.  **Generate Title Options**: Use the `generate_amazon_optimized_title` tool to create three distinct title and subtitle options.
-4.  **Validate SEO**: For each title option, use the `validate_title_seo` tool to assess its SEO potential.
-5.  **Format the Output**: Present the final output as a JSON object with the keys 'titles' (an array of 3 strings), 'rationales' (a dictionary with a rationale for each title), and 'seo_keywords' (an array of strings).
-"""
-    
-    return create_agent(
-        model=model,
-        tools=get_title_tools(),
-        system_prompt=system_prompt
-    )
+    return _create_pipeline_agent("title_agent", model)
 
 
 def create_structure_agent(model: ChatGoogleGenerativeAI) -> Any:
-    """Stage 3: Structure Agent - Build hierarchical outline."""
-    agents_config = get_agents_config()
-    spec = agents_config['main_pipeline_agents']['structure_agent']
-    
-    system_prompt = """You are the Structure Agent, an expert in content architecture and instructional design.
-Your responsibility is to create a well-structured and hierarchical outline for an ebook.
+    """Etapa 4: Arquitetura de Estrutura."""
 
-You must follow this process:
-1.  **Analyze the Core Concept and Title**: Carefully review the central idea, target audience, and the chosen title for the ebook.
-2.  **Generate the Outline**: Use the `generate_outline` tool to create a hierarchical outline with chapters and sections. The outline should be scaled to the target word count.
-3.  **Calculate Word Distribution**: Use the `count_words` tool to estimate the word count for each chapter and section to ensure the total word count is met.
-4.  **Validate the Structure**: Use the `validate_structure` tool to check the coherence and logical flow of the outline.
-5.  **Format the Output**: Present the final output as a Markdown document with a clear heading hierarchy and the estimated word distribution for each chapter.
-"""
-    
-    return create_agent(
-        model=model,
-        tools=get_structure_tools(),
-        system_prompt=system_prompt
-    )
+    return _create_pipeline_agent("structure_agent", model)
 
 
 def create_deep_research_agent(model: ChatGoogleGenerativeAI) -> Any:
-    """Stage 4A: Deep Research Agent - Gather and vectorize research."""
-    agents_config = get_agents_config()
-    spec = agents_config['main_pipeline_agents']['deep_research_agent']
-    
-    system_prompt = """You are the Deep Research Agent, a specialist in information retrieval and knowledge synthesis.
-Your responsibility is to perform deep research on a given topic, vectorize the findings, and store them for later use.
+    """Etapa 5: Integrador de Pesquisa."""
 
-You must follow this process:
-1.  **Analyze the Chapter Topic**: Carefully review the topic for each chapter of the ebook.
-2.  **Query Context7 MCP**: Use the `query_context7_mcp` tool to retrieve relevant knowledge bases and research materials.
-3.  **Perform Deep Research**: Use the `perform_deep_research` tool to synthesize the information and generate detailed findings.
-4.  **Vectorize the Research**: Use the `vectorize_research` tool to create embeddings for the research findings.
-5.  **Store in RAG**: Use the `store_in_rag_external` tool to store the vectorized research in the Supabase RAG external table.
-6.  **Format the Output**: Present the final output as a JSON object with a summary of the research, a list of sources, the vector IDs, and the storage status.
-"""
-    
-    return create_agent(
-        model=model,
-        tools=get_deep_research_tools(),
-        system_prompt=system_prompt
-    )
+    return _create_pipeline_agent("deep_research_agent", model)
 
 
 def create_chapter_agent(model: ChatGoogleGenerativeAI) -> Any:
-    """Stage 4B: Chapter Writing Agent - Write didactic content with RAG integration."""
-    agents_config = get_agents_config()
-    spec = agents_config['main_pipeline_agents']['chapter_writing_agent']
-    
-    system_prompt = """You are the Chapter Writing Agent, a master of didactic and engaging writing.
-Your responsibility is to write a complete chapter for an ebook, integrating research and maintaining the author's voice.
+    """Etapa 6: Agente de Escrita."""
 
-You must follow this process:
-1.  **Analyze the Outline**: Carefully review the outline for the chapter, including the topic, learning objectives, and estimated word count.
-2.  **Retrieve RAG Context**: Use the `retrieve_rag_context` tool to gather relevant research and information from the knowledge base.
-3.  **Incorporate Author's Voice**: Use the `retrieve_author_stories`, `retrieve_author_positioning`, and `retrieve_author_vision` tools to infuse the chapter with the author's personal stories, opinions, and perspective.
-4.  **Write the Chapter**: Write the chapter content, ensuring it is didactic, engaging, and well-structured.
-5.  **Format the Content**: Use the `format_markdown` tool to format the chapter with proper headings, lists, and code blocks.
-6.  **Validate Content Quality**: Use the `validate_content_quality` tool to check the word count and other quality metrics.
-7.  **Format the Output**: Present the final output as a complete Markdown chapter with all sections, examples, and citations.
-"""
-    
-    return create_agent(
-        model=model,
-        tools=get_chapter_writing_tools(),
-        system_prompt=system_prompt
-    )
+    return _create_pipeline_agent("chapter_writing_agent", model)
 
 
 def create_review_coordinator_agent(model: ChatGoogleGenerativeAI) -> Any:
-    """Stage 5: Review Coordinator Agent - Orchestrate 10 specialized review personas."""
-    agents_config = get_agents_config()
-    spec = agents_config['main_pipeline_agents']['review_coordinator_agent']
-    
-    return create_agent(
-        model=model,
-        tools=get_review_tools(),
-        system_prompt=_build_system_prompt(spec)
-    )
+    """Etapa 7: Coordenação de Revisão."""
+
+    return _create_pipeline_agent("review_coordinator_agent", model)
 
 
 def create_critical_reading_coordinator_agent(model: ChatGoogleGenerativeAI) -> Any:
-    """Stage 6: Critical Reading Coordinator - Execute 5 virtual readers."""
-    agents_config = get_agents_config()
-    spec = agents_config['main_pipeline_agents']['critical_reading_coordinator_agent']
-    
-    return create_agent(
-        model=model,
-        tools=get_review_tools(),
-        system_prompt=_build_system_prompt(spec)
-    )
+    """Etapa 8: Coordenação de Leitura Crítica."""
+
+    return _create_pipeline_agent("critical_reading_coordinator_agent", model)
 
 
 def create_editing_agent(model: ChatGoogleGenerativeAI) -> Any:
-    """Stage 7: Editing - Final formatting and validation."""
-    agents_config = get_agents_config()
-    spec = agents_config['main_pipeline_agents']['editing_agent']
-    
-    return create_agent(
-        model=model,
-        tools=get_editing_tools(),
-        system_prompt=_build_system_prompt(spec)
-    )
+    """Etapa 9: Edição e validação."""
+
+    return _create_pipeline_agent("editing_agent", model)
 
 
 def create_finalization_agent(model: ChatGoogleGenerativeAI) -> Any:
-    """Stage 8: Finalization - Cover concept and metadata."""
-    agents_config = get_agents_config()
-    spec = agents_config['main_pipeline_agents']['finalization_agent']
-    
-    return create_agent(
-        model=model,
-        tools=get_finalization_tools(),
-        system_prompt=_build_system_prompt(spec)
-    )
+    """Etapa 10: Finalização editorial."""
+
+    return _create_pipeline_agent("finalization_agent", model)
 
 
 def create_publication_agent(model: ChatGoogleGenerativeAI) -> Any:
-    """Stage 9: Publication - Export to multiple formats."""
-    agents_config = get_agents_config()
-    spec = agents_config['main_pipeline_agents']['publication_agent']
-    
-    return create_agent(
-        model=model,
-        tools=get_publication_tools(),
-        system_prompt=_build_system_prompt(spec)
-    )
+    """Etapa 11: Publicação e exportação."""
+
+    return _create_pipeline_agent("publication_agent", model)
 
 
 def create_technical_reviewer_agent(model: ChatGoogleGenerativeAI) -> Any:
-    """Review Persona: Technical Reviewer - Code quality and framework validation."""
-    agents_config = get_agents_config()
-    spec = agents_config['review_personas']['technical_reviewer']
-    
-    system_prompt = """You are the Technical Reviewer, a Python Engineer with expertise in LangChain and AI/ML concepts.
-Your responsibility is to validate the technical accuracy and quality of the ebook's content.
+    """Persona de Revisão: Avaliador Técnico."""
 
-You must follow this process:
-1.  **Review Code Examples**: Use the `review_code_examples` tool to check all code snippets for correctness, style, and executability.
-2.  **Validate Framework Versions**: Ensure that all references to frameworks like LangChain and Gemini are compatible with the versions specified in the project.
-3.  **Check Technical Accuracy**: Verify the correctness of all technical concepts, explanations, and examples.
-4.  **Format the Output**: Present your feedback as a JSON object with a 'score' (0-100), 'feedback' (a string), 'issues' (an array of strings), and 'recommendations' (an array of strings).
-"""
-    
-    return create_agent(
-        model=model,
-        tools=get_review_tools(),
-        system_prompt=system_prompt
-    )
+    personas_config = get_personas_config()
+    spec = personas_config['review_personas']['technical_reviewer']
+    system_prompt = _build_persona_prompt("technical_reviewer", spec)
+
+    return create_agent(model=model, tools=get_review_tools(), system_prompt=system_prompt)
 
 
 def create_editorial_reviewer_agent(model: ChatGoogleGenerativeAI) -> Any:
-    """Review Persona: Editorial Reviewer - Clarity and tone."""
-    agents_config = get_agents_config()
-    spec = agents_config['review_personas']['editorial_reviewer']
-    
-    system_prompt = """You are the Editorial Reviewer, a Communicator with a keen eye for clarity, tone, and flow.
-Your responsibility is to ensure the content is clear, engaging, and aligned with the target audience.
+    """Persona de Revisão: Revisora Editorial."""
 
-You must follow this process:
-1.  **Review for Clarity and Tone**: Use the `review_clarity_and_empathy` and `review_tone_and_engagement` tools to assess the clarity, empathy, and engagement of the content.
-2.  **Check for Logical Flow**: Use the `review_logical_flow` tool to ensure the content has a smooth and logical progression.
-3.  **Verify Grammar and Style**: Use the `review_grammar_and_style` tool to check for any grammatical errors or inconsistencies in style.
-4.  **Format the Output**: Present your feedback as a JSON object with a 'score' (0-100), 'feedback' (a string), 'clarity_issues' (an array of strings), and 'tone_notes' (a string).
-"""
-    
-    return create_agent(
-        model=model,
-        tools=get_review_tools(),
-        system_prompt=system_prompt
-    )
+    personas_config = get_personas_config()
+    spec = personas_config['review_personas']['editorial_reviewer']
+    system_prompt = _build_persona_prompt("editorial_reviewer", spec)
+
+    return create_agent(model=model, tools=get_review_tools(), system_prompt=system_prompt)
 
 
 def create_content_stylist_agent(model: ChatGoogleGenerativeAI) -> Any:
-    """Review Persona: Content Stylist - Formatting and consistency."""
-    agents_config = get_agents_config()
-    spec = agents_config['review_personas']['content_stylist']
-    
-    system_prompt = """You are the Content Stylist, an Editor with a passion for clean and consistent formatting.
-Your responsibility is to ensure the document has a professional and polished look and feel.
+    """Persona de Revisão: Estilista de Conteúdo."""
 
-You must follow this process:
-1.  **Review Formatting**: Use the `format_markdown` tool to check for any formatting inconsistencies in headings, lists, code blocks, and other Markdown elements.
-2.  **Validate Structure**: Use the `validate_structure` tool to ensure the document follows a logical and hierarchical structure.
-3.  **Format the Output**: Present your feedback as a JSON object with a 'score' (0-100), 'feedback' (a string), and 'formatting_issues' (an array of strings).
-"""
-    
-    return create_agent(
-        model=model,
-        tools=get_review_tools(),
-        system_prompt=system_prompt
-    )
+    personas_config = get_personas_config()
+    spec = personas_config['review_personas']['content_stylist']
+    system_prompt = _build_persona_prompt("content_stylist", spec)
+
+    return create_agent(model=model, tools=get_review_tools(), system_prompt=system_prompt)
 
 
 def create_governance_agent(model: ChatGoogleGenerativeAI) -> Any:
-    """Review Persona: Governance QA - Compliance and security."""
-    agents_config = get_agents_config()
-    spec = agents_config['review_personas']['governance_qa']
-    
-    system_prompt = """You are the Governance QA Agent, a Compliance Officer focused on security and standards.
-Your responsibility is to ensure the ebook complies with all relevant regulations and standards.
+    """Persona de Revisão: Governança e Conformidade."""
 
-You must follow this process:
-1.  **Check for Compliance**: Review the content for compliance with LGPD, HIPAA, and other relevant regulations.
-2.  **Verify Metadata**: Ensure that all metadata is complete and accurate.
-3.  **Assess Security**: Check for any potential security vulnerabilities or risks.
-4.  **Format the Output**: Present your feedback as a JSON object with a 'score' (0-100), 'feedback' (a string), and 'compliance_issues' (an array of strings).
-"""
-    
-    return create_agent(
-        model=model,
-        tools=get_review_tools(),
-        system_prompt=system_prompt
-    )
+    personas_config = get_personas_config()
+    spec = personas_config['review_personas']['governance_qa']
+    system_prompt = _build_persona_prompt("governance_qa", spec)
+
+    return create_agent(model=model, tools=get_review_tools(), system_prompt=system_prompt)
 
 
 def create_ethics_validator_agent(model: ChatGoogleGenerativeAI) -> Any:
-    """Review Persona: Ethics Validator - Bias detection and AI ethics."""
-    agents_config = get_agents_config()
-    spec = agents_config['review_personas']['ethics_validator']
-    
-    system_prompt = """You are the Ethics Validator, an AI Ethics Expert dedicated to ensuring fairness and respect in the content.
-Your responsibility is to detect and flag any potential bias, ethical issues, or harmful content.
+    """Persona de Revisão: Guardiã de Ética."""
 
-You must follow this process:
-1.  **Scan for Bias**: Review the content for any language or examples that could be considered biased or exclusionary.
-2.  **Check for Disclaimers**: Ensure that any necessary disclaimers (e.g., for medical or legal advice) are present and clearly stated.
-3.  **Validate AI Ethics**: Verify that the content aligns with AI ethics principles, such as fairness, transparency, and accountability.
-4.  **Format the Output**: Present your feedback as a JSON object with a 'score' (0-100), 'feedback' (a string), 'bias_flags' (an array of strings), and 'disclaimer_gaps' (an array of strings).
-"""
-    
-    return create_agent(
-        model=model,
-        tools=get_review_tools(),
-        system_prompt=system_prompt
-    )
+    personas_config = get_personas_config()
+    spec = personas_config['review_personas']['ethics_validator']
+    system_prompt = _build_persona_prompt("ethics_validator", spec)
+
+    return create_agent(model=model, tools=get_review_tools(), system_prompt=system_prompt)
 
 
 def create_author_stories_reviewer_agent(model: ChatGoogleGenerativeAI) -> Any:
-    """Review Persona: Author Stories Reviewer - Narrative balance."""
-    agents_config = get_agents_config()
-    spec = agents_config['review_personas']['author_stories_reviewer']
-    
-    system_prompt = """You are the Author Stories Reviewer, a Narrative & Pedagogy Expert.
-Your responsibility is to ensure that the author's personal stories are well-integrated and enhance the learning experience.
+    """Persona de Revisão: Histórias do Autor."""
 
-You must follow this process:
-1.  **Retrieve Author Stories**: Use the `retrieve_author_stories` tool to get a sense of the author's personal narratives.
-2.  **Analyze Narrative Balance**: Review the chapter to ensure that the author's stories are used effectively to illustrate points and engage the reader, without overshadowing the core content.
-3.  **Check for Relevance**: Ensure that all stories are relevant to the topic of the chapter and contribute to the reader's understanding.
-4.  **Format the Output**: Present your feedback as a JSON object with a 'score' (0-100), 'feedback' (a string), 'story_balance_rating' (a string), and 'narrative_issues' (an array of strings).
-"""
-    
-    return create_agent(
-        model=model,
-        tools=get_review_tools(),
-        system_prompt=system_prompt
-    )
+    personas_config = get_personas_config()
+    spec = personas_config['review_personas']['author_stories_didactics']
+    system_prompt = _build_persona_prompt("author_stories_didactics", spec)
+
+    return create_agent(model=model, tools=get_review_tools(), system_prompt=system_prompt)
 
 
 def create_author_positioning_reviewer_agent(model: ChatGoogleGenerativeAI) -> Any:
-    """Review Persona: Author Positioning Reviewer - Authority and positioning."""
-    agents_config = get_agents_config()
-    spec = agents_config['review_personas']['author_positioning_reviewer']
-    
-    system_prompt = """You are the Author Positioning Reviewer, a Marketing & Authority Expert.
-Your responsibility is to ensure that the author's expertise and market positioning are clearly communicated in the content.
+    """Persona de Revisão: Posicionamento do Autor."""
 
-You must follow this process:
-1.  **Retrieve Author Positioning**: Use the `retrieve_author_positioning` tool to understand the author's intended market position.
-2.  **Analyze for Authority**: Review the chapter to see if the author's authority and expertise are effectively demonstrated.
-3.  **Check for Niche Distinctiveness**: Ensure that the content clearly carves out a unique niche for the author.
-4.  **Format the Output**: Present your feedback as a JSON object with a 'score' (0-100), 'feedback' (a string), 'positioning_clarity' (a string), and 'authority_rating' (a string).
-"""
-    
-    return create_agent(
-        model=model,
-        tools=get_review_tools(),
-        system_prompt=system_prompt
-    )
+    personas_config = get_personas_config()
+    spec = personas_config['review_personas']['author_positioning']
+    system_prompt = _build_persona_prompt("author_positioning", spec)
+
+    return create_agent(model=model, tools=get_review_tools(), system_prompt=system_prompt)
 
 
 def create_author_vision_reviewer_agent(model: ChatGoogleGenerativeAI) -> Any:
-    """Review Persona: Author Vision Reviewer - Values and philosophy alignment."""
-    agents_config = get_agents_config()
-    spec = agents_config['review_personas']['author_vision_reviewer']
-    
-    system_prompt = """You are the Author Vision Reviewer, a Values & Philosophy Expert.
-Your responsibility is to ensure that the content is aligned with the author's worldview, core values, and principles.
+    """Persona de Revisão: Visão do Autor."""
 
-You must follow this process:
-1.  **Retrieve Author Vision**: Use the `retrieve_author_vision` tool to understand the author's core values and philosophy.
-2.  **Analyze for Alignment**: Review the chapter to ensure that the content reflects the author's stated values and principles.
-3.  **Check for Authenticity**: Ensure that the author's opinions and vision are presented authentically and consistently.
-4.  **Format the Output**: Present your feedback as a JSON object with a 'score' (0-100), 'feedback' (a string), 'alignment_rating' (a string), and 'vision_coherence' (a string).
-"""
-    
-    return create_agent(
-        model=model,
-        tools=get_review_tools(),
-        system_prompt=system_prompt
-    )
+    personas_config = get_personas_config()
+    spec = personas_config['review_personas']['author_vision_opinions']
+    system_prompt = _build_persona_prompt("author_vision_opinions", spec)
+
+    return create_agent(model=model, tools=get_review_tools(), system_prompt=system_prompt)
 
 
 def create_code_examples_reviewer_agent(model: ChatGoogleGenerativeAI) -> Any:
-    """Review Persona: Code Examples Reviewer - Code execution and validation."""
-    agents_config = get_agents_config()
-    spec = agents_config['review_personas']['code_examples_reviewer']
-    
-    system_prompt = """You are the Code Examples Reviewer, a Code Quality Expert.
-Your responsibility is to validate all code examples, exercises, and practical components in the ebook.
+    """Persona de Revisão: Validador de Código."""
 
-You must follow this process:
-1.  **Review Code Examples**: Use the `review_code_examples` tool to check all code snippets for correctness, style, and executability.
-2.  **Validate Exercises**: Ensure that all exercises are clear, relevant, and have a well-defined solution.
-3.  **Check for Practical Applicability**: Verify that the code examples and exercises are practical and relevant to the reader.
-4.  **Format the Output**: Present your feedback as a JSON object with a 'score' (0-100), 'feedback' (a string), 'code_issues' (an array of strings), and 'exercise_quality_rating' (a string).
-"""
-    
-    return create_agent(
-        model=model,
-        tools=get_review_tools(),
-        system_prompt=system_prompt
-    )
+    personas_config = get_personas_config()
+    spec = personas_config['review_personas']['code_exercises_reviewer']
+    system_prompt = _build_persona_prompt("code_exercises_reviewer", spec)
+
+    return create_agent(model=model, tools=get_review_tools(), system_prompt=system_prompt)
 
 
 def create_research_validator_agent(model: ChatGoogleGenerativeAI) -> Any:
-    """Review Persona: Research Validator - Source credibility and fact-checking."""
-    agents_config = get_agents_config()
-    spec = agents_config['review_personas']['research_validator']
-    
-    system_prompt = """You are the Research Validator, a Research Quality Expert.
-Your responsibility is to validate the quality of the research, the credibility of the sources, and the accuracy of the citations.
+    """Persona de Revisão: Validação de Pesquisa."""
 
-You must follow this process:
-1.  **Validate Source Credibility**: Review all cited sources to ensure they are credible and authoritative.
-2.  **Check Citation Accuracy**: Verify that all citations are accurate and correctly formatted.
-3.  **Assess Research Currency**: Ensure that the research is up-to-date and relevant.
-4.  **Fact-Check Claims**: Fact-check all claims and statistics to ensure they are accurate.
-5.  **Format the Output**: Present your feedback as a JSON object with a 'score' (0-100), 'feedback' (a string), 'source_issues' (an array of strings), and 'fact_check_results' (an array of strings).
-"""
-    
-    return create_agent(
-        model=model,
-        tools=get_review_tools(),
-        system_prompt=system_prompt
-    )
+    personas_config = get_personas_config()
+    spec = personas_config['review_personas']['research_references_validator']
+    system_prompt = _build_persona_prompt("research_references_validator", spec)
+
+    return create_agent(model=model, tools=get_review_tools(), system_prompt=system_prompt)
 
 
 def create_curious_beginner_agent(model: ChatGoogleGenerativeAI) -> Any:
-    """Virtual Reader: Curious Beginner - Clarity and accessibility."""
-    agents_config = get_agents_config()
-    spec = agents_config['virtual_readers']['curious_beginner']
-    
-    system_prompt = """You are the Curious Beginner, a virtual reader who is new to the topic of this ebook.
-Your responsibility is to read the content from the perspective of a beginner and provide feedback on its clarity and accessibility.
+    """Leitor Virtual: Iniciante Curioso."""
 
-You must follow this process:
-1.  **Read for Comprehension**: Read the chapter as if you are learning about the topic for the first time.
-2.  **Identify Points of Confusion**: Note any sections, terms, or concepts that are confusing or difficult to understand.
-3.  **Assess Foundational Assumptions**: Check if the content assumes any prior knowledge that a beginner might not have.
-4.  **Format the Output**: Present your feedback as a JSON object with a 'comprehension_rating' (0-100), 'confusion_points' (an array of strings), 'positive_aspects' (an array of strings), and 'suggestions' (an array of strings).
-"""
-    
-    return create_agent(
-        model=model,
-        tools=get_review_tools(),
-        system_prompt=system_prompt
-    )
+    personas_config = get_personas_config()
+    spec = personas_config['virtual_readers']['curious_beginner']
+    system_prompt = _build_virtual_reader_prompt("curious_beginner", spec)
+
+    return create_agent(model=model, tools=get_review_tools(), system_prompt=system_prompt)
 
 
 def create_technical_professional_agent(model: ChatGoogleGenerativeAI) -> Any:
-    """Virtual Reader: Technical Professional - Depth and relevance."""
-    agents_config = get_agents_config()
-    spec = agents_config['virtual_readers']['technical_professional']
-    
-    system_prompt = """You are the Technical Professional, a virtual reader who is a senior developer and expert in the field.
-Your responsibility is to read the content from the perspective of a technical professional and provide feedback on its depth and accuracy.
+    """Leitor Virtual: Profissional Técnico."""
 
-You must follow this process:
-1.  **Read for Technical Depth**: Read the chapter to assess the technical depth and accuracy of the content.
-2.  **Identify Inaccuracies**: Note any technical inaccuracies, outdated information, or missing nuances.
-3.  **Check for Best Practices**: Ensure that the content reflects current best practices and industry standards.
-4.  **Format the Output**: Present your feedback as a JSON object with a 'depth_rating' (0-100), 'technical_accuracy' (a string), 'advanced_feedback' (an array of strings), and 'suggestions' (an array of strings).
-"""
-    
-    return create_agent(
-        model=model,
-        tools=get_review_tools(),
-        system_prompt=system_prompt
-    )
+    personas_config = get_personas_config()
+    spec = personas_config['virtual_readers']['technical_professional']
+    system_prompt = _build_virtual_reader_prompt("technical_professional", spec)
+
+    return create_agent(model=model, tools=get_review_tools(), system_prompt=system_prompt)
 
 
 def create_didactic_educator_agent(model: ChatGoogleGenerativeAI) -> Any:
-    """Virtual Reader: Didactic Educator - Pedagogical structure."""
-    agents_config = get_agents_config()
-    spec = agents_config['virtual_readers']['didactic_educator']
-    
-    system_prompt = """You are the Didactic Educator, a virtual reader who is a teacher and mentor with expertise in pedagogy.
-Your responsibility is to read the content from the perspective of an educator and provide feedback on its pedagogical structure and effectiveness.
+    """Leitor Virtual: Educador Didático."""
 
-You must follow this process:
-1.  **Read for Pedagogical Structure**: Read the chapter to assess the pedagogical structure, learning progression, and knowledge scaffolding.
-2.  **Evaluate Learning Objectives**: Check if the learning objectives are clear and if the content effectively helps the reader achieve them.
-3.  **Assess Exercises and Examples**: Ensure that the exercises and examples are effective learning tools.
-4.  **Format the Output**: Present your feedback as a JSON object with a 'pedagogical_quality_rating' (0-100), 'methodology_feedback' (an array of strings), and 'suggestions' (an array of strings).
-"""
-    
-    return create_agent(
-        model=model,
-        tools=get_review_tools(),
-        system_prompt=system_prompt
-    )
+    personas_config = get_personas_config()
+    spec = personas_config['virtual_readers']['didactic_educator']
+    system_prompt = _build_virtual_reader_prompt("didactic_educator", spec)
+
+    return create_agent(model=model, tools=get_review_tools(), system_prompt=system_prompt)
 
 
 def create_domain_specialist_agent(model: ChatGoogleGenerativeAI) -> Any:
-    """Virtual Reader: Domain Specialist - Cross-disciplinary coherence."""
-    agents_config = get_agents_config()
-    spec = agents_config['virtual_readers']['domain_specialist']
-    
-    system_prompt = """You are the Domain Specialist, a virtual reader who is an expert in a specific domain related to the ebook's topic.
-Your responsibility is to read the content from the perspective of a domain specialist and provide feedback on its relevance and cross-disciplinary coherence.
+    """Leitor Virtual: Especialista em Domínio."""
 
-You must follow this process:
-1.  **Read for Domain Relevance**: Read the chapter to assess the relevance of the content to your specific domain.
-2.  **Check for Cross-Disciplinary Coherence**: Ensure that the content is coherent with the knowledge and practices of your domain.
-3.  **Identify Gaps and Inconsistencies**: Note any gaps, inconsistencies, or contextual misalignments.
-4.  **Format the Output**: Present your feedback as a JSON object with a 'relevance_rating' (0-100), 'applicability_feedback' (an array of strings), and 'expert_suggestions' (an array of strings).
-"""
-    
-    return create_agent(
-        model=model,
-        tools=get_review_tools(),
-        system_prompt=system_prompt
-    )
+    personas_config = get_personas_config()
+    spec = personas_config['virtual_readers']['domain_specialist']
+    system_prompt = _build_virtual_reader_prompt("domain_specialist", spec)
+
+    return create_agent(model=model, tools=get_review_tools(), system_prompt=system_prompt)
 
 
 def create_reflective_reader_agent(model: ChatGoogleGenerativeAI) -> Any:
-    """Virtual Reader: Reflective Reader - Empathy and emotional impact."""
-    agents_config = get_agents_config()
-    spec = agents_config['virtual_readers']['reflective_reader']
-    
-    system_prompt = """You are the Reflective Reader, a virtual reader who values meaning, empathy, and emotional impact.
-Your responsibility is to read the content from a reflective and personal perspective, providing feedback on its emotional resonance and purpose.
+    """Leitor Virtual: Leitora Reflexiva."""
 
-You must follow this process:
-1.  **Read for Meaning and Impact**: Read the chapter to assess its emotional impact and the depth of its message.
-2.  **Look for Emotional Connection**: Check if the content creates an emotional connection with the reader.
-3.  **Assess the Sense of Purpose**: Ensure that the content has a clear sense of purpose and leaves the reader with a lasting impression.
-4.  **Format the Output**: Present your feedback as a JSON object with a 'meaning_rating' (0-100), 'emotional_impact' (a string), 'reflective_feedback' (an array of strings), and 'suggestions' (an array of strings).
-"""
-    
-    return create_agent(
-        model=model,
-        tools=get_review_tools(),
-        system_prompt=system_prompt
-    )
+    personas_config = get_personas_config()
+    spec = personas_config['virtual_readers']['reflective_reader']
+    system_prompt = _build_virtual_reader_prompt("reflective_reader", spec)
+
+    return create_agent(model=model, tools=get_review_tools(), system_prompt=system_prompt)
 
 
 __all__ = [

@@ -1,531 +1,185 @@
-# Agent specifications for Ebook Generator 1.0
-# All 25 agents defined independently of any pipeline stage
-# Pipeline configuration (pipeline.yaml) maps each stage to the appropriate agent via agent_id
-
-# Main Pipeline Agents (9 agents)
-# Note: These agents are referenced by pipeline stages via agent_id
 main_pipeline_agents:
-  ideation_agent:
-    name: "Ideation Agent"
-    model: "write_model"  # Gemini 2.5 Flash
-    role: "Ideation Specialist"
-    responsibility: "Generate central idea, problem definition, target audience understanding, and transformation promise"
+  document_spec_agent:
+    name: "Agente DEL"
+    role: "Editor-Chefe"
+    responsibility: "Converter o input do usuário em um Documento de Especificação do Livro (DEL) completo."
     focus_areas:
-      - "Central Idea Synthesis"
-      - "Problem Definition"
-      - "Target Audience Analysis"
-      - "Transformation Promise"
+      - "Consolidação de contexto"
+      - "Definição de promessa"
+      - "Alinhamento com público"
+      - "Regras de voz e tom"
     process:
-      - "Analyze user input (topic, target_audience, word_count_target)"
-      - "Research market context and reader needs"
-      - "Generate central idea with emotional resonance"
-      - "Define problem the book solves"
-      - "Create transformation promise"
-    output_format: "JSON with: idea, problem, promise, audience_insight"
-    tools:
-      - "search_knowledge_base"
-      - "retrieve_rag_context"
-    timeout_seconds: 120
-    max_tokens: 4000
+      - "Ler tema, público e metas"
+      - "Registrar objetivos editoriais"
+      - "Mapear dores, ganhos e promessa"
+      - "Gerar DEL estruturado"
+    output_format: "JSON com blueprint_id, idea_brief, promise, constraints"
+
+  ideation_agent:
+    name: "Agente de Ideação"
+    role: "Estrategista Criativo"
+    responsibility: "Desdobrar o DEL em ideia central, problema, promessa e ângulos narrativos."
+    focus_areas:
+      - "Ideia central"
+      - "Problema do leitor"
+      - "Insight sobre audiência"
+      - "Tom e posicionamento"
+    process:
+      - "Interpretar DEL"
+      - "Realizar varredura rápida de mercado"
+      - "Gerar ideia/problema/promise refinados"
+      - "Sugerir ângulos narrativos"
+    output_format: "JSON com idea, problem, promise, audience_insight"
 
   title_agent:
-    name: "Title Generation Agent"
-    model: "write_model"  # Gemini 2.5 Flash
-    role: "Title Strategist"
-    responsibility: "Generate Amazon-optimized title options based on research and market analysis"
+    name: "Estrategista de Título"
+    role: "Especialista em Marketing"
+    responsibility: "Produzir variações de título/subtítulo otimizadas para Amazon KDP."
     focus_areas:
-      - "Title Research"
-      - "Keyword Optimization"
-      - "Market Positioning"
-      - "Emotional Appeal"
+      - "Pesquisa de palavras-chave"
+      - "Apelo emocional"
+      - "Posicionamento competitivo"
+      - "Regras KDP"
     process:
-      - "Research bestseller titles in category"
-      - "Analyze keyword performance"
-      - "Generate 3 title options"
-      - "Validate against KDP requirements"
-      - "Provide rationale for each option"
-    output_format: "JSON with: titles (array of 3), rationales (dict), seo_keywords (array)"
-    tools:
-      - "generate_amazon_optimized_title"
-      - "search_knowledge_base"
-    timeout_seconds: 90
-    max_tokens: 2000
+      - "Ler insights de ideação"
+      - "Pesquisar best-sellers"
+      - "Gerar no mínimo 3 combinações"
+      - "Explicar rationale e SEO"
+    output_format: "JSON com titles, subtitles, rationale, seo_score"
 
   structure_agent:
-    name: "Structure Agent"
-    model: "write_model"  # Gemini 2.5 Flash
-    role: "Content Architect"
-    responsibility: "Create hierarchical outline and table of contents scaled to word count"
+    name: "Arquiteto de Estrutura"
+    role: "Instructional Designer"
+    responsibility: "Construir sumário hierárquico proporcional à meta de palavras."
     focus_areas:
-      - "Outline Generation"
-      - "Chapter Organization"
-      - "Content Flow"
-      - "Word Distribution"
+      - "Progressão didática"
+      - "Distribuição de palavras"
+      - "Elementos especiais"
+      - "Coerência entre capítulos"
     process:
-      - "Analyze word count target and reading level"
-      - "Generate chapter hierarchy"
-      - "Distribute words across chapters"
-      - "Create detailed outline"
-      - "Validate structure coherence"
-    output_format: "Markdown with heading hierarchy, word distribution by chapter"
-    tools:
-      - "generate_outline"
-      - "count_words"
-    timeout_seconds: 120
-    max_tokens: 8000
+      - "Interpretar ideação e meta"
+      - "Definir capítulos e seções"
+      - "Distribuir palavras"
+      - "Gerar outline em Markdown"
+    output_format: "JSON com chapters, outline_markdown, word_distribution"
 
   deep_research_agent:
-    name: "Deep Research Agent"
-    model: "research_model"  # Gemini 2.5 Pro
-    role: "Research Specialist"
-    responsibility: "Execute deep research via Context7 MCP, vectorize and store in RAG"
+    name: "Agente de Pesquisa"
+    role: "Especialista em RAG"
+    responsibility: "Executar pesquisas Context7 + Supabase e registrar contexto vetorizado."
     focus_areas:
-      - "Context7 MCP Integration"
-      - "Source Quality Validation"
-      - "Vectorization & Embedding"
-      - "RAG Storage"
+      - "Design de consultas"
+      - "Validação de fontes"
+      - "Geração de embeddings"
+      - "Persistência em rag_external"
     process:
-      - "Query Context7 MCP for each chapter topic"
-      - "Retrieve scientific data and academic sources"
-      - "Validate source credibility and relevance"
-      - "Generate embeddings with Gemini"
-      - "Store vectorized research in Supabase rag_external"
-    output_format: "JSON with: research_summary, sources (array), vector_ids (array), storage_status"
-    tools:
-      - "query_context7_mcp"
-      - "perform_deep_research"
-      - "vectorize_research"
-      - "store_in_rag_external"
-    timeout_seconds: 600
-    max_tokens: 12000
+      - "Derivar queries do outline"
+      - "Consultar Context7 e fontes externas"
+      - "Resumir achados e citar fontes"
+      - "Salvar referências no RAG"
+    output_format: "JSON com research_summary, sources, vector_refs"
 
   chapter_writing_agent:
-    name: "Chapter Writing Agent"
-    model: "write_model"  # Gemini 2.5 Flash
-    role: "Content Writer"
-    responsibility: "Write didactic chapter content with research integration and author context"
+    name: "Agente de Escrita"
+    role: "Autor Didático"
+    responsibility: "Produzir capítulos completos usando outline e pesquisa vetorizada."
     focus_areas:
-      - "Didactic Writing"
-      - "Research Integration"
-      - "Author Voice"
-      - "Reader Engagement"
+      - "Clareza e didática"
+      - "Integração RAG"
+      - "Histórias e exemplos"
+      - "Exercícios e checklists"
     process:
-      - "Retrieve RAG context from deep research phase"
-      - "Load author stories and positioning from knowledge base"
-      - "Write chapter following outline"
-      - "Integrate research naturally"
-      - "Maintain author voice and positioning"
-      - "Include examples and case studies"
-    output_format: "Markdown chapter with sections, examples, and citations"
-    tools:
-      - "retrieve_rag_context"
-      - "retrieve_author_stories"
-      - "retrieve_author_positioning"
-      - "retrieve_author_vision"
-      - "validate_content_quality"
-    timeout_seconds: 300
-    max_tokens: 10000
+      - "Combinar outline e pesquisa"
+      - "Planejar cada seção"
+      - "Escrever conteúdo com formatação Markdown"
+      - "Inserir exercícios, quadros e CTA"
+    output_format: "Markdown completo por capítulo"
 
   review_coordinator_agent:
-    name: "Review Coordinator Agent"
-    model: "research_model"  # Gemini 2.5 Pro
-    role: "Review Orchestrator"
-    responsibility: "Orchestrate 10 specialized review personas and aggregate feedback"
+    name: "Coordenador de Revisão"
+    role: "Quality Lead"
+    responsibility: "Orquestrar personas técnicas e editoriais e consolidar feedback."
     focus_areas:
-      - "Persona Coordination"
-      - "Feedback Aggregation"
-      - "Quality Validation"
-      - "Score Calculation"
+      - "Seleção de personas"
+      - "Coleta estruturada"
+      - "Síntese de issues"
+      - "Prioridade de ajustes"
     process:
-      - "Execute all 10 review personas in parallel"
-      - "Collect feedback from each persona"
-      - "Aggregate scores and comments"
-      - "Identify critical issues"
-      - "Summarize review results"
-    output_format: "JSON with: persona_reviews (dict), aggregate_score, critical_issues (array), recommendations"
-    tools:
-      - "review_tone_and_engagement"
-      - "review_clarity_and_empathy"
-      - "review_grammar_and_style"
-      - "review_logical_flow"
-      - "review_code_examples"
-    timeout_seconds: 600
-    max_tokens: 8000
+      - "Ativar personas relevantes"
+      - "Enviar capítulos para revisão"
+      - "Compilar feedback ponderado"
+      - "Gerar relatório com próximos passos"
+    output_format: "JSON com persona_reviews, aggregate_score, blocking_issues"
 
   critical_reading_coordinator_agent:
-    name: "Critical Reading Coordinator"
-    model: "research_model"  # Gemini 2.5 Pro
-    role: "Iteration Specialist"
-    responsibility: "Execute 3 cycles of critical reading with 5 virtual readers"
+    name: "Coordenador de Leitura Crítica"
+    role: "Especialista em Iteração"
+    responsibility: "Simular leitores virtuais e consolidar sugestões de melhoria."
     focus_areas:
-      - "Virtual Reader Simulation"
-      - "Iterative Refinement"
-      - "Reader Validation"
-      - "Quality Improvement"
+      - "Empatia com leitor"
+      - "Metas por ciclo"
+      - "Rastreio de melhorias"
+      - "Polimento narrativo"
     process:
-      - "For each of 3 cycles:"
-      - "  - Execute 5 virtual readers in parallel"
-      - "  - Collect feedback from each reader persona"
-      - "  - Identify improvements"
-      - "  - Brief refiner agent for next cycle"
-      - "Return final refined content"
-    output_format: "JSON with: cycle_reports (array of 3), final_content, improvement_summary"
-    tools:
-      - "review_tone_and_engagement"
-      - "review_clarity_and_empathy"
-      - "review_logical_flow"
-    timeout_seconds: 900
-    max_tokens: 12000
+      - "Executar leitores virtuais por ciclo"
+      - "Compilar feedback por foco"
+      - "Destacar gaps críticos"
+      - "Sugerir ajustes"
+    output_format: "JSON com cycle_reports, consolidated_feedback"
 
   editing_agent:
-    name: "Editing Agent"
-    model: "write_model"  # Gemini 2.5 Flash
-    role: "Editor"
-    responsibility: "Final editing, formatting validation, and content polish"
+    name: "Agente de Edição"
+    role: "Copidesque"
+    responsibility: "Padronizar estilo, validar Markdown e garantir consistência final."
     focus_areas:
-      - "Grammar & Style"
-      - "Formatting Consistency"
-      - "Document Structure"
-      - "Metadata Validation"
+      - "Gramática e ortografia"
+      - "Consistência de voz"
+      - "Validação de formatação"
+      - "Legibilidade"
     process:
-      - "Perform final grammar and style check"
-      - "Validate Markdown formatting"
-      - "Ensure heading hierarchy"
-      - "Verify cross-references"
-      - "Validate metadata"
-    output_format: "Edited Markdown with formatting report"
-    tools:
-      - "format_markdown"
-      - "validate_content_quality"
-    timeout_seconds: 180
-    max_tokens: 8000
+      - "Revisar texto consolidado"
+      - "Ajustar headings/tabelas/códigos"
+      - "Aplicar checklist de estilo"
+      - "Emitir relatório de ajustes"
+    output_format: "JSON com edited_content, editing_report"
 
   finalization_agent:
-    name: "Finalization Agent"
-    model: "write_model"  # Gemini 2.5 Flash
-    role: "Production Specialist"
-    responsibility: "Generate cover concept and prepare final metadata for KDP"
+    name: "Agente de Finalização"
+    role: "Produtor Editorial"
+    responsibility: "Gerar briefing de capa, metadados e materiais auxiliares."
     focus_areas:
-      - "Cover Generation"
-      - "KDP Metadata"
-      - "ISBN and Copyright"
-      - "Publication Readiness"
+      - "Conceito visual"
+      - "Metadados KDP"
+      - "Textos legais"
+      - "Tabelas e sumário navegável"
     process:
-      - "Generate cover concept briefing"
-      - "Generate KDP metadata (title, description, keywords)"
-      - "Prepare copyright and legal text"
-      - "Validate KDP compliance"
-      - "Generate ISBN structure"
-    output_format: "JSON with: cover_briefing, metadata (dict), legal_text, kdp_compliance_report"
-    tools:
-      - "generate_cover"
-      - "generate_kdp_metadata"
-    timeout_seconds: 120
-    max_tokens: 4000
+      - "Analisar versão editada"
+      - "Criar pitch/capa/metadados"
+      - "Gerar sumário com links"
+      - "Validar checklist KDP"
+    output_format: "JSON com cover_concept, metadata, legal_notes"
 
   publication_agent:
-    name: "Publication Agent"
-    model: "write_model"  # Gemini 2.5 Flash
-    role: "Export Specialist"
-    responsibility: "Export to all formats (DOCX, EPUB, PDF, JSON) for KDP"
+    name: "Agente de Publicação"
+    role: "Especialista em Exportação"
+    responsibility: "Exportar arquivos finais e organizar pacote para KDP."
     focus_areas:
-      - "Format Conversion"
-      - "Quality Validation"
-      - "Package Assembly"
-      - "KDP Compatibility"
+      - "Conversão DOCX/EPUB/PDF"
+      - "Validação pós-export"
+      - "Checklist KDP"
+      - "Organização de arquivos"
     process:
-      - "Export to DOCX format"
-      - "Export to EPUB format (KDP compatible)"
-      - "Export to PDF format"
-      - "Export to JSON format"
-      - "Validate all exports"
-      - "Package for KDP submission"
-    output_format: "JSON with: exports (dict with paths), validation_report, kdp_package_status"
-    tools:
-      - "export_to_docx"
-      - "export_to_epub"
-      - "export_to_pdf"
-    timeout_seconds: 180
-    max_tokens: 4000
+      - "Executar exportações"
+      - "Validar integridade"
+      - "Compilar relatórios"
+      - "Gerar manifest com caminhos"
+    output_format: "JSON com exports, validation_report, kdp_status"
 
-# Specialized Review Personas (10 agents)
-review_personas:
-  technical_reviewer:
-    name: "Technical Reviewer"
-    model: "research_model"  # Gemini 2.5 Pro
-    role: "Python Engineer"
-    responsibility: "Validate code quality, framework versions, syntax, and technical accuracy"
-    expertise_areas:
-      - "Code Quality"
-      - "Framework Compatibility"
-      - "Syntax Validation"
-      - "Technical Accuracy"
-    evaluation_criteria:
-      - "Is code valid and executable?"
-      - "Are framework versions compatible with LangChain 1.0+?"
-      - "Are examples accurate and tested?"
-      - "Is documentation technically correct?"
-    output_format: "JSON with: score (0-100), feedback (string), issues (array), recommendations (array)"
-    timeout_seconds: 120
-    max_tokens: 3000
-
-  editorial_reviewer:
-    name: "Editorial Reviewer"
-    model: "write_model"  # Gemini 2.5 Flash
-    role: "Communicator"
-    responsibility: "Validate clarity, tone, flow, and audience alignment"
-    expertise_areas:
-      - "Clarity & Comprehension"
-      - "Tone & Voice"
-      - "Narrative Flow"
-      - "Audience Relevance"
-    evaluation_criteria:
-      - "Is content clear and understandable?"
-      - "Does tone match target audience?"
-      - "Is narrative flow logical?"
-      - "Does content resonate emotionally?"
-    output_format: "JSON with: score (0-100), feedback (string), clarity_issues (array), tone_notes (string)"
-    timeout_seconds: 120
-    max_tokens: 3000
-
-  content_stylist:
-    name: "Content Stylist"
-    model: "write_model"  # Gemini 2.5 Flash
-    role: "Editor Literário"
-    responsibility: "Validate document structure, formatting consistency, and visual hierarchy"
-    expertise_areas:
-      - "Document Structure"
-      - "Formatting Consistency"
-      - "Visual Hierarchy"
-      - "Style Uniformity"
-    evaluation_criteria:
-      - "Is heading hierarchy correct?"
-      - "Is Markdown formatting consistent?"
-      - "Is visual hierarchy clear?"
-      - "Are lists and tables formatted properly?"
-    output_format: "JSON with: score (0-100), feedback (string), formatting_issues (array)"
-    timeout_seconds: 90
-    max_tokens: 2000
-
-  governance_qa:
-    name: "Governance QA"
-    model: "research_model"  # Gemini 2.5 Pro
-    role: "Compliance Officer"
-    responsibility: "Validate framework versions, security, LGPD compliance, and metadata"
-    expertise_areas:
-      - "Version Accuracy"
-      - "Security & Privacy"
-      - "Regulatory Compliance"
-      - "Metadata Correctness"
-    evaluation_criteria:
-      - "Are all framework versions accurate?"
-      - "Are security disclaimers present?"
-      - "Is LGPD compliance addressed?"
-      - "Is metadata complete and correct?"
-    output_format: "JSON with: score (0-100), feedback (string), compliance_issues (array)"
-    timeout_seconds: 120
-    max_tokens: 2500
-
-  ethics_validator:
-    name: "Ethics Validator"
-    model: "research_model"  # Gemini 2.5 Pro
-    role: "AI Ethics Expert"
-    responsibility: "Detect bias, ensure required disclaimers, validate AI ethics principles"
-    expertise_areas:
-      - "Bias Detection"
-      - "AI Ethics"
-      - "Medical/Legal Disclaimers"
-      - "Inclusive Language"
-    evaluation_criteria:
-      - "Is content free from language bias?"
-      - "Are required disclaimers present?"
-      - "Are AI ethics principles respected?"
-      - "Is content inclusive and respectful?"
-    output_format: "JSON with: score (0-100), feedback (string), bias_flags (array), disclaimer_gaps (array)"
-    timeout_seconds: 120
-    max_tokens: 3000
-
-  author_stories_reviewer:
-    name: "Author Stories & Didactics Reviewer"
-    model: "research_model"  # Gemini 2.5 Pro
-    role: "Narrative & Pedagogy Expert"
-    responsibility: "Validate balance between author stories and learning objectives, ensure narrative coherence"
-    expertise_areas:
-      - "Narrative Balance"
-      - "Pedagogical Structure"
-      - "Story Relevance"
-      - "Didactic Flow"
-    evaluation_criteria:
-      - "Are author stories relevant and not overwhelming?"
-      - "Do stories support learning objectives?"
-      - "Is narrative weight balanced?"
-      - "Are stories authentic and credible?"
-    rag_integration: "author_stories"
-    output_format: "JSON with: score (0-100), feedback (string), story_balance_rating, narrative_issues (array)"
-    timeout_seconds: 120
-    max_tokens: 3000
-
-  author_positioning_reviewer:
-    name: "Author Positioning Reviewer"
-    model: "research_model"  # Gemini 2.5 Pro
-    role: "Marketing & Authority Expert"
-    responsibility: "Validate author positioning clarity, authority prominence, and niche distinctiveness"
-    expertise_areas:
-      - "Author Positioning"
-      - "Authority Establishment"
-      - "Market Differentiation"
-      - "Credibility"
-    evaluation_criteria:
-      - "Is author positioning clear and compelling?"
-      - "Is author authority evident?"
-      - "Is niche positioning distinct?"
-      - "Is author voice consistent?"
-    rag_integration: "author_positioning"
-    output_format: "JSON with: score (0-100), feedback (string), positioning_clarity, authority_rating"
-    timeout_seconds: 120
-    max_tokens: 3000
-
-  author_vision_reviewer:
-    name: "Author Vision & Opinions Reviewer"
-    model: "research_model"  # Gemini 2.5 Pro
-    role: "Values & Philosophy Expert"
-    responsibility: "Validate alignment with author worldview, core principles, and authentic opinions"
-    expertise_areas:
-      - "Value Alignment"
-      - "Philosophy Coherence"
-      - "Opinion Authenticity"
-      - "Principled Content"
-    evaluation_criteria:
-      - "Is content aligned with author values?"
-      - "Are opinions authentic and consistent?"
-      - "Is vision coherent throughout?"
-      - "Are principles upheld consistently?"
-    rag_integration: "author_vision_opinions"
-    output_format: "JSON with: score (0-100), feedback (string), alignment_rating, vision_coherence"
-    timeout_seconds: 120
-    max_tokens: 3000
-
-  code_examples_reviewer:
-    name: "Code Examples & Exercises Reviewer"
-    model: "research_model"  # Gemini 2.5 Pro
-    role: "Code Quality Expert"
-    responsibility: "Validate code examples, exercises, and practical components"
-    expertise_areas:
-      - "Code Correctness"
-      - "Example Relevance"
-      - "Exercise Design"
-      - "Practical Applicability"
-    evaluation_criteria:
-      - "Are code examples correct and executable?"
-      - "Do examples clearly demonstrate concepts?"
-      - "Are exercises effective learning tools?"
-      - "Is code well-documented?"
-    output_format: "JSON with: score (0-100), feedback (string), code_issues (array), exercise_quality_rating"
-    timeout_seconds: 150
-    max_tokens: 3500
-
-  research_validator:
-    name: "Research & References Validator"
-    model: "research_model"  # Gemini 2.5 Pro
-    role: "Research Quality Expert"
-    responsibility: "Validate research quality, source credibility, and citation accuracy"
-    expertise_areas:
-      - "Source Credibility"
-      - "Citation Accuracy"
-      - "Research Currency"
-      - "Fact Verification"
-    evaluation_criteria:
-      - "Are sources credible and authoritative?"
-      - "Are citations accurate?"
-      - "Is research current?"
-      - "Are facts verified?"
-    output_format: "JSON with: score (0-100), feedback (string), source_issues (array), fact_check_results (array)"
-    timeout_seconds: 180
-    max_tokens: 4000
-
-# Virtual Reader Personas (5 agents for critical reading iterations)
-virtual_readers:
-  curious_beginner:
-    name: "Curious Beginner Reader"
-    model: "write_model"  # Gemini 2.5 Flash
-    role: "Novice Learner"
-    responsibility: "Simulate beginner reader perspective, validate accessibility and clarity"
-    profile: "New to the topic, eager to learn, prefers clear explanations"
-    validation_focus:
-      - "Is content accessible to beginners?"
-      - "Are concepts explained clearly?"
-      - "Is progression logical?"
-      - "Are examples helpful?"
-    output_format: "JSON with: comprehension_rating, confusion_points (array), positive_aspects (array), suggestions (array)"
-    timeout_seconds: 90
-    max_tokens: 2500
-
-  technical_professional:
-    name: "Technical Professional Reader"
-    model: "research_model"  # Gemini 2.5 Pro
-    role: "Senior Developer"
-    responsibility: "Simulate advanced reader perspective, validate depth and technical accuracy"
-    profile: "Senior developer, expects depth, appreciates technical precision"
-    validation_focus:
-      - "Is content deep enough?"
-      - "Is technical content accurate?"
-      - "Are edge cases addressed?"
-      - "Is content professionally sound?"
-    output_format: "JSON with: depth_rating, technical_accuracy, advanced_feedback (array), suggestions (array)"
-    timeout_seconds: 120
-    max_tokens: 3000
-
-  didactic_educator:
-    name: "Didactic Educator Reader"
-    model: "write_model"  # Gemini 2.5 Flash
-    role: "Teacher/Mentor"
-    responsibility: "Simulate educator perspective, validate pedagogical structure and methodology"
-    profile: "Teacher or mentor, values clear methodology, good learning design"
-    validation_focus:
-      - "Is pedagogical structure sound?"
-      - "Are learning objectives clear?"
-      - "Is progression well-designed?"
-      - "Are assessment opportunities present?"
-    output_format: "JSON with: pedagogical_quality_rating, methodology_feedback (array), suggestions (array)"
-    timeout_seconds: 120
-    max_tokens: 2500
-
-  domain_specialist:
-    name: "Domain Specialist Reader"
-    model: "research_model"  # Gemini 2.5 Pro
-    role: "Subject Matter Expert"
-    responsibility: "Simulate specialist perspective, validate relevance and application"
-    profile: "Expert in field, expects relevance, appreciates practical application"
-    validation_focus:
-      - "Is content relevant to field?"
-      - "Are applications practical?"
-      - "Is context appropriate?"
-      - "Are best practices reflected?"
-    output_format: "JSON with: relevance_rating, applicability_feedback (array), expert_suggestions (array)"
-    timeout_seconds: 120
-    max_tokens: 3000
-
-  reflective_reader:
-    name: "Reflective Reader"
-    model: "write_model"  # Gemini 2.5 Flash
-    role: "Thoughtful Audience"
-    responsibility: "Simulate reflective reader perspective, validate meaning and impact"
-    profile: "Thoughtful, values meaning, seeks personal connection and growth"
-    validation_focus:
-      - "Is content meaningful?"
-      - "Is emotional connection present?"
-      - "Does content inspire reflection?"
-      - "Is purpose clear?"
-    output_format: "JSON with: meaning_rating, emotional_impact, reflective_feedback (array), suggestions (array)"
-    timeout_seconds: 90
-    max_tokens: 2500
-
-# Agent Configuration Defaults
 agent_defaults:
   retry_attempts: 3
   retry_delay_seconds: 2
   streaming: false
   verbose: true
-  parallel_execution: true  # Can be overridden per stage
+  parallel_execution: true
   timeout_default_seconds: 300
   max_tokens_default: 8000

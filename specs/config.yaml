@@ -9,45 +9,49 @@ messages:
   pipeline_error: "❌ Erro durante execução do pipeline"
   
   # Estágios - com descrições detalhadas
-  stage_1_title: "Estágio 1: Ideação"
-  stage_1_start: "Gerando ideia central, definição de problema e promessa de transformação..."
-  stage_1_complete: "✓ Ideia central gerada com sucesso"
+  stage_1_title: "Estágio 1: Documento de Especificação"
+  stage_1_start: "Consolidando DEL com ideia, promessa e direcionadores do autor..."
+  stage_1_complete: "✓ DEL gerado com sucesso"
   
-  stage_2_title: "Estágio 2: Geração de Títulos"
-  stage_2_start: "Pesquisando bestsellers e gerando títulos otimizados para Amazon..."
-  stage_2_complete: "✓ 3 opções de títulos geradas com sucesso"
+  stage_2_title: "Estágio 2: Ideação"
+  stage_2_start: "Desdobrando promessa e definindo problema central..."
+  stage_2_complete: "✓ Ideia central refinada"
   
-  stage_3_title: "Estágio 3: Estrutura & Outline"
-  stage_3_start: "Criando índice hierárquico e distribuição de palavras por capítulo..."
-  stage_3_complete: "✓ Estrutura do ebook criada com sucesso"
+  stage_3_title: "Estágio 3: Título & Subtítulo"
+  stage_3_start: "Pesquisando bestsellers e propondo títulos otimizados..."
+  stage_3_complete: "✓ Títulos e subtítulos gerados"
   
-  stage_4a_title: "Estágio 4A: Pesquisa Profunda"
-  stage_4a_start: "Consultando Context7 MCP e vetorizando resultados de pesquisa..."
-  stage_4a_complete: "✓ Pesquisa concluída e armazenada em rag_external"
+  stage_4_title: "Estágio 4: Estrutura"
+  stage_4_start: "Criando capítulos, seções e distribuição de palavras..."
+  stage_4_complete: "✓ Estrutura aprovada"
   
-  stage_4b_title: "Estágio 4B: Escrita de Capítulos"
-  stage_4b_start: "Escrevendo conteúdo didático com integração de pesquisa e narrativas do autor..."
-  stage_4b_complete: "✓ Capítulos escritos com sucesso"
+  stage_5_title: "Estágio 5: Pesquisa Profunda"
+  stage_5_start: "Executando Context7 + Supabase e registrando RAG..."
+  stage_5_complete: "✓ Pesquisa armazenada"
   
-  stage_5_title: "Estágio 5: Revisão Especializada"
-  stage_5_start: "Executando revisões de 10 personas especializadas (técnica, editorial, ética, etc)..."
-  stage_5_complete: "✓ Revisão especializada concluída com feedback consolidado"
+  stage_6_title: "Estágio 6: Escrita"
+  stage_6_start: "Produzindo capítulos inteiros com integração RAG..."
+  stage_6_complete: "✓ Conteúdo bruto produzido"
   
-  stage_6_title: "Estágio 6: Leitura Crítica & Iteração"
-  stage_6_start: "Simulando 5 leitores virtuais para feedback iterativo (1 ciclo)..."
-  stage_6_complete: "✓ Leitura crítica concluída"
+  stage_7_title: "Estágio 7: Revisão Especializada"
+  stage_7_start: "Coordenando personas técnicas/editoriais..."
+  stage_7_complete: "✓ Feedback consolidado"
   
-  stage_7_title: "Estágio 7: Edição & Formatação"
-  stage_7_start: "Refinando estilos, hierarquia de headings e validando Markdown..."
-  stage_7_complete: "✓ Edição e formatação concluídas"
+  stage_8_title: "Estágio 8: Leitura Crítica"
+  stage_8_start: "Simulando leitores virtuais em ciclos iterativos..."
+  stage_8_complete: "✓ Iterações concluídas"
   
-  stage_8_title: "Estágio 8: Finalização & Capa"
-  stage_8_start: "Gerando resumo dinâmico, metadados KDP e criando capa com IA..."
-  stage_8_complete: "✓ Finalização concluída com capa e metadados"
+  stage_9_title: "Estágio 9: Edição"
+  stage_9_start: "Aplicando copidesque e validando Markdown..."
+  stage_9_complete: "✓ Texto editado"
   
-  stage_9_title: "Estágio 9: Publicação & Exportação"
-  stage_9_start: "Exportando para DOCX, EPUB, PDF e JSON para KDP..."
-  stage_9_complete: "✓ Exportação concluída - pronto para publicação!"
+  stage_10_title: "Estágio 10: Finalização"
+  stage_10_start: "Gerando capa conceitual, metadados e sumário navegável..."
+  stage_10_complete: "✓ Finalização pronta"
+  
+  stage_11_title: "Estágio 11: KDP & Exportação"
+  stage_11_start: "Exportando formatos finais e montando pacote KDP..."
+  stage_11_complete: "✓ Pacote de publicação pronto"
 
   # Agentes
   agent_executing: "Executando agente"
@@ -176,6 +180,19 @@ prompts:
     JSON com: chapters (array), outline (markdown), word_distribution (dict)
 
 agent_prompts:
+  # Estágio 1: Document Specification
+  document_spec_prompt_template: |
+    Produce a Livro Specification (DEL) in JSON with keys blueprint_id, idea_brief,
+    promise, audience_profile, tone_guide, visual_references. Inputs:
+    Topic: {topic}
+    Audience: {target_audience}
+    Word Count Target: {word_count_target}
+    Reading Level: {reading_level}
+    Author: {author_name}
+    Bio: {author_bio}
+    Notes: {extra_notes}
+    Emphasize pains, gains, transformation, and tangible proof elements.
+  
   # Estágio 1: Ideation
   ideation_prompt_template: |
     Return JSON with keys idea, problem, promise, and audience_insight. Context:
@@ -230,15 +247,18 @@ agent_prompts:
   
   # Estágio 8: Finalization
   finalization_prompt_template: |
-    Generate book summary, create cover concept, compile metadata. Return JSON with
-    summary, cover_concept, metadata, and kdp_compliance_check:
+    Generate an executive summary, a detailed cover concept (title, subtitle, palette,
+    typography, imagery), and full KDP metadata. Return JSON with keys
+    summary, cover_concept, metadata, legal_notes, kdp_compliance_check. Use the
+    edited manuscript:
     {editing_output}
   
-  # Estágio 9: Publication
+  # Estágio 11: Publication
   publication_prompt_template: |
-    Export the ebook to DOCX, EPUB, PDF, and JSON. Return JSON with exports, validation_report, and
-    kdp_package_status, highlighting compliance checkpoints. Content excerpt:
-    {editing_output_excerpt}
+    Export the ebook to DOCX, EPUB, PDF, and JSON. Return JSON with exports,
+    validation_report, and kdp_package_status, highlighting compliance checkpoints.
+    Use the finalized content excerpt:
+    {final_output_excerpt}
 
 tables:
   title_persona_review: "Resultado da Revisão por Personas"

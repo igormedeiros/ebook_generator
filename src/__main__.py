@@ -9,9 +9,57 @@ import sys
 
 from .input_validator import validate_book_input
 from .main import run_ebook_pipeline
-from .config import get_logger, print_error_panel
+from .config import get_logger, print_error_panel, print_table
+from .config import console
 
 logger = get_logger(__name__)
+
+
+def display_book_specs(metadata: dict, parameters: dict) -> None:
+    """Render current book specifications in a table."""
+
+    rows = [
+        ["Tópico", metadata.get("topic", "-")],
+        ["Público-alvo", metadata.get("target_audience", "-")],
+        ["Meta de Palavras", str(parameters.get("word_count_target", "-"))],
+        ["Nível de Leitura", parameters.get("reading_level", "-")],
+        ["Promessa", parameters.get("transformation_promise", "-")],
+    ]
+    print_table("Especificações do Ebook", ["Campo", "Valor"], rows)
+
+
+def prompt_spec_adjustments(metadata: dict, parameters: dict) -> tuple[dict, dict]:
+    """Allow user to review and optionally adjust specifications."""
+
+    while True:
+        display_book_specs(metadata, parameters)
+        approval = input("Aprovar especificações e iniciar geração? (s/N): ").strip().lower()
+        if approval in {"s", "sim", "y", "yes"}:
+            return metadata, parameters
+
+        console.print("[bold yellow]Atualize valores ou pressione Enter para manter.[/bold yellow]")
+        new_topic = input(f"Tópico [{metadata.get('topic', '-')}] : ").strip()
+        if new_topic:
+            metadata["topic"] = new_topic
+
+        new_audience = input(f"Público-alvo [{metadata.get('target_audience', '-')}] : ").strip()
+        if new_audience:
+            metadata["target_audience"] = new_audience
+
+        new_words = input(f"Meta de Palavras [{parameters.get('word_count_target', 15000)}] : ").strip()
+        if new_words:
+            try:
+                parameters["word_count_target"] = int(new_words)
+            except ValueError:
+                console.print("[red]Valor inválido. Mantendo meta anterior.[/red]")
+
+        new_level = input(f"Nível de leitura [{parameters.get('reading_level', 'intermediate')}] : ").strip()
+        if new_level:
+            parameters["reading_level"] = new_level
+
+        new_promise = input(f"Promessa de transformação [{parameters.get('transformation_promise', '')}] : ").strip()
+        if new_promise:
+            parameters["transformation_promise"] = new_promise
 
 
 def main():
@@ -24,6 +72,8 @@ def main():
         # Extract required parameters
         metadata = book_config.get("metadata", {})
         parameters = book_config.get("parameters", {})
+        
+        metadata, parameters = prompt_spec_adjustments(metadata, parameters)
         
         topic = metadata.get("topic")
         target_audience = metadata.get("target_audience")

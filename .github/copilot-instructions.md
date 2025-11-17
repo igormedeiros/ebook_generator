@@ -66,22 +66,6 @@ This file documents the coding standards and best practices for all code agents 
 
 ---
 
-## �📘 Project Overview
-
-**Ebook Generator 1.0** is a multi-agent AI-powered editorial automation platform that transforms raw ideas into publication-ready ebooks using:
-
-- **LangChain 1.0+** for orchestration
-- **Gemini 2.5 Flash** for writing and textual revision (temp: 0.7)
-- **Gemini 2.5 Pro** for research and contextual analysis / RAG (temp: 0.3)
-- **Supabase + pgvector** for semantic search and embeddings
-- **Pandoc** for format conversion (DOCX, EPUB, PDF)
-- **MD Parser** for flexible input via .md specification files
-- **RAG Autoral** for author stories and opinions integration
-- **Multi-Persona Review** with 5 specialized reviewers
-- **KDP Integration** for direct Amazon publication
-
----
-
 ## Language Standards
 
 ### Code Language: 100% English
@@ -97,8 +81,8 @@ This file documents the coding standards and best practices for all code agents 
 - Error messages should use English for clarity
 
 ### Comments & Documentation
-- All comments must be English
-- All docstrings must be English
+- All comments must be Portuguese
+- All docstrings must be Portuguese
 - Use clear, concise technical language
 
 ## LangChain 1.0+ Standards
@@ -236,77 +220,6 @@ Process:
 Output Format:
 [Specify expected format]
 ```
-
-## Pipeline Stages
-
-The Ebook Generator follows this 9-stage pipeline with independent agent specifications:
-
-**Key Architecture Pattern**: Agents are defined independently in `specs/agents.yaml` (not per-stage). Pipeline stages in `specs/pipeline.yaml` reference agents via the `agent` field.
-
-### Stage 1: Ideation
-- Agent ID: `ideation_agent` (specs/agents.yaml > main_pipeline_agents)
-- Config: `specs/pipeline.yaml` > `stage_1_ideation`
-- Agent Model: Gemini 2.5 Flash (0.7 temperature)
-- Output: Central idea, problem definition, target audience
-
-### Stage 2: Title Generation
-- Agent ID: `title_agent`
-- Config: `specs/pipeline.yaml` > `stage_2_title`
-- Agent Model: Gemini 2.5 Flash
-- Output: 3 Amazon-optimized title options
-
-### Stage 3: Structure
-- Agent ID: `structure_agent`
-- Config: `specs/pipeline.yaml` > `stage_3_structure`
-- Agent Model: Gemini 2.5 Flash
-- Output: Hierarchical table of contents in Markdown
-
-### Stage 4A: Deep Research
-- Agent ID: `deep_research_agent`
-- Config: `specs/pipeline.yaml` > `stage_4a_deep_research`
-- Agent Model: Gemini 2.5 Pro (0.3 temperature)
-- Tools: Context7 MCP, vectorization, RAG storage
-- Output: Vectorized research in rag_external
-
-### Stage 4B: Chapter Writing
-- Agent ID: `chapter_writing_agent`
-- Config: `specs/pipeline.yaml` > `stage_4b_chapter_writing`
-- Agent Model: Gemini 2.5 Flash
-- Tools: Writing + RAG integration
-- Output: Didactic content chapters
-
-### Stage 5: Specialized Review (10 Personas)
-- Agent ID: `review_coordinator_agent`
-- Config: `specs/pipeline.yaml` > `stage_5_review`
-- Agent Model: Gemini 2.5 Pro
-- Review Personas: Technical, Editorial, Stylist, Governance, Ethics, Author Stories, Author Positioning, Author Vision, Code Reviewer, Research Validator
-- Output: Structured feedback by persona (10 perspectives)
-
-### Stage 6: Critical Reading & Iteration (3 Cycles)
-- Agent ID: `critical_reading_coordinator_agent`
-- Config: `specs/pipeline.yaml` > `stage_6_critical_reading`
-- Agent Model: Gemini 2.5 Pro
-- Virtual Readers: Curious Beginner, Technical Professional, Educator, Specialist, Reflective
-- Output: Refined content with reader validation
-
-### Stage 7: Editing
-- Agent ID: `editing_agent`
-- Config: `specs/pipeline.yaml` > `stage_7_editing`
-- Agent Model: Gemini 2.5 Flash
-- Output: Validated and formatted document
-
-### Stage 8: Finalization
-- Agent ID: `finalization_agent`
-- Config: `specs/pipeline.yaml` > `stage_8_finalization`
-- Agent Model: Gemini 2.5 Flash
-- Output: Cover concept and validated metadata
-
-### Stage 9: Publication
-- Agent ID: `publication_agent`
-- Config: `specs/pipeline.yaml` > `stage_9_publication`
-- Agent Model: Gemini 2.5 Flash
-- Tools: Export tools (DOCX, EPUB, PDF, JSON)
-- Output: Publication-ready package
 
 ## File Organization
 
@@ -750,68 +663,7 @@ class HumanInTheLoopMiddleware:
     pass
 ```
 
-## Review Personas Specialization
-
-The system integrates **8 specialized review personas** that form the core of textual refinement:
-
-### Technical Reviewer
-- **Role**: Python Engineer
-- **Focus**: Code quality, framework versions, syntax validation
-- **Checks**: LangChain compatibility, example execution, documentation accuracy
-
-### Editorial Reviewer
-- **Role**: Communicator
-- **Focus**: Clarity, tone, flow, audience alignment
-- **Checks**: Readability, emotional connection, narrative progression
-
-### Content Stylist
-- **Role**: Editor Literário
-- **Focus**: Document structure, formatting consistency, visual hierarchy
-- **Checks**: Heading hierarchy, Markdown format, style uniformity
-
-### Governance QA
-- **Role**: Compliance Officer
-- **Focus**: Framework versions, security, LGPD compliance, metadata
-- **Checks**: Version accuracy, security disclaimers, regulatory compliance
-
-### Ethics Validator
-- **Role**: AI Ethics Expert
-- **Focus**: Bias detection, medical disclaimers, AI ethics principles
-- **Checks**: Language bias, required disclaimers, HIPAA/LGPD compliance
-
-### Author Stories & Didactics Reviewer (NEW)
-- **Role**: Narrative & Pedagogy Expert
-- **Focus**: Balance between author personal stories and learning objectives
-- **Checks**: Story relevance, narrative weight, didactic flow, authenticity
-- **RAG Integration**: Author Stories knowledge base for context
-
-### Author Positioning Reviewer (NEW)
-- **Role**: Marketing & Authority Expert
-- **Focus**: Author's market positioning and subject matter expertise
-- **Checks**: Positioning clarity, authority prominence, niche distinctiveness
-- **RAG Integration**: Author Positioning knowledge base for positioning framework
-
-### Author Vision & Opinions Reviewer (NEW)
-- **Role**: Values & Philosophy Expert
-- **Focus**: Alignment with author's worldview and core principles
-- **Checks**: Vision coherence, opinion authenticity, value alignment
-- **RAG Integration**: Author Vision & Opinions knowledge base for philosophical framework
-
----
-
-## Critical Reading Personas (Virtual Readers)
-
-The system also simulates **5 virtual readers** for iterative feedback:
-
-| Persona | Profile | Validation Focus |
-|---------|---------|------------------|
-| **Curious Beginner** | New to AI/programming | Clarity, progression, accessibility |
-| **Technical Professional** | Senior developer | Depth, relevance, technical accuracy |
-| **Didactic Educator** | Teacher/mentor | Pedagogical structure, methodology |
-| **Domain Specialist** | Physician, researcher | Application relevance, cross-disciplinary coherence |
-| **Reflective Reader** | General audience | Empathy, purpose, emotional impact |
-
-These readers generate independent reports that feed into the refinement loop, conducted by the Coordinator Super Agent through **3 complete iterations**.
+----
 
 ## Version Control
 
@@ -901,34 +753,6 @@ Done. Fallback mechanism implemented and committed.
 - **NEVER push** without explicit user request
 - Push only when user asks: "push", "make push", "upload to remote", etc.
 - Workflow: Complete tasks → Update TODO.md checkboxes → Commit → Await push instruction
-
----
-
-## PRD Reference
-
-The complete Product Requirements Document (v1.0) defines:
-
-### 9-Stage Editorial Pipeline
-1. **Ideation** - Central idea, problem, audience, transformation promise
-2. **Title Generation** - Amazon-optimized titles (3 options)
-3. **Structure** - Hierarchical outline scaled to word count
-4. **Deep Research** - External RAG with Context7 MCP, vectorized research
-5. **Chapter Writing** - Didactic content with research-backed integration
-6. **Specialized Review** - 10 specialized review personas
-7. **Critical Reading & Iteration** - 5 virtual readers, 3 cycles of refinement
-8. **Editing** - Final formatting and validation
-9. **Publication** - DOCX, EPUB, PDF, JSON export for KDP
-
-### Dual-Model Architecture
-- **Gemini 2.5 Flash** - Writing, creativity, speed (temperature: 0.7)
-- **Gemini 2.5 Pro** - Research, analysis, RAG, factuality (temperature: 0.3)
-- **Gemini 2.5** - Research, analysis, RAG, factuality (temperature: 0.3)
-
-### Success Criteria
-- ≥80% reduction in editorial production time
-- ≥95% factuality (via RAG + validation)
-- 100% Amazon KDP compatibility
-- ≥90% user satisfaction
 
 ---
 

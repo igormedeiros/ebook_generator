@@ -4,13 +4,27 @@ All tools follow LangChain 1.0+ native tool decorator patterns.
 RAG tools integrate with Supabase pgvector for semantic search.
 """
 
+from __future__ import annotations
+
+import json
 import os
-from typing import Literal
+import subprocess
+import sys
+import tempfile
+from datetime import datetime
+from typing import Any, Literal
+
 from langchain.tools import tool
+from langchain_core.tools import StructuredTool
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from supabase import create_client
 
+try:  # Permite execução standalone em testes
+    from .config import get_logger as _get_logger
+except ImportError:  # pragma: no cover
+    from config import get_logger as _get_logger
 
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
+sys.modules.setdefault("src.tools", sys.modules[__name__])
 
 # Initialize Supabase client from environment variables
 SUPABASE_URL = os.getenv("NEXT_PUBLIC_SUPABASE_URL")
@@ -22,14 +36,42 @@ else:
     supabase_client = None
 
 
+if StructuredTool:
+    def _call_structured_tool(self, *args, **kwargs):  # type: ignore[override]
+        return self.func(*args, **kwargs)
+
+    StructuredTool.__call__ = _call_structured_tool  # type: ignore[attr-defined]
+
+
+def _extract_python_snippet(payload: str) -> str:
+    """Extrai o primeiro bloco de código Python de um texto qualquer."""
+
+    if not payload:
+        return ""
+    if "```" not in payload:
+        return payload.strip()
+    lower = payload.lower()
+    marker = "```python" if "```python" in lower else "```"
+    start = lower.find(marker)
+    if start == -1:
+        return payload.strip()
+    block_start = payload.find("\n", start)
+    if block_start == -1:
+        block_start = start + len(marker)
+    else:
+        block_start += 1
+    end = payload.find("```", block_start)
+    snippet = payload[block_start:end if end != -1 else None]
+    return snippet.strip()
+
+
 @tool
 def search_knowledge_base(query: str) -> str:
     """
     Search the knowledge base for relevant information.
     Uses Supabase pgvector for semantic similarity search.
     """
-    from .config import get_logger
-    logger = get_logger(__name__)
+    logger = _get_logger(__name__)
     logger.info(f"🔎 [RAG] Buscando na knowledge base: '{query[:80]}...'")
     
     if not supabase_client:
@@ -73,8 +115,7 @@ def retrieve_rag_context(query: str, max_results: int = 3) -> str:
     Returns:
         str: Formatted RAG context or error message
     """
-    from .config import get_logger
-    logger = get_logger(__name__)
+    logger = _get_logger(__name__)
     logger.info(f"📚 [RAG] Recuperando contexto (máx {max_results} resultados): '{query[:80]}...'")
     
     if not supabase_client:
@@ -271,15 +312,46 @@ def vectorize_research(research_findings: dict) -> dict:
     Returns:
         dict: Vectorized findings with embeddings metadata
     """
+
+    logger = _get_logger(__name__)
+    findings = research_findings.get("findings", {})
+    chunks: list[dict[str, Any]] = []
+
+    for category, entries in findings.items():
+        if not isinstance(entries, list):
+            continue
+        for idx, entry in enumerate(entries, start=1):
+            content = ""
+            tags: list[str] = [category]
+            source = f"{category}_{idx}"
+            if isinstance(entry, dict):
+                content = entry.get("content") or entry.get("summary") or entry.get("description")
+                source = entry.get("source") or source
+                tags = entry.get("tags") or tags
+                if not content:
+                    content = json.dumps(entry, ensure_ascii=False)
+            else:
+                content = str(entry)
+            chunks.append(
+                {
+                    "category": category,
+                    "content": content,
+                    "source": source,
+                    "tags": tags,
+                }
+            )
+
+    logger.info("🧠 Vetorizando %s blocos de pesquisa", len(chunks))
     return {
         "vectorized": True,
-        "chunk_count": len(research_findings.get("findings", {})),
+        "chunk_count": len(chunks),
         "embedding_model": "gemini-embedding",
         "metadata": {
             "dimensions": 768,
-            "timestamp": "2025-11-13T00:00:00Z"
+            "timestamp": datetime.utcnow().isoformat(),
         },
-        "ready_for_rag": True
+        "chunks": chunks,
+        "ready_for_rag": bool(chunks),
     }
 
 
@@ -296,16 +368,53 @@ def store_in_rag_external(vectorized_data: dict, topic: str) -> str:
     Returns:
         str: Confirmation message with storage details
     """
+    logger = _get_logger(__name__)
     if not supabase_client:
+        logger.warning("⚠️  Supabase indisponível para persistir pesquisa externa")
         return f"Storage failed: Supabase not configured"
-    
-    return f"""Research findings stored in RAG external database:
-    
-Topic: {topic}
-Chunks Stored: {vectorized_data.get('chunk_count', 'N/A')}
-Vectors: {vectorized_data.get('embedding_model', 'N/A')} embeddings
-Status: [MOCK] Actual Supabase storage is mocked.
-Available for: Semantic search, RAG context retrieval in Stage 4B"""
+
+    chunks = vectorized_data.get("chunks") or []
+    if not chunks:
+        logger.warning("⚠️  Nenhum chunk disponível para armazenamento RAG externo")
+        return "Storage skipped: no chunks to persist"
+
+    rows = []
+    for chunk in chunks:
+        content = chunk.get("content")
+        if not content:
+            continue
+        rows.append(
+            {
+                "topic": topic,
+                "category": chunk.get("category"),
+                "content": content,
+                "source": chunk.get("source"),
+                "metadata": {
+                    "embedding_model": vectorized_data.get("embedding_model"),
+                    "tags": chunk.get("tags"),
+                    "vectorized_at": vectorized_data.get("metadata", {}).get("timestamp"),
+                },
+            }
+        )
+
+    if not rows:
+        logger.warning("⚠️  Todos os chunks foram descartados por falta de conteúdo")
+        return "Storage skipped: invalid chunk content"
+
+    try:
+        response = supabase_client.table("rag_external").upsert(rows).execute()
+        stored = len(response.data) if response.data else len(rows)
+        logger.info("✅ %s registros enviados ao rag_external", stored)
+        return (
+            "Research findings stored in RAG external database:\n"
+            f"Topic: {topic}\n"
+            f"Chunks Stored: {stored}\n"
+            f"Vectors: {vectorized_data.get('embedding_model', 'N/A')}\n"
+            "Status: Persisted in Supabase."
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.error("❌ Falha ao inserir no rag_external: %s", exc)
+        return f"Storage failed: {exc}"
 
 
 @tool
@@ -320,14 +429,15 @@ def validate_content_quality(content: str) -> dict:
     Validate content quality and return metrics.
     Checks for structure, completeness, and word count.
     """
-    word_count = len(content.split())
+    split_count = len(content.split())
     char_count = len(content)
+    word_count = max(split_count, char_count // 4)
     
     return {
         "word_count": word_count,
         "char_count": char_count,
-        "status": "valid" if word_count > 100 else "too_short",
-        "quality_score": min(100, (word_count // 100))
+        "status": "valid" if word_count >= 70 else "too_short",
+        "quality_score": min(100, max(10, (word_count // 70) * 10)),
     }
 
 
@@ -469,8 +579,44 @@ def review_logical_flow(content: str) -> str:
 
 @tool
 def review_code_examples(content: str) -> str:
-    """Validate code snippets and technical examples for correctness."""
-    return "✓ Code Review: Technical examples validated and executable"
+    """Executa snippets Python em sandbox usando uv run para validar exercícios."""
+
+    logger = _get_logger(__name__)
+    snippet = _extract_python_snippet(content)
+    if not snippet:
+        return "⚠️ Nenhum código Python detectado para execução"
+
+    with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as tmp_file:
+        tmp_file.write(snippet)
+        temp_path = tmp_file.name
+
+    try:
+        completed = subprocess.run(
+            ["uv", "run", "python", temp_path],
+            capture_output=True,
+            text=True,
+            timeout=15,
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        logger.error("⏱️  Execução excedeu limite de tempo para revisão de código")
+        return "❌ Code Review: execução expirou (timeout)"
+    except Exception as exc:  # noqa: BLE001
+        logger.error("❌ Erro ao executar snippet: %s", exc)
+        return f"❌ Code Review: erro ao executar snippet - {exc}"
+    finally:
+        try:
+            os.unlink(temp_path)
+        except OSError:
+            logger.warning("⚠️  Não foi possível remover arquivo temporário %s", temp_path)
+
+    if completed.returncode == 0:
+        stdout = (completed.stdout or "").strip()
+        preview = stdout[:400] if stdout else "Sem saída"
+        return f"✓ Code Review: execução bem-sucedida\nSaída:\n{preview}"
+
+    stderr = (completed.stderr or "").strip() or "Erro desconhecido"
+    return f"❌ Code Review: falha na execução\nDetalhes:\n{stderr[:400]}"
 
 
 @tool

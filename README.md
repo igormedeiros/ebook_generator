@@ -882,3 +882,227 @@ For issues, questions, or suggestions:
 **Version**: 1.0  
 **Last Updated**: November 12, 2025  
 **Status**: Architecture Complete ✅ | Core Implementation In Progress ⏳ | Testing Pending ❌
+
+## 📚 Documentation Archive
+
+### EXECUTION_GUIDE.md · Ebook Generator 1.0 - Execution Guide
+
+**Updated**: November 13, 2025
+
+#### Quick Start
+
+```bash
+# Run the complete pipeline
+uv run python -m src
+
+# Run with timeout (useful for testing with API quota limits)
+timeout 120 uv run python -m src
+
+# Run functional tests (mocked, no API calls)
+uv run python test_functional_pipeline.py
+
+# Run integration tests (real API calls)
+timeout 60 uv run python test_integration_pipeline.py
+```
+
+#### What's New in v1.0 - Verbose Logging & Progress Tracking
+
+- 🚀 **Progress Bar**: Stage indicators, completion percentage, emoji markers.
+- 🤖 **Agent Transparency**: Logs creation, prompt building, execution feedback, and outputs.
+- 📚 **RAG Visibility**: Tool activation logs, embedding generation, pgvector similarity search counts.
+- 👥 **Review Personas Transparency**: Personas tracked with progress bar and status logs.
+- 👁️  **Virtual Readers Transparency**: Multi-cycle reader feedback with explicit logging.
+
+Detailed transcript excerpts show spinner usage, persona tracking, and log formatting, ensuring no "frozen" terminal while agents run.
+
+#### API Integration Notes
+
+- Stage 4A leverages Context7 MCP + Supabase pgvector with verbose tracing.
+- Stage 5 executes 10 personas with individual logging.
+- Stage 6 runs 3 cycles across 5 virtual readers with perspective summaries.
+
+#### Performance Estimates
+
+| Stage | Approx. Duration |
+|-------|------------------|
+| 1–3   | 5–10s each |
+| 4A    | 15–20s |
+| 4B    | 10–15s |
+| 5     | 30–60s |
+| 6     | 45–90s |
+| 7–9   | 5–10s each |
+
+#### Troubleshooting & Quota Tips
+
+- Watch for spinner stalls → likely API rate limits; retry after delay.
+- Ensure Unicode-capable terminal for emoji rendering.
+- Use correct logger levels for verbose output.
+- Free-tier Gemini limits ≈ 10 req/min; offset by staged testing.
+
+### docs/USAGE.md · Ebook Generator 1.0 - Guia de Uso
+
+#### Visão Geral
+
+Pipeline de 9 estágios que transforma um tópico em ebook pronto, carregando `input/book_input.yaml` e solicitando campos faltantes interativamente.
+
+#### Formas de Uso
+
+1. **Modo Interativo** (`uv run python -m src`): valida `input/book_input.yaml`, coleta faltas, executa pipeline completo, gera `specs/book.yaml`.
+2. **Modo Pré-Configurado**: preencher `input/book_input.yaml`, rodar pipeline.
+3. **Uso Programático**: usar `InputValidator` + `run_ebook_pipeline` diretamente em código Python.
+
+#### Arquivos de Especificação
+
+- `input/book_input.yaml`: campos obrigatórios (topic, target_audience, word_count_target) + opcionais (transformation_promise, reading_level, author metadata, stage_overrides).
+- Exemplos `input/book_input.example-*.yaml` prontos para copiar.
+
+#### Campos Interativos e Output
+
+- Prompts coloridos Rich pedem valores ausentes.
+- Outputs por estágio gravados (structure, deep research, chapters, reviews, etc.).
+
+#### Variáveis de Ambiente
+
+```bash
+export GOOGLE_API_KEY="sua-chave-aqui"
+```
+
+#### Troubleshooting
+
+- Validar YAML (aspas, indentação, sem tabs).
+- Garantir `uv sync` executado.
+- Conferir pipeline com `uv run python -m src`.
+
+#### Configuração Avançada
+
+- `stage_overrides` para customizar parâmetros.
+- Ajuste de temperatura via `specs/models.yaml`.
+
+### docs/TODO_ANALYSIS.md · TODO.md Analysis & Rationalization
+
+- Comparou PRD/ARCHITECTURE vs implementação, removendo overengineering e priorizando MVP.
+- Destacou tarefas claras (36) focadas em agents, tools, pipeline, RAG, config, testes, docs.
+- Enfatizou TODO.md workflow (checkbox-only, commits por tarefa, push sob demanda).
+- Resumiu fases futuras: Phase 2A (funcional), 2B (performance), 3 (robustez), 4 (nice-to-haves).
+- Proporcionou critérios de sucesso (pipeline executa, qualidade, testabilidade) e próximos passos.
+
+### ANALYSIS.md · Análise Final: Alinhamento PRD/ARCHITECTURE vs Implementação
+
+- Confirmou requisitos PRD atendidos (9 estágios, dual-model, personas, export formats, etc.).
+- Indicou requisitos parciais (Context7 MCP live, Supabase pgvector live, RAG Autoral).
+- Destacou métricas (tempo editorial ≥80% redução, factualidade ≥95%, KDP compatível).
+- Documentou conformidade arquitetural (config YAML, logging, LangChain patterns, review personas, virtual readers).
+- Mapeou TODO progresso (23 tarefas concluídas) e itens pendentes (Testing & Validation, Advanced Features).
+- Forneceu resumo executivo, conquistas, dependências externas, métricas de qualidade e próximos passos.
+
+### PROJECT_STATUS.md · Final Status Report (November 13, 2025)
+
+- Sessão concluída com foco em: input_validator fix, config centralizada, testes abrangentes, documentação.
+- Código: 100% English naming, zero syntax errors, type hints, docstrings, 25 agents + 30 tools prontos.
+- Arquitetura: src/specs estruturas completas, pipeline estágios prontos.
+- Testes: 13 test suites (input validator, TUI, e2e) todos passando.
+- Pipeline readiness: Estágios 1–9 listados como "Ready".
+- Commits destacados e quick-start commands.
+- Estado: Production ready.
+
+### SESSION_SUMMARY.md · Session Summary (November 13, 2025)
+
+- Detalhou trabalho concluído (file fix, mensagens centralizadas, testes, doc updates, e2e pipeline test).
+- Cobriu conformidade (arquitetura, qualidade de código, cobertura de testes, pipeline pronto).
+- Listou commits e ambiente de execução (Python 3.11.14, uv, etc.).
+- Confirmou prontidão para produção e testes reais.
+
+### TODO.md · Historical Checklist Snapshot
+
+```
+## COMPLETED: Code Compliance & Standards
+[x] Verify agents.py - all agents return proper LangChain objects
+[x] Verify tools.py - all 30+ tools use @tool decorator
+[x] Centralize Portuguese validation messages to specs/config.yaml
+[x] Fix input_validator.py corruption (recreated from scratch)
+[x] Fix config.py - gemini-2.5 → gemini-2.5-pro model ID
+
+## COMPLETED: Pipeline Execution & Testing
+[x] Test interactive prompts for missing fields
+[x] Test all TUI output (colorful headers, stage completion)
+[x] Validate all Portuguese messages render correctly
+[x] Create functional pipeline tests (10 stages mocked) - All 10 tests PASS
+[x] Fix Gemini API model configuration (gemini-2.5-pro)
+[x] Add comprehensive verbose logging to all 9 pipeline stages
+[x] Create integration test file with real API calls (no mocking)
+[x] Verify pytest integration with project
+
+## COMPLETED: Verbose Logging & Progress Bar
+[x] Add progress bar to overall pipeline execution
+[x] Show "pensamento alto" (chain of thought) of agents with 🤖 emoji
+[x] Log tool usage and RAG queries with 🔎 and 📚 emojis
+[x] Add emoji status indicators for each stage
+[x] Implement spinner feedback during agent execution (no frozen UI)
+[x] Log all 9 stages with detailed action tracking
+[x] Show stage completion percentage with progress bar
+
+## COMPLETED: RAG Integration Logging
+[x] Add logging for search_knowledge_base tool calls
+[x] Add logging for retrieve_rag_context RAG operations  
+[x] Add logging when RAG Autoral is accessed
+[x] Show when Supabase pgvector queries happen
+[x] Log embedding generation progress
+[x] Show similarity search results count
+
+## COMPLETED: Agent Execution Visibility
+[x] Enhance execute_agent() with visual spinner during API calls
+[x] Update execute_review_personas() with progress bar for 10 personas
+[x] Show which persona is being reviewed (📋 emoji)
+[x] Display result count from review personas
+[x] Add logging for virtual readers in critical reading stage
+[x] Log persona completion status individually
+
+## COMPLETED: Code Quality Updates
+[x] Fixed agents.py execute_agent() function with visual feedback
+[x] Fixed agents.py execute_review_personas() with progress tracking
+[x] Updated tools.py search_knowledge_base() with RAG logging
+[x] Updated tools.py retrieve_rag_context() with detailed logging
+[x] Updated main.py with rich.progress integration
+[x] Added show_stage_status() helper for consistent stage logging
+
+## Current Phase: Testing & Validation
+[ ] Test pipeline execution: uv run python -m src (with new progress bar - may hit API quota)
+[ ] Verify progress bar displays correctly for all 9 stages
+[ ] Verify emoji indicators display in terminal
+[ ] Confirm spinner shows during agent/API calls (no frozen appearance)
+[ ] Test RAG logging with real Supabase queries (if configured)
+[ ] Verify personas review logging with 10 different specialists
+[ ] Test virtual readers logging in critical reading stage
+
+## Future: Advanced Features & Optimization
+[ ] Context7 MCP live integration for deep research stage
+[ ] Supabase RAG live vector operations with real embeddings
+[ ] Author knowledge base live integration (RAG Autoral)
+[ ] KDP compliance automated validation
+[ ] GitHub repository auto-creation for code examples
+[ ] Multi-language ebook support
+[ ] Performance optimization: parallel stage execution
+[ ] Caching layer for repeated queries
+```
+
+### GEMINI.md · Copilot Instructions - Ebook Generator 1.0
+
+The full coding-standards document (author Igor Medeiros, November 10, 2025) remains authoritative. Highlights include:
+
+- **TODO.md Workflow**: Checkbox-only, commit-per-task, final commit entry, no progress prose.
+- **Language Standards**: 100% English code, Portuguese for user strings OK, docstrings in English.
+- **LangChain Patterns**: Use `@tool`, structured prompts, `create_agent`, `execute_agent` patterns.
+- **Tool Organization**: Stage-specific tool getters, `get_all_tools` aggregator.
+- **System Prompt Template**: Role, responsibility, focus areas, process, output format.
+- **Pipeline Stages**: 9-stage overview with agents, models, outputs.
+- **File Organization**: `src/`, `specs/`, `input/`, `docs/` layout with `__init__` export rules.
+- **Logging Standards**: Use `logger` + Rich, no `print()`, emoji tagging for actions.
+- **Configuration Management**: All Portuguese strings in `specs/config.yaml`, YAML-driven parameters.
+- **Dual-Model Strategy**: Gemini 2.5 Flash (writing) + Gemini 2.5 Pro (research) with uv execution.
+- **Dependency & Execution**: Manage via `uv`, run code/tests with `uv run`.
+- **RAG Integration**: Supabase pgvector, Context7 MCP placeholders with instructions.
+- **Error Handling & Type Hints**: Docstrings, Args/Returns, typed signatures.
+- **Review & Reading Personas**: Detailed responsibilities for 10 reviewers + 5 virtual readers.
+- **Communication Rules**: Avoid unsolicited summaries, respect TODO workflow, commit discipline.
+
+For the verbatim document (≈1k lines) refer to `.github/copilot-instructions.md` which mirrors the former `GEMINI.md` content.

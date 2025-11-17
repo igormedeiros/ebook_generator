@@ -12,6 +12,7 @@ Supports dual-model strategy:
 - Gemini 2.5 Pro (research, temp=0.3)
 """
 
+import json
 import logging
 import os
 import sys
@@ -124,6 +125,14 @@ def get_models_config() -> Dict[str, Any]:
     return load_yaml_config("models.yaml")
 
 
+def _get_model_settings(model_key: str) -> Dict[str, Any]:
+    """Return model configuration block for a given key."""
+
+    models_cfg = get_models_config()
+    models = models_cfg.get("models", {})
+    return models.get(model_key, {})
+
+
 def get_personas_config() -> Dict[str, Any]:
     """
     Carrega configuração de personas (personas.yaml).
@@ -179,7 +188,10 @@ def get_agent_for_stage(stage_name: str) -> str:
 # ============================================================================
 
 
-def get_model() -> ChatGoogleGenerativeAI:
+def get_model(
+    timeout: Optional[int] = None,
+    max_retries: Optional[int] = None,
+) -> ChatGoogleGenerativeAI:
     """
     Initialize and return the writing model (Gemini 2.5 Flash).
     Uses Gemini 2.5 Flash for fast, creative text generation and iterative refinement.
@@ -195,6 +207,10 @@ def get_model() -> ChatGoogleGenerativeAI:
     
     Used for: Writing, chapter generation, title generation, creative tasks
     
+    Args:
+        timeout: Optional timeout override for API calls (seconds)
+        max_retries: Optional retry override before triggering fallback
+
     Returns:
         ChatGoogleGenerativeAI: Configured Gemini 2.5 Flash model
     
@@ -204,17 +220,32 @@ def get_model() -> ChatGoogleGenerativeAI:
     api_key = os.getenv("GOOGLE_API_KEY")
     if not api_key:
         raise ValueError("GOOGLE_API_KEY environment variable not set")
-    
-    return ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash",
-        google_api_key=api_key,
-        temperature=0.7,  # Balanced creativity and consistency
-        top_p=0.95,
-        top_k=40,
-    )
+
+    settings = _get_model_settings("write_model")
+    resolved_timeout = timeout if timeout is not None else settings.get("timeout")
+    resolved_retries = max_retries if max_retries is not None else settings.get("max_retries")
+    model_kwargs = {
+        "model": settings.get("model_id", "gemini-2.5-flash"),
+        "google_api_key": api_key,
+        "temperature": settings.get("temperature", 0.7),
+        "top_p": settings.get("top_p", 0.95),
+        "top_k": settings.get("top_k", 40),
+    }
+    max_tokens = settings.get("max_tokens")
+    if max_tokens:
+        model_kwargs["max_output_tokens"] = max_tokens
+    if resolved_timeout is not None:
+        model_kwargs["timeout"] = resolved_timeout
+    if resolved_retries is not None:
+        model_kwargs["max_retries"] = resolved_retries
+
+    return ChatGoogleGenerativeAI(**model_kwargs)
 
 
-def get_research_model() -> ChatGoogleGenerativeAI:
+def get_research_model(
+    timeout: Optional[int] = None,
+    max_retries: Optional[int] = None,
+) -> ChatGoogleGenerativeAI:
     """
     Initialize and return the research model (Gemini 2.5 Flash for free tier).
     
@@ -231,6 +262,10 @@ def get_research_model() -> ChatGoogleGenerativeAI:
     
     Used for: Research, RAG integration, fact-checking, semantic analysis
     
+    Args:
+        timeout: Optional timeout override for API calls (seconds)
+        max_retries: Optional retry override before triggering fallback
+
     Returns:
         ChatGoogleGenerativeAI: Configured Gemini model
     
@@ -241,13 +276,25 @@ def get_research_model() -> ChatGoogleGenerativeAI:
     if not api_key:
         raise ValueError("GOOGLE_API_KEY environment variable not set")
     
-    return ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash",  # Flash for higher free tier quota (15 req/min vs 2)
-        google_api_key=api_key,
-        temperature=0.3,  # Focused on precision and factuality for RAG
-        top_p=0.95,
-        top_k=40,
-    )
+    settings = _get_model_settings("research_model")
+    resolved_timeout = timeout if timeout is not None else settings.get("timeout")
+    resolved_retries = max_retries if max_retries is not None else settings.get("max_retries")
+    model_kwargs = {
+        "model": settings.get("model_id", "gemini-2.5-pro"),
+        "google_api_key": api_key,
+        "temperature": settings.get("temperature", 0.3),
+        "top_p": settings.get("top_p", 0.95),
+        "top_k": settings.get("top_k", 40),
+    }
+    max_tokens = settings.get("max_tokens")
+    if max_tokens:
+        model_kwargs["max_output_tokens"] = max_tokens
+    if resolved_timeout is not None:
+        model_kwargs["timeout"] = resolved_timeout
+    if resolved_retries is not None:
+        model_kwargs["max_retries"] = resolved_retries
+    
+    return ChatGoogleGenerativeAI(**model_kwargs)
 
 
 def get_model_with_fallback():
@@ -408,6 +455,70 @@ def print_table(
     console.print(table)
 
 
+def truncate_text(text: str, limit: int = 1000) -> str:
+    """Return text truncated to limit with ellipsis when needed."""
+
+    if len(text) <= limit:
+        return text
+    return f"{text[:limit].rstrip()}..."
+
+
+def print_agent_status(
+    agent_name: str,
+    stage_label: str,
+    model_name: str,
+    objective: str,
+) -> None:
+    """Show which agent/model is running for a stage."""
+
+    content = (
+        f"[bold white]Agente:[/bold white] {agent_name}\n"
+        f"[bold white]Estágio:[/bold white] {stage_label}\n"
+        f"[bold white]Modelo:[/bold white] {model_name}\n"
+        f"[bold white]Objetivo:[/bold white] {objective}"
+    )
+    panel = Panel(
+        content,
+        title="🤖 Execução do Agente",
+        border_style="cyan",
+        padding=(1, 2),
+    )
+    console.print(panel)
+
+
+def print_agent_thought(agent_name: str, thought: str) -> None:
+    """Display a short 'thinking aloud' message for the running agent."""
+
+    panel = Panel(
+        f"[italic]{truncate_text(thought, 600)}[/italic]",
+        title=f"🧠 Pensamento - {agent_name}",
+        border_style="magenta",
+        padding=(1, 2),
+    )
+    console.print(panel)
+
+
+def print_agent_output(stage_label: str, output: Any, max_chars: int = 1200) -> None:
+    """Render the agent output in a Rich panel with truncation."""
+
+    if isinstance(output, str):
+        rendered = output
+    else:
+        try:
+            rendered = json.dumps(output, ensure_ascii=False, indent=2)
+        except Exception:  # noqa: BLE001
+            rendered = str(output)
+
+    preview = truncate_text(rendered, max_chars)
+    panel = Panel(
+        preview or "(sem saída)",
+        title=f"📤 Resultado - {stage_label}",
+        border_style="green",
+        padding=(1, 2),
+    )
+    console.print(panel)
+
+
 def print_progress(
     total: int,
     description: str = "Processando"
@@ -498,11 +609,17 @@ def print_pipeline_complete(results: Dict[str, Any]) -> None:
         results: Dicionário com resultados do pipeline
     """
     summary = results.get("summary", {})
+    total_stages = summary.get("total_stages", 11)
+    final_path = summary.get("final_ebook_path")
+    final_line = ""
+    if final_path:
+        final_line = f"[green]Arquivo Final:[/green] {final_path}\n"
     panel = Panel(
         f"[bold green]✅ Pipeline Completado com Sucesso![/bold green]\n\n"
         f"[cyan]Tópico:[/cyan] {summary.get('topic', 'N/A')}\n"
         f"[yellow]Público-alvo:[/yellow] {summary.get('target_audience', 'N/A')}\n"
-        f"[magenta]Estágios Concluídos:[/magenta] {summary.get('stages_completed', 0)}/9\n\n"
+        f"[magenta]Estágios Concluídos:[/magenta] {summary.get('stages_completed', 0)}/{total_stages}\n"
+        f"{final_line}\n"
         f"[bright_yellow]🎉 Seu ebook está pronto para publicação no KDP![/bright_yellow]",
         title="[bold green]CONCLUSÃO[/bold green]",
         border_style="green",
@@ -549,6 +666,10 @@ __all__ = [
     "get_logger",
     "print_panel",
     "print_table",
+    "truncate_text",
+    "print_agent_status",
+    "print_agent_thought",
+    "print_agent_output",
     "print_progress",
     "print_stage_header",
     "print_stage_complete",

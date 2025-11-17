@@ -10,7 +10,7 @@ Each tier is tried in sequence until one succeeds.
 """
 
 import os
-from typing import Optional, Any, Dict
+from typing import Any, Callable, Dict, List, Optional
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_groq import ChatGroq
 from src.config import get_logger
@@ -25,12 +25,61 @@ class LLMFallback:
         """Initialize LLM models in fallback order."""
         self.models = []
         self.setup_models()
+        # Precompute sequences for different workloads
+        self._research_sequence = [self.models[0], self.models[1], self.models[2]]
+        self._write_sequence = [self.models[1], self.models[0], self.models[2]]
+
+    def _describe_model(self, model: Any) -> str:
+        """Return readable name for logging."""
+
+        return getattr(model, "model", getattr(model, "model_name", type(model).__name__))
+
+    def _extract_response(self, response: Any) -> str:
+        """Normalize different agent response structures into a string."""
+
+        if isinstance(response, dict):
+            if "output" in response:
+                return response["output"]
+            if "messages" in response:
+                messages = response.get("messages", [])
+                if messages:
+                    return messages[-1].content
+        return str(response)
+
+    def _get_sequence(self, mode: str) -> List[Dict[str, Any]]:
+        """Return ordered list of models for the requested workload."""
+
+        if mode == "research":
+            return list(self._research_sequence)
+        if mode == "write":
+            return list(self._write_sequence)
+        return list(self.models)
+
+    @staticmethod
+    def _replace_agent_model(agent: Any, model: Any) -> bool:
+        """Attempt to swap the underlying LLM used by the agent in-place."""
+
+        # AgentExecutor exposes .agent.llm_chain.llm and .llm_chain.llm
+        swapped = False
+        chain_candidates = []
+        if hasattr(agent, "agent") and hasattr(agent.agent, "llm_chain"):
+            chain_candidates.append(agent.agent.llm_chain)
+        if hasattr(agent, "llm_chain"):
+            chain_candidates.append(agent.llm_chain)
+
+        for chain in chain_candidates:
+            if hasattr(chain, "llm"):
+                chain.llm = model
+                swapped = True
+
+        return swapped
     
     def setup_models(self):
         """Setup LLM models in priority order."""
         # Priority 1: Gemini 2.5 Pro (high accuracy, low quota)
         self.models.append({
             "name": "Gemini 2.5 Pro",
+            "model_id": "gemini-2.5-pro",
             "init": self._init_gemini_pro,
             "description": "Google Gemini 2.5 Pro (Research mode, 2 req/min free tier)"
         })
@@ -38,6 +87,7 @@ class LLMFallback:
         # Priority 2: Gemini 2.5 Flash (good accuracy, higher quota)
         self.models.append({
             "name": "Gemini 2.5 Flash",
+            "model_id": "gemini-2.5-flash",
             "init": self._init_gemini_flash,
             "description": "Google Gemini 2.5 Flash (Writing mode, 15 req/min free tier)"
         })
@@ -45,6 +95,7 @@ class LLMFallback:
         # Priority 3: Groq LLaMA 3 70B (unlimited free tier)
         self.models.append({
             "name": "Groq LLaMA 3 70B",
+            "model_id": "llama-3.3-70b-versatile",
             "init": self._init_groq,
             "description": "Groq LLaMA 3 70B (Fallback, unlimited free tier)"
         })
@@ -154,68 +205,67 @@ class LLMFallback:
     
     def execute_with_fallback(
         self,
-        agent: Any,
         query: str,
-        model_sequence: Optional[list] = None
+        agent: Any,
+        agent_factory: Optional[Callable[[Any], Any]] = None,
+        mode: str = "write",
+        skip_model_id: Optional[str] = None,
     ) -> str:
-        """
-        Execute agent with automatic fallback on failure.
-        
-        Args:
-            agent: LangChain agent to execute
-            query: Query string for agent
-            model_sequence: Optional list of models to try (default: all)
-        
-        Returns:
-            str: Agent response
-            
-        Raises:
-            RuntimeError: If all models fail
-        """
-        logger.info(f"🔄 Executando com fallback ({len(self.models)} modelos disponíveis)...")
-        
-        for idx, model_config in enumerate(self.models, 1):
+        """Execute agent with automatic fallback on failure."""
+
+        sequence = self._get_sequence(mode)
+        total_candidates = len(sequence)
+        if skip_model_id:
+            sequence = [cfg for cfg in sequence if cfg.get("model_id") != skip_model_id]
+
+        if not sequence:
+            raise RuntimeError("❌ Sem modelos alternativos disponíveis para fallback")
+
+        logger.info(
+            f"🔄 Executando fallback ({len(sequence)}/{total_candidates} modelos elegíveis)..."
+        )
+        last_error: Optional[Exception] = None
+
+        for idx, model_config in enumerate(sequence, 1):
             try:
-                logger.info(f"\n[Tentativa {idx}/{len(self.models)}] 📊 {model_config['name']}")
+                logger.info(f"\n[Tentativa {idx}/{len(sequence)}] 📊 {model_config['name']}")
                 logger.info(f"   {model_config['description']}")
-                
-                # Try to get and use the model
+
                 model = model_config["init"]()
-                
-                # Execute agent with this model
-                logger.info(f"   ⏳ Processando com {model_config['name']}...")
-                response = agent.invoke({
+                logger.info(
+                    f"   ⏳ Processando com {model_config['name']} ({self._describe_model(model)})..."
+                )
+
+                current_agent = None
+                if agent_factory:
+                    current_agent = agent_factory(model)
+                else:
+                    swapped = self._replace_agent_model(agent, model)
+                    if swapped:
+                        current_agent = agent
+                    else:
+                        raise RuntimeError(
+                            "Agent does not expose llm_chain; provide agent_factory for fallback."
+                        )
+
+                setattr(current_agent, "_fallback_model_id", model_config.get("model_id"))
+                response = current_agent.invoke({
                     "messages": [{"role": "user", "content": query}]
                 })
-                
-                # Extract response
-                if isinstance(response, dict):
-                    if "output" in response:
-                        result = response["output"]
-                    elif "messages" in response:
-                        messages = response.get("messages", [])
-                        result = messages[-1].content if messages else str(response)
-                    else:
-                        result = str(response)
-                else:
-                    result = str(response)
-                
+                result = self._extract_response(response)
                 logger.info(f"   ✅ Sucesso com {model_config['name']}")
                 return result
-                
-            except Exception as e:
-                error_msg = str(e)
-                logger.warning(f"   ❌ Falhou {model_config['name']}: {error_msg[:80]}")
-                
-                # Log specific quota errors
-                if "ResourceExhausted" in str(type(e)) or "429" in error_msg:
-                    logger.warning(f"   💬 Quota excedida - tentando próximo modelo...")
-                
-                continue
-        
+
+            except Exception as error:  # noqa: BLE001
+                last_error = error
+                error_msg = str(error)
+                logger.warning(f"   ❌ Falhou {model_config['name']}: {error_msg[:120]}")
+                if "ResourceExhausted" in str(type(error)) or "429" in error_msg:
+                    logger.warning("   💬 Quota excedida - tentando próximo modelo...")
+
         raise RuntimeError(
-            f"❌ Todos os {len(self.models)} modelos falharam! "
-            "Verifique suas credenciais de API."
+            f"❌ Todos os modelos de fallback falharam ({len(sequence)} tentativas)! "
+            f"Último erro: {last_error}"
         )
 
 

@@ -1,219 +1,193 @@
-# Technical Architecture – Automated eBook Generator
+# Arquitetura Técnica – Ebook Generator 1.0
 
-**Ebook Generator 1.0 - Technical Architecture Specification**
+**Documento:** Especificação Arquitetural Oficial  
+**Versão:** 1.0 (Revisada)  
+**Atualização:** Novembro/2025  
 
-**Version**: 1.0  
-**Last Updated**: November 13, 2025  
+## Documentos Relacionados
 
-## Related Documentation
-
-- **[Product Requirements Document (PRD.md)](./PRD.md)** - Business objectives, features, and success metrics
-- **[This Architecture Document](./ARCHITECTURE.md)** - Technical stack, components, and execution flow
-- **[Copilot Instructions (.github/copilot-instructions.md)](../.github/copilot-instructions.md)** - Coding standards and implementation details
-
----
-
-## 1. Stack and Integrations
-
-### Backend
-- **Language**: Python 3.11+
-- **AI Orchestration**: LangChain 1.0+
-- **AI Models**: 
-  - Gemini 2.5 Flash (fast writing, temperature 0.7)
-  - Gemini 2.5 Pro (deep research/RAG, temperature 0.3)
-
-### Storage and Vectorization
-- **Database**: Supabase
-- **Vectorization**: pgvector extension
-- **Retriever**: LangChain Retriever
-
-### Conversion and Export
-- **Markdown → HTML/DOCX/EPUB**: Pandoc 3.0+
-- **Cover Generation**: API Integration (Banana or similar)
-- **Publication**: Assistant for KDP (Kindle Direct Publishing)
+- **[PRD.md](./PRD.md)** – Diretrizes de produto, escopo e métricas.
+- **[ARCHITECTURE.md](./ARCHITECTURE.md)** – (este arquivo) visão técnica completa.
+- **[.github/copilot-instructions.md](../.github/copilot-instructions.md)** – Padrões de engenharia e governança.
 
 ---
 
-## 2. Architectural Components
+## 1. Visão Técnica Geral
 
-### 2.1 Configuration System (`specs/`)
+O Ebook Generator 1.0 opera como uma **plataforma editorial multiagente**. O Superagente Editor-Chefe coordena agentes especializados em ideação, pesquisa, escrita, revisão e publicação, replicando o workflow de uma editora profissional. Toda a execução é dirigida por parâmetros YAML e pelo dual-model Gemini 2.5 (Flash para escrita; 2.5 padrão para pesquisa), garantindo rapidez criativa e rigor factual.
 
-All pipeline parameters are externalized to YAML configuration files. This parameter-driven architecture allows for flexible and reusable components.
+---
+
+## 2. Stack e Integrações
+
+### Backend e Orquestração
+- **Linguagem:** Python 3.11+
+- **Gerenciador/Runner:** `uv` (instalação, sincronização e execução)
+- **Framework:** LangChain 1.0+ (agents + tools + Runnables)
+- **CLI/TUI:** Rich + typer (sem FastAPI/Docker)
+
+### Modelos e LLMs
+- **Gemini 2.5 Flash** – Escrita criativa, revisão textual, iterações (temp. 0.7)
+- **Gemini 2.5** – Pesquisa profunda, RAG e análise factual (temp. 0.3)
+
+### Persistência e RAG
+- **Supabase + Postgres** – Base operacional
+- **pgvector** – Armazena embeddings (`rag_author_*`, `rag_external`)
+- **Retriever LangChain** – Consulta dos vetores para os agentes
+
+### Conversão e Publicação
+- **Pandoc 3.0+** – Markdown → HTML/DOCX/EPUB
+- **Ferramenta de imagem (Banana/NanoBanana)** – Geração de capa
+- **Saída KDP** – JSON com metadados, DOCX/EPUB finais
+
+---
+
+## 3. Componentes Arquiteturais
+
+### 3.1 Configuração Parametrizada (`specs/`)
+
+Todos os parâmetros ficam fora do código:
 
 ```
 specs/
-├── pipeline.yaml         # 9-stage definitions with agent mappings
-├── agents.yaml           # 25 independent agent specifications
-├── config.yaml           # Portuguese strings, messages, labels
-├── models.yaml           # Gemini model configuration
-├── tools.yaml            # 30+ tool specifications
-├── personas.yaml         # 10 review personas + 5 virtual readers
-├── book.yaml             # Generated from input validation (gitignore)
-└── README.md             # Configuration documentation
+├── pipeline.yaml      # Estágios e agentes do pipeline editoral
+├── agents.yaml        # 25 agentes independentes (principais + revisores + leitores)
+├── personas.yaml      # Perfis detalhados dos revisores e leitores
+├── tools.yaml         # Definição das 30+ ferramentas
+├── models.yaml        # Configuração do dual-model Gemini
+├── config.yaml        # Mensagens em português para a TUI/logs
+├── book.yaml          # Gerado após validação de entrada (gitignored)
+└── README.md          # Documentação das especificações
 ```
 
-**Key Principle**: **Agents are defined independently of stages**
-- `agents.yaml` contains all agent specifications without stage associations.
-- `pipeline.yaml` defines the 9 stages with parameters and references agents by their ID.
-- This mapping allows agents to be reusable and reconfigurable without altering the pipeline structure.
+**Princípios-chave**:
+- Agentes são declarados em `agents.yaml` e reutilizados por múltiplos estágios.
+- `pipeline.yaml` apenas referencia IDs de agentes e parâmetros (ideação → publicação).
+- Strings em português ficam centralizadas em `config.yaml`.
+- `book.yaml` combina input do usuário com defaults validados.
 
-**Key Files**:
-
-1.  **`pipeline.yaml`**: Defines the 9 pipeline stages, their parameters, and the `agent` ID responsible for each stage.
-2.  **`agents.yaml`**: Contains specifications for all 25 agents (9 main pipeline, 10 review personas, 5 virtual readers).
-3.  **`config.yaml`**: Centralizes all user-facing strings (in Portuguese) for the TUI, including messages, prompts, and labels.
-4.  **`models.yaml`**: Configures the Gemini models (Flash and Pro) with their respective settings (temperature, top_p, etc.).
-5.  **`tools.yaml`**: Specifies the 30+ tools available to the agents, organized by category.
-6.  **`personas.yaml`**: Details the 10 review personas and 5 virtual readers, including their expertise and evaluation criteria.
-7.  **`book.yaml`**: Auto-generated file that merges user input with pipeline defaults. It is not committed to version control.
-
-### 2.2 `src/` Directory
-
-The `src/` directory contains the core application logic.
+### 3.2 Núcleo de Execução (`src/`)
 
 ```
 src/
-├── main.py               # Pipeline orchestration (9 stages)
-├── agents.py             # All agent definitions
-├── tools.py              # All tool definitions
-├── config.py             # Configuration, logging, models, YAML loading
-├── input_validator.py    # Input validation and interactive prompts
-└── __init__.py           # Package initialization
+├── main.py             # Orquestração dos 11 passos editoriais
+├── agents.py           # Factories create_agent() + prompts sistêmicos
+├── tools.py            # Implementação @tool (RAG, pesquisa, formatação)
+├── config.py           # Carregamento YAML, logging Rich, modelos Gemini
+├── input_validator.py  # Validação de input/book_input.yaml → specs/book.yaml
+├── llm_fallback.py     # Estratégia de fallback/resiliência de modelos
+└── __init__.py         # API pública do pacote
 ```
 
--   **`main.py`**: Orchestrates the 9-stage ebook generation pipeline.
--   **`agents.py`**: Contains the functions that create the LangChain agents.
--   **`tools.py`**: Defines the tools that agents can use.
--   **`config.py`**: Loads configurations from the `specs/` directory and sets up logging.
--   **`input_validator.py`**: Validates user input and prompts for missing information.
--   **`__init__.py`**: Makes the `src` directory a Python package.
+### 3.3 Validador de Entrada
+- Lê `input/book_input.yaml`.
+- Checa campos essenciais (tema, público, word count, promessa).
+- Solicita dados faltantes via prompts interativos Rich.
+- Gera `specs/book.yaml` com metadata + parâmetros prontos para a pipeline.
 
-### 2.3 Input Validator (`src/input_validator.py`)
-
-Validates and converts user input to pipeline configuration.
-
-**Validation Flow**:
-
-1.  Load `input/book_input.yaml` (user-provided).
-2.  Check for mandatory fields (`topic`, `target_audience`, `word_count_target`).
-3.  If fields are missing or invalid, it prompts the user interactively.
-4.  Merges validated input with defaults from `specs/pipeline.yaml`.
-5.  Generates `specs/book.yaml`.
-
-### 2.4 Configuration Module (`src/config.py`)
-
-Provides a unified interface for loading all configurations from the `specs/` directory. It also handles logging setup using the Rich library for a colorful TUI.
-
-### 2.5 Logging and Output Standards
-
-All output must use the `logging` module and Rich for formatting, not `print()`.
-
-```python
-from src.config import get_logger, console
-
-logger = get_logger(__name__)
-
-# Logging with levels
-logger.info("Pipeline iniciado")
-logger.warning("Aviso importante")
-logger.error("Erro na execução")
-logger.debug("Detalhes técnicos")
-
-# Rich output for panels
-console.print("[bold cyan]Resultado da Revisão[/bold cyan]")
-```
+### 3.4 Logging e Saída
+- Todo output usa `logging` + Rich (`print_panel`, `print_table`).
+- `get_logger()` centraliza formato, níveis e contexto.
+- `print()` é proibido para manter padrão visual e rastreabilidade.
 
 ---
 
-## 3. RAG Pipeline
+## 4. Pipeline Multiagente
 
-### 3.1 Author Knowledge Base (Pre-loaded in Supabase)
+### 4.1 Camada de Orquestração
+- **Superagente Editor-Chefe**: Consolida tema/problema/público, gera Documento de Especificação do Livro (DEL) e dispara cada estágio.
 
--   **`rag_author_stories`**: Personal narratives and experiences.
--   **`rag_author_positioning`**: Market positioning and authority.
--   **`rag_author_vision`**: Values, philosophy, and opinions.
+### 4.2 Camada de Produção Editorial
+1. **Agente da Ideia Central** – Refinamento da promessa e direcionadores de tom.
+2. **Agente de Título/Subtítulo** – Baseado em pesquisa Amazon/Google dos best-sellers.
+3. **Agente Estruturador** – Outline completo, distribuição de palavras e elementos didáticos.
+4. **Agente Pesquisador** – Google Search + Context7 + Supabase (armazenamento vetorial).
+5. **Agente Escritor** – Usa Gemini Flash, consulta RAG e aplica voz do autor.
 
-This data is pre-loaded and used by reviewers to ensure the author's voice and perspective are maintained.
+### 4.3 Camada de Qualidade Editorial
+6. **Superagente de Revisão** – Coordena 5 especialistas: Técnico, Editorial, Copidesque, Governança e Ética. Executa três iterações obrigatórias.
+7. **Superagente de Leitura Crítica** – Emula 5 leitores virtuais (iniciante, profissional, acadêmico, pragmático, cético) em três rodadas com foco diferente (clareza, precisão, engajamento).
+8. **Agente de Editoração** – Aplica padrões Markdown (ATX, 100 colunas, GFM) e organiza blocos de código, tabelas e chamadas.
+9. **Agente Capista** – Gera briefing visual e solicita arte à tool de imagem.
+10. **Agente de Finalização** – Monta sumário navegável, links internos e prepara conversões Pandoc.
+11. **Agente KDP** – Exporta arquivos (DOCX/EPUB/Markdown) e monta JSON de metadados, tags e descrições de marketing.
 
-### 3.2 External RAG - Deep Research Pipeline
+---
 
-1.  **Stage 3 (Structure)**: The Structure Agent defines the chapters.
-2.  **Stage 4A (Deep Research)**: The Deep Research Agent queries the Context7 MCP Server for academic papers, books, and other sources for each chapter. The results are vectorized and stored in the `rag_external` table in Supabase.
-3.  **Stage 4B (Chapter Writing)**: The Writer Agent uses the vectorized research from `rag_external` to write the chapters, including citations.
-4.  **Stage 5 (Review)**: The Research & References Validator persona verifies the quality and credibility of the cited sources.
+## 5. RAG e Pesquisa
 
-### 3.3 Supabase Configuration
+### 5.1 Bases Vetoriais
+- **`rag_author_stories`** – Histórias e narrativas pessoais.
+- **`rag_author_positioning`** – Diferenciais e autoridade do autor.
+- **`rag_author_vision`** – Valores, ética e visão estratégica.
+- **`rag_external`** – Pesquisas coletadas pelo Agente Pesquisador (Google, papers, Amazon, guias).
+
+### 5.2 Fluxo de Pesquisa
+1. Agente Estruturador define capítulos/seções.
+2. Agente Pesquisador cria consultas (tipos: research, best_practices, case_studies, expert_perspectives).
+3. Resultados são normalizados, vectorizados (modelo `text-embedding-3-small`) e enviados para Supabase.
+4. Agente Escritor consome RAG segmentado por capítulo, respeitando `rag_context_limit`.
+5. Revisores Técnico e de Referências validam credibilidade (`credibility_threshold`).
+
+### 5.3 Esquema Supabase Simplificado
 
 ```sql
--- Table: rag_external (Research knowledge - vectorized during pipeline)
 CREATE TABLE rag_external (
   id BIGSERIAL PRIMARY KEY,
+  chapter_id VARCHAR(64),
+  topic TEXT,
+  source TEXT,
   content TEXT NOT NULL,
-  embedding vector(1536),
-  chapter_id VARCHAR(100),
-  topic VARCHAR(255),
-  source VARCHAR(255),
+  embedding VECTOR(1536),
   created_at TIMESTAMP DEFAULT NOW()
 );
-
--- Other rag tables for author knowledge...
 ```
 
 ---
 
-## 4. Execution Sequence
+## 6. Agentes, Ferramentas e Prompts
 
-The pipeline consists of 9 stages, executed sequentially:
-
-1.  **Ideation**: Defines the central idea, problem, and audience.
-2.  **Title Generation**: Creates 3 Amazon-optimized title options.
-3.  **Structure**: Generates a hierarchical table of contents.
-4.  **Deep Research & Chapter Writing**:
-    -   **4A. Deep Research**: Gathers and vectorizes external knowledge.
-    -   **4B. Chapter Writing**: Writes chapters using the research.
-5.  **Specialized Review**: 10 specialized personas review the content.
-6.  **Critical Reading & Iteration**: 5 virtual readers provide feedback in 3 cycles.
-7.  **Editing**: Finalizes formatting and validation.
-8.  **Finalization**: Generates a cover concept and metadata.
-9.  **Publication**: Exports the ebook to DOCX, EPUB, PDF, and JSON.
+- **agents.py** expõe `create_*_agent()` seguindo o padrão LangChain `create_agent(model, tools, system_prompt)`.
+- Cada agente possui **System Prompt** com papel, foco, processo e formato de saída (vide PRD).
+- **Ferramentas** (`tools.py`) usam `@tool`, com docstrings em inglês e strings de interface em português (quando expostas ao usuário).
+- Agrupamento de ferramentas por estágio (ideação, título, estrutura, pesquisa, escrita, revisão, finalização) permite reuse e testes unitários segmentados.
 
 ---
 
-## 5. Gemini Model Roles
+## 7. Personas Especialistas e Leitores Virtuais
 
--   **Gemini 2.5 Flash (Fast Writing)**: Used for creative writing, reviews, and summaries. (Temperature: 0.7)
--   **Gemini 2.5 Pro (Deep Research)**: Used for research, analysis, and factual validation. (Temperature: 0.3)
+### 7.1 Revisão Especializada (5 principais nesta versão)
+1. **Revisor Técnico** – Analisa código, frameworks e precisão factual.
+2. **Revisor Editorial** – Avalia clareza narrativa e adequação ao público.
+3. **Copidesque** – Padroniza estilo, gramática e consistência terminológica.
+4. **Governança** – Garante conformidade legal, LGPD, versões e citações.
+5. **Ética** – Monitora vieses, segurança e necessidade de disclaimers.
 
----
-## 6. Review and Reading Personas
+*(Os demais perfis herdados do PRD continuam definidos em `personas.yaml` para expansão futura.)*
 
-### Review Personas (10)
-
-1.  **Technical Reviewer**: Validates code and technical accuracy.
-2.  **Editorial Reviewer**: Checks for clarity, tone, and flow.
-3.  **Content Stylist**: Ensures formatting consistency.
-4.  **Governance QA**: Verifies compliance and metadata.
-5.  **Ethics Validator**: Detects bias and ethical issues.
-6.  **Author Stories & Didactics Reviewer**: Balances author stories with learning objectives.
-7.  **Author Positioning Reviewer**: Validates the author's market positioning.
-8.  **Author Vision & Opinions Reviewer**: Aligns content with the author's worldview.
-9.  **Examples & Exercises Code Reviewer**: Executes and collects code examples.
-10. **Research & References Validator**: Validates the credibility of sources.
-
-### Critical Reading Personas (5)
-
-1.  **Curious Beginner**: Represents a newcomer to the topic.
-2.  **Technical Professional**: A senior developer who validates technical depth.
-3.  **Didactic Educator**: A teacher who focuses on pedagogical structure.
-4.  **Domain Specialist**: An expert in a related field.
-5.  **Reflective Reader**: A general reader who evaluates the emotional impact.
+### 7.2 Leitores Virtuais (5)
+- **Curioso Iniciante**, **Profissional Técnico**, **Educador Didático**, **Especialista de Domínio**, **Leitor Reflexivo** – cada um gera relatórios focados em clareza, profundidade, didática, aplicação prática e impacto emocional.
 
 ---
 
-## 7. External Dependencies
+## 8. Padrões Operacionais
 
--   **Google Gemini API**: For LLMs and embeddings.
--   **Supabase API**: For storage and vector operations.
--   **Context7 MCP Server**: For semantic knowledge base retrieval.
--   **GitHub API** (optional): For managing code examples.
--   **Pandoc**: For format conversion.
+- **Execução**: `uv run src/main.py` (ou módulos específicos). Nenhum uso direto de `python`.
+- **Dependências**: `uv sync` para instalar; `uv add` para novas libs.
+- **Logs**: `logger.info|warning|error|debug`, sem `print()`.
+- **Internacionalização**: Código e docstrings em inglês; strings exibidas em português via `get_message()`.
+- **Conformidade**: Sem FastAPI/Docker; foco em CLI offline.
+
+---
+
+## 9. Dependências Externas
+
+- **Google Gemini API** – Modelos Flash e 2.5 (pesquisa, escrita, embeddings quando necessário).
+- **Supabase** – Banco Postgres, autenticação e vetores.
+- **Context7 MCP** – Pesquisa semântica externa.
+- **Ferramenta de Imagem** – Geração de capa a partir de prompt estruturado.
+- **Pandoc** – Conversões para DOCX/EPUB/PDF.
+
+---
+
+Este documento reflete a arquitetura técnica alinhada ao PRD revisado, servindo como blueprint direto para implementação e auditorias futuras.

@@ -1,338 +1,179 @@
-# Especificação do Pipeline - Ebook Generator 1.0
-# Todos os parâmetros configuráveis para cada estágio
-
 stages:
-  stage_1_ideation:
-    name: "Ideação"
-    description: "Gera a essência do livro e promessa de transformação"
-    agent: "ideation_agent"  # Reference to agents.yaml > main_pipeline_agents > ideation_agent
+  stage_1_document_spec:
+    name: "Documento de Especificação"
+    description: "Superagente Editor-Chefe consolida DEL com ideia, promessa e direcionadores."
+    agent: "document_spec_agent"
     parameters:
       topic:
         type: string
         required: true
-        description: "Tópico principal do ebook"
-        example: "Python para Análise de Dados"
-      
+        description: "Tema principal informado pelo usuário"
       target_audience:
         type: string
         required: true
-        description: "Público-alvo do livro"
-        example: "Cientistas de dados iniciantes"
-      
+        description: "Público-alvo prioritário"
       word_count_target:
         type: integer
         required: true
         default: 15000
         min: 5000
         max: 100000
-        step: 1000
-        description: "Contagem de palavras alvo"
-      
-      transformation_promise:
-        type: string
-        required: false
-        description: "Promessa de transformação para o leitor"
-        example: "Dominar análise de dados em Python de forma prática"
-      
       reading_level:
         type: string
+        default: "intermediate"
+        enum: ["beginner", "intermediate", "advanced"]
+      author_name:
+        type: string
         required: false
-        default: "intermediary"
-        enum: ["beginner", "intermediary", "advanced", "expert"]
-        description: "Nível de leitura esperado"
+      author_bio:
+        type: string
+        required: false
 
-  stage_2_title:
-    name: "Geração de Títulos"
-    description: "Gera 3 opções de título otimizados para Amazon"
-    agent: "title_agent"  # Reference to agents.yaml > main_pipeline_agents > title_agent
+  stage_2_ideation:
+    name: "Ideação"
+    description: "Expande promessa, define problema central e voz editorial."
+    agent: "ideation_agent"
+    parameters:
+      del_id:
+        type: string
+        required: true
+        description: "Identificador do DEL gerado no estágio 1"
+      include_market_scan:
+        type: boolean
+        default: true
+
+  stage_3_title_generation:
+    name: "Título e Subtítulo"
+    description: "Pesquisa best-sellers e gera 3 variações otimizadas para Amazon."
+    agent: "title_agent"
     parameters:
       title_count:
         type: integer
-        required: true
-        default: 3
-        min: 1
-        max: 10
-        description: "Quantidade de opções de título"
-      
-      seo_keywords:
-        type: array
-        item_type: string
-        required: false
-        description: "Palavras-chave prioritárias para SEO"
-        example: ["Python", "Análise", "Dados"]
-      
-      market_category:
-        type: string
-        required: false
-        description: "Categoria de mercado Amazon"
-        example: "Technology & Engineering"
-      
-      amazon_compliance:
-        type: boolean
-        required: true
-        default: true
-        description: "Validar compatibilidade com requerimentos Amazon"
-
-  stage_3_structure:
-    name: "Estrutura e Outline"
-    description: "Cria índice hierárquico com distribuição de palavras"
-    agent: "structure_agent"  # Reference to agents.yaml > main_pipeline_agents > structure_agent
-    parameters:
-      outline_depth:
-        type: integer
-        required: true
         default: 3
         min: 1
         max: 5
-        description: "Profundidade da estrutura (níveis de seções)"
-      
-      chapter_count:
+      enforce_amazon_rules:
+        type: boolean
+        default: true
+
+  stage_4_structure:
+    name: "Estrutura"
+    description: "Cria capítulos, seções e distribuição de palavras."
+    agent: "structure_agent"
+    parameters:
+      outline_depth:
         type: integer
-        required: false
-        description: "Número de capítulos (auto-calculado se vazio)"
-        min: 3
-        max: 30
-      
-      section_weights:
-        type: object
-        required: false
-        description: "Distribuição de peso entre seções (%)"
-        example: {"introduction": 10, "main_content": 70, "conclusion": 20}
-      
+        default: 3
+        min: 1
+        max: 4
       didactic_progression:
         type: boolean
-        required: true
         default: true
-        description: "Usar progressão didática estruturada"
 
-  stage_4a_deep_research:
+  stage_5_research:
     name: "Pesquisa Profunda"
-    description: "Pesquisa externa com Context7 MCP Server"
-    agent: "deep_research_agent"  # Reference to agents.yaml > main_pipeline_agents > deep_research_agent
+    description: "Executa busca Context7 + Supabase e registra em rag_external."
+    agent: "deep_research_agent"
     parameters:
       query_types:
         type: array
         item_type: string
-        required: true
         default: ["research", "case_studies", "trends"]
-        enum: ["research", "trends", "case_studies", "expert_perspectives", "best_practices"]
-        description: "Tipos de pesquisa a executar"
-      
-      research_depth:
-        type: string
-        required: true
-        default: "standard"
-        enum: ["quick", "standard", "comprehensive"]
-        description: "Profundidade da pesquisa"
-      
       source_limit:
         type: integer
-        required: true
         default: 5
         min: 1
-        max: 20
-        description: "Número máximo de fontes por tópico"
-      
-      vectorization_model:
-        type: string
-        required: true
-        default: "gemini-embedding-001"
-        description: "Modelo para gerar embeddings"
-      
+        max: 10
       credibility_threshold:
         type: number
-        required: true
         default: 0.7
         min: 0.0
         max: 1.0
-        description: "Score mínimo de credibilidade das fontes (0-1)"
 
-  stage_4b_chapter_writing:
-    name: "Escrita de Capítulos"
-    description: "Escreve capítulos com conteúdo baseado em pesquisa"
-    agent: "chapter_writing_agent"  # Reference to agents.yaml > main_pipeline_agents > chapter_writing_agent
+  stage_6_writing:
+    name: "Escrita"
+    description: "Produz capítulos integrais com RAG e voz do autor."
+    agent: "chapter_writing_agent"
     parameters:
-      chapter_template:
-        type: string
-        required: true
-        default: "standard"
-        enum: ["standard", "technical", "narrative", "tutorial"]
-        description: "Template de capítulo"
-      
       rag_context_limit:
         type: integer
-        required: true
         default: 3
         min: 1
-        max: 10
-        description: "Limite de contextos RAG por seção"
-      
-      author_voice_weight:
-        type: number
-        required: true
-        default: 0.6
-        min: 0.0
-        max: 1.0
-        description: "Peso da voz do autor (0=puramente técnico, 1=muito pessoal)"
-      
-      example_count:
-        type: integer
-        required: true
-        default: 2
-        min: 0
-        max: 5
-        description: "Número de exemplos por seção"
-      
+        max: 6
       include_exercises:
         type: boolean
-        required: true
         default: true
-        description: "Incluir exercícios práticos"
 
-  stage_5_review:
+  stage_7_specialized_review:
     name: "Revisão Especializada"
-    description: "Revisão por 10 personas especializados"
-    agent: "review_coordinator_agent"  # Reference to agents.yaml > main_pipeline_agents > review_coordinator_agent
+    description: "Coordena personas técnicas/editoriais para feedback consolidado."
+    agent: "review_coordinator_agent"
     parameters:
-      active_personas:
+      personas_pool:
         type: array
         item_type: string
-        required: false
         default: ["all"]
-        enum: ["technical", "editorial", "stylist", "governance", "ethics", "author_stories", "author_positioning", "author_vision", "code_reviewer", "research_validator", "all"]
-        description: "Personas ativos para revisão"
-      
-      feedback_aggregation:
+      aggregation_strategy:
         type: string
-        required: true
         default: "weighted"
         enum: ["majority", "consensus", "weighted"]
-        description: "Estratégia de agregação de feedback"
-      
-      threshold_score:
-        type: number
-        required: true
-        default: 0.8
-        min: 0.0
-        max: 1.0
-        description: "Score mínimo de aceitação (0-1)"
 
-  stage_6_critical_reading:
-    name: "Leitura Crítica e Iteração"
-    description: "3 ciclos de feedback de leitores virtuais e revisão"
-    agent: "critical_reading_coordinator_agent"  # Reference to agents.yaml > main_pipeline_agents > critical_reading_coordinator_agent
+  stage_8_critical_reading:
+    name: "Leitura Crítica"
+    description: "Simula leitores virtuais em ciclos focados."
+    agent: "critical_reading_coordinator_agent"
     parameters:
       iteration_cycles:
         type: integer
-        required: true
         default: 3
         min: 1
-        max: 5
-        description: "Número de ciclos de iteração"
-      
-      active_virtual_readers:
-        type: array
-        item_type: string
-        required: false
-        default: ["all"]
-        enum: ["curious_beginner", "technical_professional", "didactic_educator", "domain_specialist", "reflective_reader", "all"]
-        description: "Leitores virtuais ativos"
-      
+        max: 3
       cycle_focus:
         type: array
         item_type: string
-        required: false
         default: ["clarity", "accuracy", "engagement"]
-        enum: ["clarity", "accuracy", "engagement", "structure", "tone"]
-        description: "Foco de cada ciclo"
-      
-      refinement_threshold:
-        type: number
-        required: true
-        default: 0.75
-        min: 0.0
-        max: 1.0
-        description: "Score mínimo para conclusão de iteração"
 
-  stage_7_editing:
-    name: "Edição e Formatação"
-    description: "Formatação final e validação Markdown"
-    agent: "editing_agent"  # Reference to agents.yaml > main_pipeline_agents > editing_agent
+  stage_9_editing:
+    name: "Edição"
+    description: "Aplica copidesque e valida Markdown."
+    agent: "editing_agent"
     parameters:
       markdown_standard:
         type: string
-        required: true
         default: "commonmark"
-        enum: ["commonmark", "gfm", "github"]
-        description: "Padrão Markdown a usar"
-      
-      line_length_max:
-        type: integer
-        required: true
-        default: 100
-        min: 50
-        max: 200
-        description: "Comprimento máximo de linha"
-      
+        enum: ["commonmark", "gfm"]
       heading_style:
         type: string
-        required: true
         default: "atx"
-        enum: ["atx", "setext"]
-        description: "Estilo de headings"
 
-  stage_8_finalization:
-    name: "Finalização e Capa"
-    description: "Geração dinâmica de capa e metadados"
-    agent: "finalization_agent"  # Reference to agents.yaml > main_pipeline_agents > finalization_agent
+  stage_10_finalization:
+    name: "Finalização"
+    description: "Gera capa, sumário navegável e metadados consolidados."
+    agent: "finalization_agent"
     parameters:
       cover_style:
         type: string
-        required: true
         default: "modern"
         enum: ["modern", "classic", "minimalist", "vibrant"]
-        description: "Estilo da capa"
-      
-      metadata_template:
-        type: string
-        required: true
-        default: "kdp_standard"
-        enum: ["kdp_standard", "smashwords", "epub3"]
-        description: "Template de metadados"
-      
-      include_toc:
-        type: boolean
-        required: true
-        default: true
-        description: "Incluir table of contents"
-      
       include_glossary:
         type: boolean
-        required: true
         default: false
-        description: "Incluir glossário"
+      metadata_template:
+        type: string
+        default: "kdp_standard"
 
-  stage_9_publication:
-    name: "Publicação e Exportação"
-    description: "Exportação para múltiplos formatos"
-    agent: "publication_agent"  # Reference to agents.yaml > main_pipeline_agents > publication_agent
+  stage_11_publication:
+    name: "KDP e Exportação"
+    description: "Exporta para DOCX/EPUB/PDF e monta pacote KDP."
+    agent: "publication_agent"
     parameters:
       export_formats:
         type: array
         item_type: string
-        required: true
         default: ["docx", "epub", "pdf"]
-        enum: ["docx", "epub", "pdf", "json", "html"]
-        description: "Formatos de exportação"
-      
-      kdp_compliance_strict:
-        type: boolean
-        required: true
-        default: true
-        description: "Validação rigorosa de compatibilidade KDP"
-      
       output_directory:
         type: string
-        required: true
-        default: "./output"
-        description: "Diretório de saída"
+        default: "./dist"
+      kdp_compliance_strict:
+        type: boolean
+        default: true
