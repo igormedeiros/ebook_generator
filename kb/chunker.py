@@ -10,7 +10,12 @@ suitable for embedding and RAG operations. It supports:
 
 import re
 from typing import List, Dict, Any, Optional
-import tiktoken
+
+try:
+    import tiktoken
+    TIKTOKEN_AVAILABLE = True
+except ImportError:
+    TIKTOKEN_AVAILABLE = False
 
 
 class MarkdownChunker:
@@ -32,10 +37,12 @@ class MarkdownChunker:
         """
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
-        try:
-            self.encoding = tiktoken.get_encoding(encoding_name)
-        except Exception:
-            # Fallback to a simple word-based approximation if tiktoken fails
+        if TIKTOKEN_AVAILABLE:
+            try:
+                self.encoding = tiktoken.get_encoding(encoding_name)
+            except Exception:
+                self.encoding = None
+        else:
             self.encoding = None
     
     def count_tokens(self, text: str) -> int:
