@@ -232,9 +232,9 @@ Veja como deve ser o início do seu arquivo result/ebook.md:
 
 ## Introdução
 
-Hoje completam dois meses que retirei um tumor enorme da cabeça. As coisas aconteceram tão rápido... Só sei que lutaram pela minha vida e que preciso fazer com que ela valha à pena.
+[Comece com uma história pessoal autêntica e inspiradora que conecta emocionalmente com o tema do autoconhecimento e inteligência emocional. Use experiências reais de transformação e superação que demonstrem vulnerabilidade e humanidade.]
 
-[Continue com história inspiradora que conecta com o tema...]
+[Continue desenvolvendo a história com detalhes que criem conexão emocional...]
 
 ### A Jornada do Autoconhecimento
 
