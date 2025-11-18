@@ -5,7 +5,7 @@ Agentes simples com system prompt bem definido.
 
 from langchain.agents import create_agent
 from langchain_google_genai import ChatGoogleGenerativeAI
-from .tools_write import replace_text_in_docx
+from .tools import get_all_tools
 
 import os
 from dotenv import load_dotenv
@@ -30,7 +30,7 @@ gemini_llm = ChatGoogleGenerativeAI(
 # Criação do agente de escrita com system prompt especializado
 writer_agent = create_agent(
     model=gemini_llm,
-    tools=[replace_text_in_docx],
+    tools=get_all_tools(),
     system_prompt="""Você é um Escritor Especialista em Autodesenvolvimento.
 
 Sua responsabilidade é gerar conteúdo inspirador e transformador sobre autoconhecimento 

@@ -15,7 +15,7 @@ from .agents_write import writer_agent
 
 def load_brd():
     """Carrega BRD do arquivo specs/brd.yaml."""
-    brd_path = Path(__file__).parent.parent.parent / "specs" / "brd.yaml"
+    brd_path = Path(__file__).parent.parent / "specs" / "brd.yaml"
     with open(brd_path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
