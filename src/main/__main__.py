@@ -1,33 +1,98 @@
 """
 Pipeline de geração de ebook usando LangChain 1.0+.
 
-Orquestra a execução sequencial dos agentes para gerar conteúdo de autodesenvolvimento.
+Orquestra a execução sequencial dos agentes com as ferramentas de tarefas
+para gerar conteúdo de autodesenvolvimento.
 """
 
 import time
-from agents import writer_agent, create_writer_agent, groq_llm
+from agents import writer_agent, groq_llm
 from tasks import (
-    INTRODUCTION_PROMPT,
-    PROBLEMA_PROMPT,
-    IDENTIFICACAO_PROMPT,
-    SOLUCAO_PROMPT,
-    PROTECAO_PROMPT,
-    PERMISSAO_PROMPT,
-    POTENCIA_PROMPT
+    write_introduction,
+    write_problem_chapter,
+    write_identification_chapter,
+    write_solution_chapter,
+    write_protection_chapter,
+    write_permission_chapter,
+    write_power_chapter
 )
 
 ebook_config_path = 'config/ebook_config.json'
 ebook_template_path = '../templates/ebook_template.docx'
 
-# Lista de prompts para cada seção do ebook
+# Configuração das seções do ebook com seus parâmetros
 EBOOK_SECTIONS = [
-    ("Introdução", INTRODUCTION_PROMPT),
-    ("Problema", PROBLEMA_PROMPT),
-    ("Identificação", IDENTIFICACAO_PROMPT),
-    ("Solução", SOLUCAO_PROMPT),
-    ("Proteção", PROTECAO_PROMPT),
-    ("Permissão", PERMISSAO_PROMPT),
-    ("Potência", POTENCIA_PROMPT)
+    {
+        "name": "Introdução",
+        "tool": write_introduction,
+        "params": {
+            "topic": "Autoconhecimento e Inteligência Emocional",
+            "audience": "Iniciantes em desenvolvimento pessoal"
+        }
+    },
+    {
+        "name": "Problema",
+        "tool": write_problem_chapter,
+        "params": {
+            "topic": "Gestão emocional e autoconhecimento",
+            "context": "Desafios comuns no desenvolvimento pessoal"
+        }
+    },
+    {
+        "name": "Identificação",
+        "tool": write_identification_chapter,
+        "params": {
+            "author_stories": {
+                "Superação pessoal": "História de como superei meus limites",
+                "Transformação": "Jornada de mudança e crescimento"
+            }
+        }
+    },
+    {
+        "name": "Solução",
+        "tool": write_solution_chapter,
+        "params": {
+            "method_name": "Método de Inteligência Emocional",
+            "steps": [
+                "Reconhecer emoções",
+                "Compreender origem",
+                "Integrar aprendizado",
+                "Aplicar na vida"
+            ]
+        }
+    },
+    {
+        "name": "Proteção",
+        "tool": write_protection_chapter,
+        "params": {
+            "risks": [
+                "Autossabotagem e dúvida de si",
+                "Influências externas negativas",
+                "Falta de consistência"
+            ]
+        }
+    },
+    {
+        "name": "Permissão",
+        "tool": write_permission_chapter,
+        "params": {
+            "affirmations": [
+                "Você merece ser feliz",
+                "Você tem direito de crescer",
+                "Sua transformação é possível"
+            ]
+        }
+    },
+    {
+        "name": "Potência",
+        "tool": write_power_chapter,
+        "params": {
+            "celebration_elements": {
+                "Progresso": "Celebrar avanços realizados",
+                "Potencial": "Reconhecer capacidade de transformação"
+            }
+        }
+    }
 ]
 
 def execute_agent(agent, query: str) -> str:
@@ -46,22 +111,55 @@ def execute_agent(agent, query: str) -> str:
     })
     return response.get("output", str(response))
 
-def generate_ebook():
+def generate_ebook_section(section_config: dict) -> dict:
     """
-    Gera o ebook de forma sequencial, criando conteúdo para cada seção.
-    """
-    ebook_content = {}
+    Gera uma seção específica do ebook usando a ferramenta correspondente.
     
-    for section_name, prompt in EBOOK_SECTIONS:
-        print(f"\n{'='*60}")
-        print(f"Gerando: {section_name}")
-        print(f"{'='*60}")
+    Args:
+        section_config: Configuração da seção com tool e parâmetros
+    
+    Returns:
+        dict: Resultado da seção com nome e conteúdo
+    """
+    section_name = section_config["name"]
+    tool = section_config["tool"]
+    params = section_config["params"]
+    
+    print(f"\n{'='*60}")
+    print(f"Gerando: {section_name}")
+    print(f"{'='*60}")
+    
+    # Chama a ferramenta com os parâmetros específicos
+    tool_result = tool.invoke(params)
+    
+    # Executa o agente com o resultado da ferramenta
+    query = f"Com base nesta estrutura:\n\n{tool_result}\n\nGere o conteúdo da seção '{section_name}'"
+    agent_result = execute_agent(writer_agent, query)
+    
+    print(f"✓ {section_name} concluída")
+    
+    return {
+        "section": section_name,
+        "tool_guidance": tool_result,
+        "content": agent_result
+    }
+
+def generate_ebook() -> dict:
+    """
+    Gera o ebook completo de forma sequencial.
+    
+    Returns:
+        dict: Dicionário com conteúdo de todas as seções
+    """
+    ebook_content = {
+        "title": "Autoconhecimento e Inteligência Emocional",
+        "sections": []
+    }
+    
+    for section_config in EBOOK_SECTIONS:
+        section_result = generate_ebook_section(section_config)
+        ebook_content["sections"].append(section_result)
         
-        # Executa o agente com o prompt da seção
-        result = execute_agent(writer_agent, prompt)
-        ebook_content[section_name] = result
-        
-        print(f"✓ {section_name} concluída")
         print("\nAguardando 2 segundos antes da próxima seção...")
         time.sleep(2)
     
@@ -69,7 +167,7 @@ def generate_ebook():
 
 if __name__ == "__main__":
     print("\n" + "="*60)
-    print("Iniciando geração de ebook")
+    print("Iniciando geração de ebook com LangChain 1.0+")
     print("="*60)
     
     # Gera o ebook
@@ -79,5 +177,7 @@ if __name__ == "__main__":
     print("Ebook gerado com sucesso!")
     print("="*60)
     print("\nSeções geradas:")
-    for section in content:
-        print(f"  ✓ {section}")
+    for section in content["sections"]:
+        print(f"  ✓ {section['section']}")
+    
+    print(f"\nTotal: {len(content['sections'])} seções concluídas")
