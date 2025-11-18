@@ -19,7 +19,7 @@ from pathlib import Path
 
 try:
     # Quando executado como módulo (python -m src.main)
-    from .agents import writer_agent, research_agent
+    from .agents import writer_agent, research_agent, thematic_research_agent
     from .ui import (
         print_header, print_ebook_info, print_chapters_preview,
         get_confirmation, print_phase_header, print_research_start,
@@ -29,7 +29,7 @@ try:
     )
 except ImportError:
     # Quando executado diretamente (python src/main.py)
-    from src.agents import writer_agent, research_agent
+    from src.agents import writer_agent, research_agent, thematic_research_agent
     from src.ui import (
         print_header, print_ebook_info, print_chapters_preview,
         get_confirmation, print_phase_header, print_research_start,
@@ -232,6 +232,184 @@ Sua pesquisa será a base para a escrita do capítulo, então seja completo, fun
     
     return content if isinstance(content, str) else str(content)
 
+def generate_thematic_research(brd):
+    """
+    Gera pesquisas temáticas abrangentes baseadas nos required_topics do BRD.
+    
+    Cada tópico obrigatório gera um documento independente de pesquisa que pode
+    alimentar múltiplos capítulos. Diferente da pesquisa por capítulo, a pesquisa
+    temática é mais abrangente e profunda.
+    
+    Args:
+        brd: Configuração BRD com required_topics
+    
+    Returns:
+        dict: {topic_name: research_content, ...}
+    """
+    project = brd["project"]
+    required_topics = project.get("required_topics", [])
+    
+    if not required_topics:
+        print("⚠️ Nenhum tópico obrigatório encontrado no BRD")
+        return {}
+    
+    thematic_research_data = {}
+    print(f"\n📚 Gerando pesquisas temáticas abrangentes para {len(required_topics)} tópicos...\n")
+    
+    for idx, topic in enumerate(required_topics, 1):
+        print(f"  [{idx}/{len(required_topics)}] 🔍 Pesquisa temática: {topic}...")
+        
+        query = f"""Conduza uma pesquisa temática ABRANGENTE e PROFUNDA sobre: "{topic}"
+
+CONTEXTO DO EBOOK:
+Nome: {project['name']}
+Descrição: {project['description']}
+Público-alvo: {project['target_audience']}
+
+INSTRUÇÕES CRÍTICAS:
+Esta pesquisa é TEMÁTICA E INDEPENDENTE, não vinculada a um capítulo específico.
+Deve ser um documento de referência COMPLETO que alimentará MÚLTIPLOS capítulos.
+
+Portanto:
+- Seja ABRANGENTE: cubra todas as dimensões do tema
+- Seja APROFUNDADO: não superficial, mas com detalhes técnicos significativos
+- Seja AUTOSSUFICIENTE: o documento deve ser inteligível por si só
+- Seja REUTILIZÁVEL: estruturado para ser referenciado por vários capítulos
+
+REQUISITOS DE QUALIDADE OBRIGATÓRIOS:
+✓ Mínimo 3000 palavras (tema é denso e abrangente)
+✓ Mínimo 7 fontes confiáveis (documentação oficial, papers, referências validadas)
+✓ Hierarquia clara com no mínimo 8 seções temáticas
+✓ Tabelas comparativas quando relevante
+✓ Exemplos de código LangChain ou pseudocódigo comentado
+✓ Diagramas textuais de arquitetura
+✓ Glossário de termos técnicos do tema
+
+ESTRUTURA ESPERADA:
+1. Resumo Executivo (300-400 palavras)
+   - O que é o tema
+   - Por que é importante em contextos clínicos
+   - Principais conceitos
+   - Como se integra ao ecosistema LangChain
+
+2. Histórico e Evolução (300-400 palavras)
+   - Origem do conceito/tecnologia
+   - Evolução no tempo
+   - Estado-da-arte atual
+   - Roadmap futuro
+
+3. Conceitos Fundamentais e Arquitetura (500-700 palavras)
+   - Definições precisas
+   - Componentes principais
+   - Arquitetura (com diagrama textual)
+   - Fluxos de dados/controle
+   - Padrões de design
+
+4. Integração com LangChain 1.0 (400-500 palavras)
+   - Como este tema se integra ao LangChain
+   - APIs e métodos relevantes
+   - Exemplos de código LangChain
+   - Limitações e considerações
+
+5. Melhores Práticas e Padrões Comprovados (400-600 palavras)
+   - Implementações recomendadas
+   - Padrões de design
+   - Performance e otimizações
+   - Escalabilidade
+   - Monitoramento
+
+6. Anti-padrões e Armadilhas Comuns (300-400 palavras)
+   - Erros frequentes
+   - Por que evitá-los
+   - Consequências
+   - Como detectar
+
+7. Aplicabilidade em Ambientes Clínicos (400-600 palavras)
+   - Requisitos clínicos específicos
+   - Adaptações necessárias
+   - Casos de uso clínicos reais
+   - Desafios específicos da saúde
+
+8. Compliance, Segurança e Ética (400-600 palavras)
+   - Regulamentações aplicáveis (LGPD, HIPAA, normas clínicas)
+   - Considerações de privacidade
+   - Vieses e fairness
+   - Auditoria e rastreabilidade
+   - Transparência algorítmica
+
+9. Implementação Prática com Exemplos (500-700 palavras)
+   - Exemplos concretos de código
+   - Pseudocódigo comentado
+   - Guias passo-a-passo
+   - Integrações com sistemas clínicos
+
+10. Referências e Glossário (separado)
+    - Mínimo 7 fontes com URLs/DOIs
+    - Data de acesso
+    - Glossário de 20+ termos técnicos do tema
+
+FORMATAÇÃO:
+- Use Markdown com hierarquia clara (# ## ###)
+- Blocos de código: ```python ou ```
+- Tabelas para comparações
+- Blockquotes para destaques
+- Listas numeradas e com bullets
+- Ênfase em **bold** para conceitos-chave
+
+RESULTADO FINAL:
+Um documento denso, profundo, completo e pronto para ser referência compartilhada
+por múltiplos capítulos do ebook. Não é resumido - é abrangente."""
+        
+        response = thematic_research_agent.invoke({
+            "messages": [{"role": "user", "content": query}]
+        })
+        
+        content = response["messages"][-1].content
+        
+        # Se for lista com artifacts (Gemini format), extrai o texto
+        if isinstance(content, list) and len(content) > 0:
+            if isinstance(content[0], dict) and 'text' in content[0]:
+                content = content[0]['text']
+        
+        research_content = content if isinstance(content, str) else str(content)
+        thematic_research_data[topic] = research_content
+    
+    return thematic_research_data
+
+def save_thematic_research_to_kb(thematic_research_data, brd):
+    """
+    Salva pesquisas temáticas em kb/ como arquivos Markdown.
+    
+    Args:
+        thematic_research_data: Dict {topic_name: research_content}
+        brd: Configuração BRD
+    
+    Returns:
+        dict: {topic_name: file_path}
+    """
+    kb_dir = Path(__file__).parent.parent / "kb"
+    kb_dir.mkdir(exist_ok=True)
+    
+    thematic_paths = {}
+    
+    for topic, content in thematic_research_data.items():
+        # Normaliza nome do arquivo
+        safe_name = topic.lower().replace(" ", "_").replace("(", "").replace(")", "")
+        file_path = kb_dir / f"thematic_{safe_name}.md"
+        
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(f"# Pesquisa Temática: {topic}\n\n")
+            f.write(f"Ebook: {brd['project']['name']}\n")
+            f.write(f"Data: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+            f.write(f"Tipo: Pesquisa Temática Abrangente\n\n")
+            f.write("---\n\n")
+            f.write(content)
+        
+        thematic_paths[topic] = str(file_path)
+        print(f"  ✓ Salvo: {file_path.name}")
+    
+    return thematic_paths
+
 def save_research_to_kb(chapter_name, research_content, brd):
     """
     Salva research em kb/ como arquivo Markdown.
@@ -361,8 +539,18 @@ def generate_ebook():
     
     print_separator()
     
-    # Etapa 3: Fazer research de cada capítulo e salvar em kb/
-    print_phase_header(1, "RESEARCH E SALVAMENTO", "Pesquisa profunda e salvamento em kb/")
+    # FASE 1: Pesquisa Temática Abrangente (baseada em required_topics)
+    print_phase_header(1, "PESQUISA TEMÁTICA", "Pesquisas abrangentes sobre tópicos obrigatórios")
+    
+    thematic_research_data = generate_thematic_research(brd)
+    if thematic_research_data:
+        print_separator()
+        thematic_paths = save_thematic_research_to_kb(thematic_research_data, brd)
+        print(f"  ✅ {len(thematic_paths)} pesquisas temáticas salvas em kb/")
+        print_separator()
+    
+    # FASE 2: Pesquisa por Capítulo (usando as temáticas como base)
+    print_phase_header(2, "RESEARCH E SALVAMENTO", "Pesquisa profunda e salvamento em kb/")
     
     research_data = {}
     for idx, chapter in enumerate(chapters, 1):
@@ -388,8 +576,8 @@ def generate_ebook():
     print_success_message("Todas as pesquisas foram salvas em kb/")
     print_separator()
     
-    # Etapa 4: Geração de conteúdo
-    print_phase_header(2, "GERAÇÃO DE CONTEÚDO", "Geração de conteúdo final baseado em research")
+    # FASE 3: Geração de conteúdo
+    print_phase_header(3, "GERAÇÃO DE CONTEÚDO", "Geração de conteúdo final baseado em research")
     
     # Gerar queries para cada capítulo (agora com research como contexto)
     chapters_queries = build_chapter_queries_with_research(chapters, research_data, brd)
