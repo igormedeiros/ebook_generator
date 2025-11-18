@@ -118,11 +118,20 @@ def get_pipeline_config() -> Dict[str, Any]:
 def get_models_config() -> Dict[str, Any]:
     """
     Carrega configuração de modelos IA (models.yaml).
-    
+
     Returns:
         dict: Configuração Gemini, embeddings e APIs
     """
     return load_yaml_config("models.yaml")
+
+
+def get_llm_profiles(profile: Optional[str] = None) -> Dict[str, Any]:
+    """Return LLM profile configuration defined in config.yaml."""
+
+    profiles = get_config("llm_profiles")
+    if profile:
+        return profiles.get(profile, {})
+    return profiles
 
 
 def _get_model_settings(model_key: str) -> Dict[str, Any]:
