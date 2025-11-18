@@ -3,9 +3,11 @@
 # This is the canonical BRD referenced by all agents
 
 project:
-  name: "LangChain na Saúde - Agentes de IA para Clínica"
+  title: "LangChain 1.0 na Saúde"
+  subtitle: "Os primeiros passos no desenvolvimento de agentes de IA que funcionam"
+  name: "LangChain 1.0 na Saúde - Agentes de IA que funcionam"
   description: "Guia prático sobre implementação de agentes LangChain 1.0 em ambientes clínicos com compliance e ética"
-  target_audience: "Engenheiros, médicos residentes e profissionais de saúde interessados em IA clínica"
+  target_audience: "Desenvolvedores Python da área da saúde interessados em agentes de IA"
   language: "Portuguese (Brazilian)"
 
 objectives:
@@ -30,61 +32,38 @@ writing_style:
 
 content_structure:
   chapters:
-    - name: "Introdução"
-      purpose: "Contexto clínico e por que LangChain importa"
+    - name: 
+      purpose: 
       elements:
-        - "Desafios atuais em clínicas: sobrecarga de dados"
-        - "O que é LangChain e por que usar"
-        - "Visão geral de agentes em saúde"
-        - "Caso de uso real do autor"
+    - name: 
+      purpose: 
+      elements:
+  - name: 
+      purpose: 
+      elements:
+  - name: 
+      purpose: 
+      elements:
+  - name: 
+      purpose: 
+      elements:
+  - name: 
+      purpose: 
+      elements:
+  - name: 
+      purpose: 
+      elements:
+  - name: 
+      purpose: 
+      elements:
+  - name: 
+      purpose: 
+      elements:
+  - name: 
+      purpose: 
+      elements:
+  
     
-    - name: "Fundamentos"
-      purpose: "Conceitos técnicos essenciais de LangChain"
-      elements:
-        - "Arquitetura de agentes LangChain 1.0"
-        - "Tools, models e memory"
-        - "RAG em contexto clínico"
-        - "Exemplos de código"
-    
-    - name: "RAG Clínico"
-      purpose: "Implementação de RAG com EHRs"
-      elements:
-        - "Integração com Supabase pgvector"
-        - "Embedding de anotações clínicas"
-        - "Recuperação semântica segura"
-        - "Exemplo prático com dados sintéticos"
-    
-    - name: "Compliance e Auditoria"
-      purpose: "Garantia de compliance clínico"
-      elements:
-        - "Trilhas de auditoria para decisões"
-        - "LGPD e proteção de dados"
-        - "Conformidade com protocolos clínicos"
-        - "Logging estruturado de decisões"
-    
-    - name: "Validação Humana"
-      purpose: "Revisão humana obrigatória"
-      elements:
-        - "Implementar review loops"
-        - "Sinais de confiança do agente"
-        - "Workflow de aprovação médica"
-        - "Tratamento de outliers"
-    
-    - name: "Casos de Uso"
-      purpose: "Implementações práticas reais"
-      elements:
-        - "Resumo de anotações clínicas"
-        - "Triagem inicial de pacientes"
-        - "Sugestão de diagnósticos (apenas humano decide)"
-        - "Monitoramento contínuo pós-internação"
-    
-    - name: "Próximos Passos"
-      purpose: "Roadmap e considerações finais"
-      elements:
-        - "Deploying em produção"
-        - "Monitoramento e iteração"
-        - "Ética e responsabilidade contínua"
-        - "Comunidade e recursos"
 
 output_requirements:
   format: "Markdown"
