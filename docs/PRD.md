@@ -1,42 +1,33 @@
-# 📘 PRD – Ebook Generator 1.0
+# 📘 Product Requirements Document – Ebook Generator 1.0
 
-**Autor:** Igor Medeiros  
-**Data:** Novembro/2025  
-**Versão:** 1.0 (Revisada)
+**Autor:** Igor Medeiros  \
+**Versão:** 1.1 (Atualizada a partir do código em `src/`)  \
+**Data:** Novembro/2025
 
 ---
 
 ## 1. Visão Geral do Produto
 
-O **Ebook Generator 1.0** é um sistema editorial automatizado baseado em agentes coordenados via LangChain 1.0 e nos modelos Gemini 2.5 (Flash para escrita e 2.5 padrão para pesquisa). Ele replica o fluxo profissional de uma editora — da concepção ao arquivo final — entregando ebooks coerentes, didáticos, bem estruturados e prontos para publicação na Amazon KDP.
+O **Ebook Generator 1.0** é um pipeline editorial automatizado em Python 3.11+ que utiliza LangChain 1.0, modelos Gemini 2.5 (Flash para escrita e Pro para pesquisa) e uma interface rica em terminal para produzir ebooks técnicos prontos para publicação. O sistema parte de um **Book Requirements Document (`specs/brd.yaml`)** com tema, público, tópicos obrigatórios e estilo, gera pesquisas temáticas, conduz pesquisa capítulo a capítulo, armazena tudo em `kb/` e finalmente redige o ebook completo em Markdown (`result/ebook.md`).
 
 ---
 
-## 2. Objetivo do Produto
+## 2. Objetivos do Produto
 
-Construir um pipeline totalmente automatizado capaz de:
-
-- Receber **tema + público-alvo + objetivo instrucional**.
-- Consolidar **ideia central** e **promessa de transformação**.
-- Gerar **título/subtítulo otimizados** com base em bestsellers.
-- Definir **estrutura editorial completa** com progressão didática.
-- Executar **pesquisa real** (Google + Amazon + RAG Supabase).
-- Escrever capítulos didáticos com exemplos de código, exercícios e explicações claras.
-- Revisar o material com múltiplas perspectivas.
-- Produzir arquivos finais em **Markdown + DOCX + EPUB**.
-- Entregar **metadados KDP** prontos para publicação.
-
-Tudo com mínima intervenção humana, preservando rigor técnico, didática clara e profundidade prática.
+1. **Automatizar o fluxo editorial** da estruturação até a redação final de ebooks técnicos sobre LangChain na saúde clínica.
+2. **Garantir rastreabilidade de pesquisa** salvando cada entrega em `kb/` e permitindo reuso em execuções futuras.
+3. **Aplicar dois modelos especializados** (Gemini Flash e Gemini Pro) para equilibrar criatividade na escrita e rigor na pesquisa.
+4. **Oferecer experiência guiada** via TUI Rich, com confirmações e transparência de cada etapa.
+5. **Preparar terreno para RAG/Supabase** armazenando pesquisas localmente e exibindo opção de envio futuro.
 
 ---
 
 ## 3. Público-Alvo
 
-- Criadores independentes e infoprodutores de conteúdo técnico.
-- Educadores e professores que desejam materializar seu método de ensino.
-- Desenvolvedores e especialistas que produzem livros técnicos.
-- Empresas que escalem conteúdo educativo em tecnologia.
-- Consultores que transformam expertise em produtos digitais.
+- Criadores independentes que produzem ebooks técnicos.
+- Educadores e equipes de enablement que precisam de material consistente e atualizado.
+- Times de produto/IA interessados em documentar soluções baseadas em LangChain.
+- Profissionais de saúde digital que desejam guias aplicados a contextos clínicos com compliance.
 
 ---
 
@@ -44,154 +35,74 @@ Tudo com mínima intervenção humana, preservando rigor técnico, didática cla
 
 ### 4.1 Inclui
 
-- Pipeline editorial completo (ideação → publicação).
-- Sistema multiagentes com funções especializadas.
-- RAG via Supabase/pgvector integrando pesquisas externas.
-- Conversão de arquivos e preparação de metadados KDP.
-- Revisão multi-perspectiva (especialistas e leitores virtuais).
-- Geração de capa com ferramenta de imagem.
+- Carregamento de requisitos a partir de `specs/brd.yaml` e validações adicionais via `src/input_validator.py`.
+- Orquestração completa em `src/main.py` com três fases principais:
+  1. **Pesquisa Temática Abrangente** (por tópico obrigatório) salva imediatamente.
+  2. **Pesquisa por Capítulo** (Contexto → Problema → Solução → Aplicação → Ética) com registro em `kb/`.
+  3. **Geração de Conteúdo** em Markdown por capítulo usando o contexto pesquisado.
+- Sistema multiagente (`src/agents.py`) com modelos Gemini e ferramentas definidas em `src/tools.py`.
+- UI baseada em Rich (`src/ui.py`) para cabeçalhos, tabelas, barras de progresso e confirmações do usuário.
+- Exportação principal para Markdown (`result/ebook.md`) e utilitários de publicação (DOCX/EPUB/PDF/JSON) expostos via tools.
 
 ### 4.2 Não inclui
 
-- Backend FastAPI ou qualquer API pública.
-- Docker ou estratégias de deploy.
-- Interface visual interativa (CLI apenas).
+- API pública ou interface web; execução é exclusivamente via CLI/TUI.
+- Persistência efetiva em Supabase/pgvector (placeholders documentados nas tools).
+- Integração ativa com Context7 MCP ou geração de capa real (funções stub retornam mensagens simuladas).
+- Automação de submissão para KDP/Amazon além da geração dos conteúdos.
 
 ---
 
-## 5. Arquitetura Geral
+## 5. Requisitos Funcionais
 
-Três camadas organizam o sistema:
-
-```
-Camada 1 – Orquestração
-  → Superagente Editor-Chefe
-
-Camada 2 – Produção Editorial
-  → Agente da Ideia Central
-  → Agente de Título/Subtítulo
-  → Agente Estruturador
-  → Agente Pesquisador (Google + RAG + Supabase)
-  → Agente Escritor (didático, com exemplos)
-
-Camada 3 – Qualidade Editorial
-  → Superagente de Revisão (coordena 5 especialistas)
-        ├ Revisor Técnico
-        ├ Revisor Editorial
-        ├ Copidesque
-        ├ Agente de Governança
-        └ Validador Ético
-  → Superagente de Leitura Crítica (coordena 5 leitores virtuais)
-  → Agente de Editoração
-  → Agente Capista
-  → Agente de Finalização
-  → Agente KDP
-```
+1. **RF-01 – Preparação**: Carregar `specs/brd.yaml`, exibir resumo do livro e pré-visualização dos capítulos antes da execução.
+2. **RF-02 – Confirmação**: Solicitar aprovação do usuário via Rich antes de prosseguir.
+3. **RF-03 – Pesquisa Temática**: Para cada `required_topic` no BRD, gerar documento de ~3000 palavras, 7+ fontes e salvar imediatamente em `kb/thematic_*.md`.
+4. **RF-04 – Pesquisa por Capítulo**: Para cada capítulo sugerido pelo agente escritor, gerar pesquisa mínima de 2000 palavras com 5+ fontes e salvar em `kb/research_*.md`.
+5. **RF-05 – Geração de Capítulos**: Usar `writer_agent` com contexto pesquisado para criar capítulos (~word_count_target ÷ n capítulos) e anexá-los ao ebook.
+6. **RF-06 – Persistência**: Salvar o ebook consolidado em `result/ebook.md`, criando a pasta caso não exista.
+7. **RF-07 – UX Transparente**: Mostrar fases, progresso e resumos (sucesso/erro) usando componentes Rich definidos em `src/ui.py`.
+8. **RF-08 – Configurabilidade**: Permitir ajustes em `specs/` (`pipeline.yaml`, `config.yaml`, `models.yaml`, `tools.yaml`, `personas.yaml`) sem alterar código.
 
 ---
 
-## 6. Fluxo Operacional Completo
+## 6. Requisitos Não Funcionais
 
-### 6.1 Etapa 1 — Entrada
-
-O **Superagente Editor-Chefe** recebe tema, objetivo instrucional e público-alvo, gerando o **Book Requirements Document (BRD)** contendo ideia central, promessa de aprendizado, estilo didático e progressão de complexidade.
-
-### 6.2 Etapa 2 — Ideação
-
-O **Agente da Ideia Central** desdobra a transformação prometida, garante aderência didática ao público e define o tom técnico-acessível.
-
-### 6.3 Etapa 3 — Título e Subtítulo
-
-1. **Agente Pesquisador** coleta referências via Google e Amazon (bestsellers do tema).  
-2. **Agente de Título/Subtítulo** aplica fórmulas observadas, gera variações e seleciona a melhor combinação com palavras-chave de SEO.
-
-### 6.4 Etapa 4 — Estrutura
-
-O **Agente Estruturador** cria a arquitetura do livro: capítulos, seções com progressão do básico ao avançado, elementos didáticos (exemplos, exercícios, casos) e formato Markdown base.
-
-### 6.5 Etapa 5 — Pesquisa Profunda (RAG)
-
-O **Agente Pesquisador** executa para cada tópico:
-
-1. Busca Google contextualizada.
-2. Coleta de fontes oficiais e referências de documentação.
-3. Registro em Supabase/pgvector com embeddings.
-4. Disponibilização do contexto para o Agente Escritor.
-
-### 6.6 Etapa 6 — Escrita
-
-O **Agente Escritor** (Gemini 2.5 Flash) consulta RAG, cria explicações didáticas com exemplos de código comentados, exercícios práticos e progressão clara, redigindo cada capítulo com clareza e acessibilidade.
-
-### 6.7 Etapa 7 — Revisão Especializada
-
-O **Superagente de Revisão** coordena 5 especialistas com foco em:
-
-- **Revisor Técnico**: precisão, código e boas práticas.
-- **Revisor Editorial**: clareza, fluxo didático e voz.
-- **Copidesque**: estilo, padronização e consistência.
-- **Governança**: conformidade, versões e citações.
-- **Ética**: vieses e disclaimers sobre limitações.
-
-Três iterações sucessivas refinam o texto.
-
-### 6.8 Etapa 8 — Leitura Crítica
-
-O **Superagente de Leitura Crítica** simula cinco leitores com perfis distintos. Cada um gera relatório crítico apontando lacunas, ritmo de aprendizado e compreensão. O ciclo roda por três iterações.
-
-### 6.9 Etapa 9 — Editoração
-
-O **Agente de Editoração** aplica padrões visuais: hierarquias de títulos, blocos de código formatados, tabelas, chamadas e boxes didáticos.
-
-### 6.10 Etapa 10 — Finalização
-
-- **Agente Capista**: cria conceito visual baseado no título/subtítulo.
-- **Agente Finalizador**: gera sumário navegável, links internos e prepara conversões Markdown → DOCX/EPUB.
-
-### 6.11 Etapa 11 — Metadados e KDP
-
-O **Agente KDP** produz JSON com sinopse, tags, categorias, descrição marketing e público. Consolida arquivos finais para submissão.
+- **RNF-01 – Plataforma**: Python 3.11+ com dependências gerenciadas via `uv` ou `pip` (ver `pyproject.toml`).
+- **RNF-02 – Segurança**: Exigir `GOOGLE_API_KEY` em variáveis de ambiente, sem armazenamento em repositório.
+- **RNF-03 – Observabilidade**: Toda saída deve usar logging Rich/UI; `print` simples é desencorajado.
+- **RNF-04 – Estruturação**: Conteúdo final e pesquisas usam Markdown GFM com headings hierárquicos.
+- **RNF-05 – Testabilidade**: Ferramentas ficam isoladas em `src/tools.py` para facilitar testes unitários.
 
 ---
 
-## 7. Agentes e Responsabilidades
+## 7. Dependências & Integrações
 
-Cada agente possui:
-
-- **System prompt dedicado** descrevendo papel, foco didático e processo.
-- **Ferramentas específicas** (Google Search, Supabase RAG, parsing Amazon, etc.).
-- **Critérios de saída** claros e validação de qualidade.
-
----
-
-## 8. Tecnologias
-
-- **LLMs**: Gemini 2.5 Flash (escrita) e Gemini 2.5 (pesquisa/RAG).
-- **Orquestração**: LangChain 1.0+ com agentes e tools.
-- **RAG**: Supabase + pgvector.
-- **Execução**: Python 3.11+, `uv` para gerenciamento, Pandoc para conversões.
+- **Gemini 2.5 Flash / Pro**: Principais modelos via `langchain-google-genai`.
+- **LangChain 1.0**: Criação de agentes, ferramentas e execução de chamadas LLM.
+- **Rich**: UI e feedback do pipeline.
+- **python-docx / futuro ebooklib/reportlab**: Suporte a exportações adicionais.
+- **Supabase / Context7**: Integrações planejadas com métodos stub já definidos nas tools.
 
 ---
 
-## 9. Critérios de Qualidade
+## 8. Métricas de Sucesso
 
-- Clareza textual com linguagem acessível para iniciantes.
-- Progressão didática consistente e bem estruturada.
-- Exemplos de código reais, comentados e práticos.
-- Exercícios que consolidam aprendizado.
-- Referências úteis e links para aprofundamento.
-- Zero vieses prejudiciais.
-- Sumário navegável e metadados completos KDP.
+- Gerar ebooks completos (>10k palavras) sem intervenção manual após confirmação inicial.
+- Garantir que cada capítulo possua um arquivo de pesquisa correspondente em `kb/`.
+- Permitir reexecução incremental reutilizando pesquisas temáticas existentes, reduzindo tempo em execuções repetidas.
+- Manter consistência estilística definida no BRD (tom, abordagem, características) em todos os capítulos.
 
 ---
 
-## 10. Métricas de Sucesso
+## 9. Roadmap e Próximos Passos
 
-- **Tempo de geração**: < 15 min para um ebook completo.
-- **Aderência estrutural**: ≥ 99% conforme template editorial.
-- **Qualidade revisões**: ≥ 90% de concordância entre especialistas.
-- **Factualidade**: ≥ 95% graças à pesquisa + validação RAG.
-- **Estabilidade de exportação**: 100% dos arquivos DOCX/EPUB gerados sem warnings.
+1. **Integrações externas**: ativar Supabase/pgvector, Context7 MCP e armazenamento remoto real para RAG.
+2. **Formatos finais adicionais**: completar exportações EPUB/PDF/JSON e automatizar metadados KDP.
+3. **Validações ampliadas**: conectar `src/input_validator.py` diretamente ao fluxo principal para preencher BRDs dinamicamente.
+4. **Testes automatizados**: cobrir fases do pipeline com mocks de agentes para validar UX e persistência.
+5. **Capa e assets visuais**: conectar ferramentas de imagem reais e anexar arquivos gerados ao pacote final.
 
 ---
 
-Documento oficial atualizado para Ebook Generator 1.0 com foco em LangChain para iniciantes.
+Este PRD reflete o comportamento atual implementado em `src/` e serve de referência única para evolução futura do Ebook Generator 1.0.
