@@ -313,21 +313,22 @@ Exemplo formato:
     print("❌ Não foi possível gerar estrutura de capítulos")
     return []
 
-def generate_chapter_research(chapter_name, chapter_purpose, chapter_elements, brd):
+def generate_chapter_research(chapter_name, chapter_purpose, chapter_elements, brd, skip_prompt=False):
     """Conduz pesquisa profunda sobre um capítulo usando research_agent."""
     
     # Check if we should skip research based on user preference
     from .ui import get_confirmation
     
-    print(f"\n  🔍 Preparando pesquisa para: {chapter_name}")
-    should_research = get_confirmation(
-        f"Deseja realizar pesquisa profunda (Deep Research) para o capítulo '{chapter_name}'?",
-        default=True
-    )
-    
-    if not should_research:
-        print(f"  ⏩ Pulando pesquisa para '{chapter_name}'. Usando apenas conhecimento interno e contexto existente.")
-        return f"# Pesquisa ignorada para {chapter_name}\n\nO usuário optou por pular a etapa de pesquisa profunda para este capítulo.", 0
+    if not skip_prompt:
+        print(f"\n  🔍 Preparando pesquisa para: {chapter_name}")
+        should_research = get_confirmation(
+            f"Deseja realizar pesquisa profunda (Deep Research) para o capítulo '{chapter_name}'?",
+            default=True
+        )
+        
+        if not should_research:
+            print(f"  ⏩ Pulando pesquisa para '{chapter_name}'. Usando apenas conhecimento interno e contexto existente.")
+            return f"# Pesquisa ignorada para {chapter_name}\n\nO usuário optou por pular a etapa de pesquisa profunda para este capítulo.", 0
 
     project = brd["project"]
     min_words = get_deep_research_requirement("chapter", "minimum_word_count", 2000)
@@ -665,19 +666,30 @@ def generate_ebook():
     print_separator()
     
     # FASE 2: Pesquisa por Capítulo (usando as temáticas como base)
-    print_phase_header(2, "RESEARCH E SALVAMENTO", "Pesquisa profunda e salvamento em kb/")
+    print_phase_header(2, "DEEP RESEARCH DE TODOS OS CAPÍTULOS E SALVAMENTO", "Pesquisa profunda e salvamento em kb/")
+    
+    # Pergunta global se deve realizar Deep Research para TODOS os capítulos
+    perform_deep_research = get_confirmation("Deseja realizar DEEP RESEARCH para TODOS os capítulos?", default=True)
     
     research_data = {}
     for idx, chapter in enumerate(chapters, 1):
         print_research_start(chapter['name'], idx, len(chapters))
         
-        # Gera research
-        research_content, research_word_count = generate_chapter_research(
-            chapter['name'],
-            chapter['purpose'],
-            chapter['elements'],
-            brd
-        )
+        if perform_deep_research:
+            # Gera research real
+            research_content, research_word_count = generate_chapter_research(
+                chapter['name'],
+                chapter['purpose'],
+                chapter['elements'],
+                brd,
+                skip_prompt=True # Novo parâmetro para pular o prompt individual
+            )
+        else:
+            # Pula research
+            print(f"  ⏩ Pulando pesquisa para '{chapter['name']}'. Usando apenas conhecimento interno e contexto existente.")
+            research_content = f"# Pesquisa ignorada para {chapter['name']}\n\nO usuário optou por pular a etapa de pesquisa profunda para este capítulo."
+            research_word_count = 0
+
         research_data[chapter['name']] = research_content
 
         # Salva em kb/
