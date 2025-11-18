@@ -72,26 +72,29 @@ def print_chapters_preview(chapters: list):
     
     console.print(table)
 
-def print_confirmation_prompt():
-    """Exibe prompt de confirmação bonito."""
+def get_confirmation(prompt_text: str = "Deseja prosseguir com a geração?", default: bool = True):
+    """Obtém confirmação do usuário de forma bonita."""
+    default_str = "(S/n)" if default else "(s/N)"
+    
     panel = Panel(
-        Align.center("[bold yellow]Deseja prosseguir com a geração?[/bold yellow]\n[dim](s) Sim   (n) Não[/dim]"),
+        Align.center(f"[bold yellow]{prompt_text}[/bold yellow]\n[dim]{default_str}[/dim]"),
         border_style="yellow",
         padding=(1, 2),
         box=box.ROUNDED
     )
     console.print(panel)
-
-def get_confirmation():
-    """Obtém confirmação do usuário de forma bonita."""
-    print_confirmation_prompt()
+    
     while True:
         response = console.input("[bold cyan]>>> [/bold cyan]").strip().lower()
-        if response in ['s', 'sim']:
-            console.print("[green]✓ Prosseguindo...[/green]")
+        
+        if not response:
+            return default
+            
+        if response in ['s', 'sim', 'y', 'yes']:
+            console.print("[green]✓ Confirmado[/green]")
             return True
-        elif response in ['n', 'não', 'nao']:
-            console.print("[red]✗ Geração cancelada.[/red]")
+        elif response in ['n', 'não', 'nao', 'no']:
+            console.print("[yellow]✗ Negado[/yellow]")
             return False
         else:
             console.print("[yellow]⚠ Digite 's' para sim ou 'n' para não[/yellow]")

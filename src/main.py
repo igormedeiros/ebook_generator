@@ -62,6 +62,9 @@ from .ui import (
     print_completion_summary, print_separator, print_info
 )
 
+# Import get_confirmation from ui explicitly to avoid circular import issues if any
+from .ui import get_confirmation
+
 def load_brd():
     """Carrega BRD do arquivo specs/brd.yaml."""
     brd_path = Path(__file__).parent.parent / "specs" / "brd.yaml"
@@ -312,6 +315,19 @@ Exemplo formato:
 
 def generate_chapter_research(chapter_name, chapter_purpose, chapter_elements, brd):
     """Conduz pesquisa profunda sobre um capítulo usando research_agent."""
+    
+    # Check if we should skip research based on user preference
+    from .ui import get_confirmation
+    
+    print(f"\n  🔍 Preparando pesquisa para: {chapter_name}")
+    should_research = get_confirmation(
+        f"Deseja realizar pesquisa profunda (Deep Research) para o capítulo '{chapter_name}'?",
+        default=True
+    )
+    
+    if not should_research:
+        print(f"  ⏩ Pulando pesquisa para '{chapter_name}'. Usando apenas conhecimento interno e contexto existente.")
+        return f"# Pesquisa ignorada para {chapter_name}\n\nO usuário optou por pular a etapa de pesquisa profunda para este capítulo.", 0
 
     project = brd["project"]
     min_words = get_deep_research_requirement("chapter", "minimum_word_count", 2000)
