@@ -257,24 +257,22 @@ docs/
 
 1. **No Package Structure**: `src/` is NOT a Python package
 2. **Entry Point**: `src/main.py` is the ONLY entry point file
-3. **Execution Methods**:
+3. **Execution Method**:
    ```bash
-   # ✅ CORRECT - Use python -m src.main
+   # ✅ CORRECT - Only way to run (python -m requires src/ parent directory)
    uv run python -m src.main
    
-   # ✅ CORRECT - Direct execution with if __name__ == "__main__"
-   uv run python src/main.py
-   
+   # ❌ WRONG - Do NOT use: python src/main.py (relative imports fail)
    # ❌ WRONG - Do NOT create __main__.py
-   # ❌ WRONG - Do NOT use python -m src (requires __main__.py)
-   # ❌ WRONG - Do NOT use python src/main.py (without uv run)
+   # ❌ WRONG - Do NOT add __init__.py to src/
    ```
 
-4. **Why No `__main__.py`**:
-   - Adds unnecessary complexity
-   - `main.py` with `if __name__ == "__main__"` block is sufficient
-   - Keeps src/ directory flat and simple
-   - All logic stays in main.py, not split across files
+4. **Why This Pattern**:
+   - No `__init__.py` keeps src/ truly flat and simple
+   - `python -m src.main` works because current directory is in sys.path
+   - `src/main.py` with `if __name__ == "__main__"` is the pattern
+   - Relative imports work only via `python -m` module execution
+   - Keeps code organization clean and dependency-free
 
 5. **Import Pattern**:
    ```python
@@ -283,12 +281,13 @@ docs/
    from .config import get_model
    from .tools import get_all_tools
    
-   # ✅ Good (from root level scripts)
+   # ✅ Good (from root level or external scripts)
    from src.config import get_model
    from src.main import generate_ebook
    
    # ❌ NEVER (src in imports from src/ files)
    from src.config import get_model  # WRONG in src/ files
+   from src.tools import get_all_tools  # WRONG
    
    # ❌ Avoid
    from langchain.agents import *
