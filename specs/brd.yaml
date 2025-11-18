@@ -12,13 +12,13 @@ project:
   required_topics:
     - "LangChain 1.0"
     - "RAG"
+    - "Memory em LangChain"
+    - "Compliance em Saúde"
+    - "Ética em IA"
     - "Agentes RAG"
     - "Registros Eletrônicos de Saúde (EHRs)"
     - "Compliance em Saúde"
     - "Chainlit"
-    - "Ética em IA Clínica"
-    - "Validação e Auditoria"
-    - "Transparência Algorítmica"
   main_use_case:
     description: "Chat conversacional com UI Chainlit usando Langchain 1.0 e RAG com chromadb para responder sobre dados de evolução clínica de pacientes internados numa UTI"
     features:
@@ -28,30 +28,14 @@ project:
       - "Balanceamento entre automação e revisão humana"
       - "UI Chainlit"
 
-objectives:
-  primary: "Ensinar implementação segura e ética de agentes LangChain em contextos clínicos"
-  secondary:
-    - "Demonstrar arquitetura RAG em EHRs"
-    - "Garantir compliance e auditoria"
-    - "Balancear automação com revisão humana"
-    - "Implementar transparência algorítmica"
-
 writing_style:
-  inspiration:
-    - "Abordagem técnica rigorosa"
-    - "Sensibilidade para contexto clínico humanizado"
-  tone: "Técnico mas acessível, com foco em responsabilidade"
-  approach: "Prático, com exemplos reais de implementação"
-  characteristics:
-    - "Código executável e testado"
-    - "Casos de uso clínicos reais"
-    - "Discussão de trade-offs éticos"
-    - "Guias de implementação step-by-step"
+  file: "specs/system_writer.md"
 
 content_structure:
   num_chapters: 10
+  chapter_structure:
   target_word_count: 15000
-  structure_prompt: "Crie uma estrutura de 10 capítulos para este ebook, cada um com nome, propósito e elementos obrigatórios a incluir. Total de aproximadamente 15000 palavras. Foque em: 1) Introdução ao tema, 2) Fundamentos LangChain, 3) RAG e arquitetura, 4) EHRs e dados clínicos, 5) Implementação prática, 6) Compliance e segurança, 7) Ética e responsabilidade, 8) Chainlit e interfaces, 9) Validação e auditoria, 10) Próximos passos e futuro"
+  structure_prompt: "Crie uma estrutura de <num_chapters> capítulos para este ebook, cada um com nome, propósito e elementos obrigatórios a incluir. Total de aproximadamente <target_word_count> palavras. Os capitulos devem seguir a estrutura: <chapter_structure>"
 
 output_requirements:
   format: "Markdown"
@@ -60,10 +44,9 @@ output_requirements:
   no_json_output: true
   validation:
     - "Content must be in Portuguese (Brazilian)"
-    - "Must follow the 10-chapter structure"
+    - "Must follow the number of chapters structure defined in the BRD"
     - "Target approximately 15000 words"
     - "Must include code examples"
-    - "Must address compliance and ethics"
     - "Must be technically accurate"
 
 quality_criteria:

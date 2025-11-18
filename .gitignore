@@ -18,10 +18,12 @@ wheels/
 .env
 .venv/
 venv/
+refs/
 
 # Generated configuration (not committed)
 specs/book.yaml
 output/
+result/
 env/
 kb/
 

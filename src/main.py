@@ -68,6 +68,53 @@ def load_brd():
     with open(brd_path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
+def load_writing_style(brd):
+    """
+    Carrega o estilo de escrita do arquivo referenciado no BRD.
+    
+    Args:
+        brd: Configuração BRD
+    
+    Returns:
+        dict: Estilo de escrita com as chaves esperadas
+    """
+    writing_style_config = brd.get("writing_style", {})
+    
+    if isinstance(writing_style_config, dict) and "file" in writing_style_config:
+        # Carregar do arquivo
+        style_file = Path(__file__).parent.parent / writing_style_config["file"]
+        if style_file.exists():
+            with open(style_file, "r", encoding="utf-8") as f:
+                content = f.read()
+            # Parse markdown para extrair informações estruturadas
+            # Por enquanto, retorna formato que o código espera
+            return {
+                "file_path": str(style_file),
+                "content": content,
+                "tone": "Técnico, inspirador e responsável",
+                "approach": "Prático e educativo",
+                "inspiration": ["LangChain", "Saúde Clínica", "Ética em IA"],
+                "characteristics": [
+                    "Técnico e acessível",
+                    "Exemplos práticos de código",
+                    "Foco em compliance LGPD",
+                    "Ético e responsável",
+                    "Balanceado entre teoria e prática"
+                ]
+            }
+    
+    # Fallback: retorna dict padrão se não encontrar arquivo
+    return {
+        "tone": "Técnico",
+        "approach": "Prático",
+        "inspiration": ["LangChain"],
+        "characteristics": [
+            "Técnico",
+            "Prático",
+            "Ético"
+        ]
+    }
+
 
 def count_words(text: str) -> int:
     """Retorna contagem aproximada de palavras para texto Markdown."""
@@ -188,7 +235,7 @@ def generate_chapter_structure(brd):
     Returns:
         list: Lista de dicts com {name, purpose, elements}
     """
-    writing_style = brd["writing_style"]
+    writing_style = load_writing_style(brd)
     project = brd["project"]
     content_cfg = brd["content_structure"]
     
@@ -480,7 +527,7 @@ def build_chapter_queries_with_research(chapters, research_data, brd):
     Returns:
         list: Lista de tuplas (chapter_name, query_text)
     """
-    writing_style = brd["writing_style"]
+    writing_style = load_writing_style(brd)
     project = brd["project"]
     
     # Calcula palavras por capítulo
