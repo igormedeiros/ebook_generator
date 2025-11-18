@@ -1,6 +1,14 @@
 # Configuração centralizada de strings em Português
 # Todas as mensagens, labels e textos parametrizáveis
 
+deep_research:
+  search_prompt: "Realize uma pesquisa profunda sobre o seguinte tópico e retorne um resumo detalhado com fontes confiáveis:"
+  storage_confirmation: "Os resultados da pesquisa foram armazenados com sucesso no sistema RAG."
+  minimum_word_count: 2000
+  minimum_sources: 5
+  retrieval_prompt: "Recupere o contexto relevante do sistema RAG para a seguinte consulta:"
+
+
 messages:
   # Pipeline
   pipeline_start: "🚀 Iniciando pipeline de geração de ebook..."

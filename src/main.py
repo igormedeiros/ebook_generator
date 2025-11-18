@@ -130,6 +130,11 @@ def generate_chapter_research(chapter_name, chapter_purpose, chapter_elements, b
     """
     Conduz pesquisa profunda sobre um capítulo usando research_agent.
     
+    Aplica os requisitos de qualidade do deep_research do config.yaml:
+    - Mínimo 2000 palavras
+    - Mínimo 5 fontes confiáveis
+    - Estrutura: Contexto → Problema → Solução → Aplicação → Ética
+    
     Args:
         chapter_name: Nome do capítulo
         chapter_purpose: Propósito do capítulo
@@ -141,27 +146,77 @@ def generate_chapter_research(chapter_name, chapter_purpose, chapter_elements, b
     """
     project = brd["project"]
     
-    query = f"""Faça uma pesquisa profunda e estruturada sobre o capítulo: "{chapter_name}"
+    query = f"""Realize uma pesquisa profunda e contextualizada sobre o capítulo: "{chapter_name}"
 
-Propósito do capítulo:
+CONTEXTO DO EBOOK:
+Nome: {project['name']}
+Descrição: {project['description']}
+Público-alvo: {project['target_audience']}
+Tópicos Obrigatórios: {', '.join(project.get('required_topics', []))}
+
+ESPECIFICAÇÕES DO CAPÍTULO:
+Propósito:
 {chapter_purpose}
 
 Elementos a cobrir:
 {chr(10).join(f"• {elem}" for elem in chapter_elements)}
 
-Contexto do ebook: {project['name']}
-Público-alvo: {project['target_audience']}
+REQUISITOS DE QUALIDADE MANDATÓRIOS:
+✓ Mínimo 2000 palavras de conteúdo substantivo
+✓ Mínimo 5 fontes confiáveis e referências validadas
+✓ Estrutura clara e lógica
+✓ Profundidade técnica apropriada para o público-alvo
+✓ Balanceamento entre teoria e prática
 
-Sua pesquisa deve incluir:
-1. Conceitos fundamentais e contexto
-2. Melhores práticas comprovadas
-3. Considerações éticas e compliance
-4. Exemplos práticos e casos reais
-5. Riscos e mitigações
-6. Referências e fontes
+ESTRUTURA ESPERADA:
+1. Resumo Executivo (150-200 palavras)
+   - Overview do tópico
+   - Relevância para o contexto clínico
+   
+2. Contexto e Fundamentação (300-500 palavras)
+   - Histórico e evolução do tópico
+   - Por que é importante agora
+   - Conexão com LangChain e IA na saúde
+   
+3. Conceitos Fundamentais (400-600 palavras)
+   - Definições e terminologia
+   - Arquitetura e componentes
+   - Princípios-chave
+   
+4. Melhores Práticas e Padrões (400-600 palavras)
+   - Implementações comprovadas
+   - Anti-padrões a evitar
+   - Casos de uso bem-sucedidos
+   
+5. Considerações de Compliance e Ética (300-500 palavras)
+   - Regulamentações aplicáveis (LGPD, normas clínicas)
+   - Considerações éticas e de responsabilidade
+   - Riscos e mitigações
+   - Transparência e auditoria
+   
+6. Aplicação Prática (300-500 palavras)
+   - Exemplos concretos e executáveis
+   - Padrões de código LangChain (pseudocódigo ou sintaxe)
+   - Fluxos de integração
+   - Métricas de sucesso
+   
+7. Referências e Fontes (em seção separada)
+   - Mínimo 5 fontes validadas
+   - Mix de: papers científicos, documentação técnica, blogs especializados
+   - Formato: [1] Título - Autor/Fonte - URL/DOI - Data de acesso
 
-Estruture a resposta em Markdown com seções claras e profundidade técnica.
-Esta pesquisa será a base para o conteúdo final do capítulo."""
+INSTRUÇÕES CRÍTICAS:
+- Escreva em Markdown com formatação clara
+- Use headings hierárquicos (#, ##, ###)
+- Destaque pontos críticos em **negrito** e considerações em > blockquotes
+- Inclua tabelas comparativas quando relevante
+- Mantenha tom técnico mas acessível
+- Sempre cite as fontes de informação
+- Faça conexões explícitas com LangChain 1.0 e ambientes clínicos
+- Se houver código, use blocos ```python ou ```
+- Total de conteúdo: 2000+ palavras
+
+Sua pesquisa será a base para a escrita do capítulo, então seja completo, fundamentado e práticável."""
     
     print(f"  🔍 Pesquisando: {chapter_name}...")
     response = research_agent.invoke({
