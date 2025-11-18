@@ -20,6 +20,7 @@ Ebook Generator 1.0 is an advanced multi-agent system that orchestrates the comp
 - **RAG Integration Ready**: Supabase pgvector support for knowledge augmentation
 - **Production Quality**: Output validated for Amazon KDP, LGPD, and industry standards
 - **Extensible Architecture**: Easy to add new agents, tools, and personas
+- **Envio automático para Kindle**: Tool dedicada envia o EPUB finalizado via SMTP (Gmail) diretamente para o e-mail do Kindle
 
 ## � Implementation Status
 
@@ -197,6 +198,21 @@ Each reader generates independent reports that feed into the **3-iteration refin
 The project now ships with a dedicated CLI entry point exposed through `src/__main__.py`. Running `python -m src` (or `uv run python -m src` inside the managed environment) boots the validator shim and executes the same pipeline used in tests, so you no longer need wrapper scripts or ad-hoc modules.
 
 #### Option 1: Interactive Mode (Recommended)
+
+### Optional: Kindle Delivery
+
+To automatically deliver the final EPUB to your Kindle account, configure the following environment variables (a Gmail account with an app password is required):
+
+```bash
+export KINDLE_EMAIL="seu_usuario@kindle.com"            # Endereço aprovado na Amazon
+export KINDLE_SMTP_USER="seu_usuario@gmail.com"        # Conta Gmail usada para envio
+export KINDLE_SMTP_PASSWORD="app-password"             # App password do Gmail
+# Opcional: sobrescreva servidor/porta padrão
+# export KINDLE_SMTP_SERVER="smtp.gmail.com"
+# export KINDLE_SMTP_PORT="587"
+```
+
+O pipeline passa a disponibilizar a tool `send_epub_to_kindle` durante a fase de finalização/publicação. Ao invocá-la (manual ou automaticamente), o arquivo `.epub` já convertido é anexado ao e-mail e entregue diretamente no Kindle registrado, permitindo revisar o conteúdo final no dispositivo.
 
 The pipeline automatically loads specifications from `input/book_input.yaml`. If any required fields are missing, it will prompt you interactively:
 

@@ -1,5 +1,7 @@
 import builtins
 import contextlib
+import os
+import tempfile
 import types
 import unittest
 from unittest.mock import mock_open, patch
@@ -58,7 +60,9 @@ from src.tools import (
     export_to_json,
     generate_kdp_metadata,
     replace_text_in_docx,
+    send_epub_to_kindle,
     get_ideation_tools,
+    get_finalization_tools,
     get_all_tools,
 )
 
@@ -148,6 +152,10 @@ class TestTools(unittest.TestCase):
         """Test that all tools are returned."""
         tools = get_all_tools()
         self.assertGreater(len(tools), 20) # Check for a reasonable number of tools
+
+    def test_get_finalization_tools_includes_email_sender(self):
+        tools = get_finalization_tools()
+        self.assertIn(send_epub_to_kindle, tools)
 
     @patch('src.tools.supabase_client', None)
     def test_search_knowledge_base_no_supabase(self):
@@ -323,6 +331,44 @@ def test_replace_text_in_docx_handles_processing_error():
         message = replace_text_in_docx("entrada.docx", "saida.docx", {"a": "b"})
 
     assert "Erro ao processar" in message
+
+
+class TestSendEpubToKindle(unittest.TestCase):
+
+    def _create_epub_file(self):
+        handle = tempfile.NamedTemporaryFile(suffix=".epub", delete=False)
+        handle.write(b"conteudo de teste")
+        handle.flush()
+        handle.close()
+        self.addCleanup(lambda: os.path.exists(handle.name) and os.remove(handle.name))
+        return handle.name
+
+    def test_missing_file_returns_message(self):
+        message = send_epub_to_kindle("/tmp/inexistente.epub", "user@kindle.com")
+        self.assertIn("não encontrado", message)
+
+    def test_missing_kindle_email(self):
+        epub_path = self._create_epub_file()
+        message = send_epub_to_kindle(epub_path, kindle_email="")
+        self.assertEqual(message, "E-mail do Kindle não configurado")
+
+    @patch("src.tools.smtplib.SMTP")
+    @patch.dict(
+        "os.environ",
+        {
+            "KINDLE_SMTP_USER": "sender@gmail.com",
+            "KINDLE_SMTP_PASSWORD": "secret",
+        },
+        clear=True,
+    )
+    def test_successful_send_uses_smtp(self, mock_smtp):
+        epub_path = self._create_epub_file()
+        smtp_conn = mock_smtp.return_value.__enter__.return_value
+        message = send_epub_to_kindle(epub_path, kindle_email="reader@kindle.com")
+        self.assertIn("EPUB enviado", message)
+        smtp_conn.starttls.assert_called_once()
+        smtp_conn.login.assert_called_once_with("sender@gmail.com", "secret")
+        smtp_conn.send_message.assert_called_once()
 
 
 if __name__ == '__main__':

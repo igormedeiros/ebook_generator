@@ -20,6 +20,7 @@ from .config import (
 from .tools import (
     get_all_tools,
     get_editing_tools,
+    get_finalization_tools,
     get_ideation_tools,
     get_publication_tools,
     get_research_tools,
@@ -164,7 +165,7 @@ def create_editing_agent(model: Any) -> Any:
 
 
 def create_finalization_agent(model: Any) -> Any:
-    return _create_agent_from_config("finalization_agent", model, get_editing_tools)
+    return _create_agent_from_config("finalization_agent", model, get_finalization_tools)
 
 
 def create_publication_agent(model: Any) -> Any:
