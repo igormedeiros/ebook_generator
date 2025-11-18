@@ -14,7 +14,7 @@ from typing import Any
 import yaml
 from supabase import Client, create_client
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 BOOK_SPEC_PATH = PROJECT_ROOT / "specs" / "book.yaml"
 ENV_PATH = PROJECT_ROOT / ".env"
 
