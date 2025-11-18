@@ -233,6 +233,35 @@ def ask_rag_storage_method():
             return 'local'
         print("Resposta inválida. Digite 's' ou 'l'")
 
+def initialize_ebook_file(brd, output_file="result/ebook.md"):
+    """Cria o arquivo ebook.md inicial usando o template."""
+    import os
+    import datetime
+
+    os.makedirs(os.path.dirname(output_file) or ".", exist_ok=True)
+    
+    template_path = Path(__file__).parent.parent / "template" / "template.md"
+    template_content = ""
+    
+    if template_path.exists():
+        with open(template_path, "r", encoding="utf-8") as f:
+            template_content = f.read()
+    else:
+        # Fallback template if file missing
+        template_content = "# <<titulo_do_livro>>\n\n[Capitulos]"
+
+    # Substitui placeholders iniciais
+    final_content = template_content.replace("<<titulo_do_livro>>", brd['project']['name'])
+    final_content = final_content.replace("<<data de lançamento>>", datetime.date.today().strftime("%d/%m/%Y"))
+    final_content = final_content.replace("<<numero do ASIN>>", "PENDENTE")
+    final_content = final_content.replace("<<link da amazon>>", "https://amazon.com.br/dp/PENDENTE")
+    
+    with open(output_file, "w", encoding="utf-8") as f:
+        f.write(final_content)
+    
+    print(f"  📄 Arquivo inicial criado: {output_file}")
+    return output_file
+
 def generate_chapter_structure(brd):
     """
     Gera a estrutura de capítulos usando o writer_agent.
@@ -449,12 +478,21 @@ def generate_thematic_research(brd):
     print(f"\n📚 Gerando pesquisas temáticas abrangentes para {len(required_topics)} tópicos...\n")
     print("   (Salvamento imediato ativado - cada tema é persistido em kb/ após geração)\n")
 
-    for idx, topic in enumerate(required_topics, 1):
-        print(f"  [{idx}/{len(required_topics)}] 🔍 Pesquisa temática: {topic}...")
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+        TimeRemainingColumn(),
+    ) as progress:
+        task = progress.add_task("[cyan]Pesquisando temas...", total=len(required_topics))
 
-        base_prompt = build_deep_research_prompt(topic=topic, project=project, minimum_words=min_words)
+        for idx, topic in enumerate(required_topics, 1):
+            progress.update(task, description=f"[cyan]Pesquisando tema ({idx}/{len(required_topics)}): {topic}")
 
-        thematic_instructions = f"""# 🔬 Diretrizes Complementares para Temas Obrigatórios
+            base_prompt = build_deep_research_prompt(topic=topic, project=project, minimum_words=min_words)
+
+            thematic_instructions = f"""# 🔬 Diretrizes Complementares para Temas Obrigatórios
 - Esta pesquisa é independente de capítulos e servirá como fonte canônica reutilizável.
 - Gere no mínimo {min_words} palavras em formato Markdown altamente estruturado.
 - Cite pelo menos {min_sources} fontes confiáveis priorizando documentação oficial, órgãos reguladores e papers revisados por pares.
@@ -463,38 +501,42 @@ def generate_thematic_research(brd):
 - Trate riscos, limitações, trade-offs, métricas de performance e implicações éticas especificamente para saúde.
 """
 
-        optional_blocks = []
-        for field in ("technical_depth_description", "technical_guidelines", "code_examples_requirement"):
-            block = thematic_cfg.get(field)
-            if block:
-                optional_blocks.append(block.strip())
+            optional_blocks = []
+            for field in ("technical_depth_description", "technical_guidelines", "code_examples_requirement"):
+                block = thematic_cfg.get(field)
+                if block:
+                    optional_blocks.append(block.strip())
 
-        query_blocks = [base_prompt.strip(), thematic_instructions.strip()] + optional_blocks
-        query = "\n\n".join(block for block in query_blocks if block).strip()
+            query_blocks = [base_prompt.strip(), thematic_instructions.strip()] + optional_blocks
+            query = "\n\n".join(block for block in query_blocks if block).strip()
 
-        response = thematic_research_agent.invoke({
-            "messages": [{"role": "user", "content": query}]
-        })
+            response = thematic_research_agent.invoke({
+                "messages": [{"role": "user", "content": query}]
+            })
 
-        content = response["messages"][-1].content
+            content = response["messages"][-1].content
 
-        # Se for lista com artifacts (Gemini format), extrai o texto
-        if isinstance(content, list) and len(content) > 0:
-            if isinstance(content[0], dict) and 'text' in content[0]:
-                content = content[0]['text']
+            # Se for lista com artifacts (Gemini format), extrai o texto
+            if isinstance(content, list) and len(content) > 0:
+                if isinstance(content[0], dict) and 'text' in content[0]:
+                    content = content[0]['text']
 
-        research_content = content if isinstance(content, str) else str(content)
-        word_count = count_words(research_content)
+            research_content = content if isinstance(content, str) else str(content)
+            word_count = count_words(research_content)
 
-        if word_count < min_words:
-            print(f"    ⚠️ Conteúdo de '{topic}' possui {word_count} palavras (mínimo recomendado: {min_words}).")
-        else:
-            print(f"    🧮 Contagem aproximada: {word_count} palavras.")
+            if word_count < min_words:
+                # print(f"    ⚠️ Conteúdo de '{topic}' possui {word_count} palavras (mínimo recomendado: {min_words}).")
+                pass
+            else:
+                # print(f"    🧮 Contagem aproximada: {word_count} palavras.")
+                pass
 
-        # SALVAMENTO IMEDIATO após geração de cada tema
-        file_path = save_thematic_research_immediately(topic, research_content, brd, word_count=word_count)
-        thematic_research_paths[topic] = file_path
-        print(f"  📝 Salvo imediatamente: {Path(file_path).name}\n")
+            # SALVAMENTO IMEDIATO após geração de cada tema
+            file_path = save_thematic_research_immediately(topic, research_content, brd, word_count=word_count)
+            thematic_research_paths[topic] = file_path
+            # print(f"  📝 Salvo imediatamente: {Path(file_path).name}\n")
+            
+            progress.advance(task)
 
     return thematic_research_paths
 
@@ -649,6 +691,9 @@ def generate_ebook():
     # Pedir aprovação
     if not get_confirmation("Deseja prosseguir com a geração do Ebook?"):
         return None
+    
+    # Inicializa arquivo do ebook imediatamente
+    initialize_ebook_file(brd)
     
     print_separator()
     
@@ -918,41 +963,20 @@ def save_ebook(ebook, output_file="result/ebook.md"):
     if template_path.exists():
         with open(template_path, "r", encoding="utf-8") as f:
             template_content = f.read()
-    
-    # Constrói o conteúdo dos capítulos
-    chapters_content = ""
-    for chapter in ebook["chapters"]:
-        chapters_content += f"## {chapter['name']}\n\n"
-        chapters_content += f"{chapter['content']}\n\n"
-        chapters_content += "---\n\n"
-    
-    final_content = ""
-    
-    if template_content:
-        # Substitui placeholders
-        final_content = template_content.replace("<<titulo_do_livro>>", ebook['title'])
-        final_content = final_content.replace("<<data de lançamento>>", datetime.date.today().strftime("%d/%m/%Y"))
-        final_content = final_content.replace("<<numero do ASIN>>", "PENDENTE")
-        final_content = final_content.replace("<<link da amazon>>", "https://amazon.com.br/dp/PENDENTE")
-        
-        # Substitui [Capitulos] pelo conteúdo real
-        if "[Capitulos]" in final_content:
-            final_content = final_content.replace("[Capitulos]", chapters_content)
-        else:
-            # Se não achar o placeholder, anexa ao final
-            final_content += "\n\n" + chapters_content
-            
-        # Remove outros placeholders não usados se necessário ou deixa como está
     else:
-        # Fallback se não houver template
-        final_content = f"# {ebook['title']}\n\n"
-        final_content += f"{ebook['description']}\n\n"
-        final_content += "---\n\n"
-        final_content += chapters_content
+        # Fallback template if file missing
+        template_content = "# <<titulo_do_livro>>\n\n[Capitulos]"
+
+    # Substitui placeholders iniciais
+    final_content = template_content.replace("<<titulo_do_livro>>", brd['project']['name'])
+    final_content = final_content.replace("<<data de lançamento>>", datetime.date.today().strftime("%d/%m/%Y"))
+    final_content = final_content.replace("<<numero do ASIN>>", "PENDENTE")
+    final_content = final_content.replace("<<link da amazon>>", "https://amazon.com.br/dp/PENDENTE")
     
     with open(output_file, "w", encoding="utf-8") as f:
         f.write(final_content)
     
+    print(f"  📄 Arquivo inicial criado: {output_file}")
     return output_file
 
 

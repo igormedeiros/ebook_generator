@@ -17,3 +17,5 @@
 [x] Integrate template/template.md into save_ebook
 [x] Implement Review, Critical Reading, and Editing phases in generate_ebook
 [x] Fix output parsing for Python list strings
+[x] Initialize ebook.md immediately after confirmation using template
+[x] Add progress bar to thematic research phase
