@@ -13,7 +13,7 @@ import os
 from typing import Any, Callable, Dict, List, Optional
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_groq import ChatGroq
-from src.config import get_logger
+from .config import get_logger
 
 logger = get_logger(__name__)
 
