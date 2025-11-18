@@ -1,11 +1,11 @@
 """
 Definição de agentes usando LangChain 1.0+.
-Agentes simples com system prompt bem definido.
+Agentes especializados para research, escrita e validação.
 """
 
 from langchain.agents import create_agent
 from langchain_google_genai import ChatGoogleGenerativeAI
-from .tools import get_all_tools
+from .tools import get_all_tools, get_research_tools
 
 import os
 from dotenv import load_dotenv
@@ -27,7 +27,43 @@ gemini_llm = ChatGoogleGenerativeAI(
     top_k=40
 )
 
-# Criação do agente de escrita com system prompt especializado
+# Inicialização do modelo Gemini 2.5 (análise e research mais profundo)
+gemini_research = ChatGoogleGenerativeAI(
+    model="gemini-2.5",
+    api_key=google_api_key,
+    temperature=0.3,
+    top_p=0.95,
+    top_k=40
+)
+
+# Agent de Research para deep research dos conteúdos
+research_agent = create_agent(
+    model=gemini_research,
+    tools=get_research_tools(),
+    system_prompt="""Você é um Especialista em Research sobre Saúde Clínica e Agentes de IA.
+
+Sua responsabilidade é conduzir pesquisas profundas e análises rigorosas sobre tópicos de IA na saúde.
+
+Foco de pesquisa:
+- LangChain 1.0 e arquitetura de agentes
+- RAG e aplicações clínicas
+- EHRs e dados médicos
+- Compliance (LGPD, regulações de saúde)
+- Ética em IA e transparência
+- Validação de sistemas de IA em saúde
+
+Características do seu trabalho:
+- Análise profunda baseada em evidências
+- Referências técnicas e científicas
+- Mapeamento de melhores práticas
+- Identificação de riscos e considerações éticas
+- Estrutura lógica e bem fundamentada
+
+Retorne análises estruturadas, bem contextualizadas e prontas para alimentar conteúdo técnico.
+Cada análise deve ser em Markdown com referências claras e estrutura bem definida."""
+)
+
+# Agente de escrita com system prompt especializado
 writer_agent = create_agent(
     model=gemini_llm,
     tools=get_all_tools(),

@@ -4,21 +4,25 @@ Pipeline de geração de ebook usando LangChain 1.0+.
 Padrão LangChain 1.0:
 - Carrega BRD do YAML
 - Gera estrutura de capítulos via agent
-- Gera conteúdo para cada capítulo
-- Salva resultado
+- Faz deep research de cada capítulo
+- Salva research em kb/ como .md
+- Gera conteúdo final baseado no research
+- Salva resultado final em result/
+- Upload para Supabase (future)
 """
 
 import time
 import yaml
 import json
+import os
 from pathlib import Path
 
 try:
     # Quando executado como módulo (python -m src.main)
-    from .agents import writer_agent
+    from .agents import writer_agent, research_agent
 except ImportError:
     # Quando executado diretamente (python src/main.py)
-    from src.agents import writer_agent
+    from src.agents import writer_agent, research_agent
 
 def load_brd():
     """Carrega BRD do arquivo specs/brd.yaml."""
@@ -108,12 +112,92 @@ Exemplo formato:
     print("❌ Não foi possível gerar estrutura de capítulos")
     return []
 
-def build_chapter_queries(chapters, brd):
+def generate_chapter_research(chapter_name, chapter_purpose, chapter_elements, brd):
     """
-    Constrói queries para cada capítulo já gerado.
+    Conduz pesquisa profunda sobre um capítulo usando research_agent.
+    
+    Args:
+        chapter_name: Nome do capítulo
+        chapter_purpose: Propósito do capítulo
+        chapter_elements: Elementos obrigatórios
+        brd: Configuração BRD
+    
+    Returns:
+        str: Conteúdo de research em Markdown
+    """
+    project = brd["project"]
+    
+    query = f"""Faça uma pesquisa profunda e estruturada sobre o capítulo: "{chapter_name}"
+
+Propósito do capítulo:
+{chapter_purpose}
+
+Elementos a cobrir:
+{chr(10).join(f"• {elem}" for elem in chapter_elements)}
+
+Contexto do ebook: {project['name']}
+Público-alvo: {project['target_audience']}
+
+Sua pesquisa deve incluir:
+1. Conceitos fundamentais e contexto
+2. Melhores práticas comprovadas
+3. Considerações éticas e compliance
+4. Exemplos práticos e casos reais
+5. Riscos e mitigações
+6. Referências e fontes
+
+Estruture a resposta em Markdown com seções claras e profundidade técnica.
+Esta pesquisa será a base para o conteúdo final do capítulo."""
+    
+    print(f"  🔍 Pesquisando: {chapter_name}...")
+    response = research_agent.invoke({
+        "messages": [{"role": "user", "content": query}]
+    })
+    
+    content = response["messages"][-1].content
+    
+    # Se for lista com artifacts (Gemini format), extrai o texto
+    if isinstance(content, list) and len(content) > 0:
+        if isinstance(content[0], dict) and 'text' in content[0]:
+            content = content[0]['text']
+    
+    return content if isinstance(content, str) else str(content)
+
+def save_research_to_kb(chapter_name, research_content, brd):
+    """
+    Salva research em kb/ como arquivo Markdown.
+    
+    Args:
+        chapter_name: Nome do capítulo (usado para nome do arquivo)
+        research_content: Conteúdo de research
+        brd: Configuração BRD
+    
+    Returns:
+        str: Caminho do arquivo salvo
+    """
+    kb_dir = Path(__file__).parent.parent / "kb"
+    kb_dir.mkdir(exist_ok=True)
+    
+    # Normaliza nome do arquivo
+    safe_name = chapter_name.lower().replace(" ", "_").replace(":", "")
+    file_path = kb_dir / f"research_{safe_name}.md"
+    
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write(f"# Research: {chapter_name}\n\n")
+        f.write(f"Ebook: {brd['project']['name']}\n")
+        f.write(f"Data: {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+        f.write("---\n\n")
+        f.write(research_content)
+    
+    return str(file_path)
+
+def build_chapter_queries_with_research(chapters, research_data, brd):
+    """
+    Constrói queries para cada capítulo com base no research realizado.
     
     Args:
         chapters: Lista de dicts com estrutura de capítulos
+        research_data: Dict com research por capítulo {chapter_name: research_content}
         brd: Configuração BRD
     
     Returns:
@@ -129,11 +213,16 @@ def build_chapter_queries(chapters, brd):
     
     queries = []
     for idx, chapter in enumerate(chapters, 1):
+        research_context = research_data.get(chapter['name'], "")
+        
         query = f"""Gere o capítulo {idx}/{number_chapters} "{chapter['name']}" do ebook: {project['name']}
 
 REQUISITOS:
 - Aproximadamente {words_per_chapter} palavras
 - Este é o capítulo {idx} de {number_chapters}
+
+CONTEXTO DE RESEARCH (use como base):
+{research_context[:2000]}...
 
 Propósito do capítulo:
 {chapter['purpose']}
@@ -152,7 +241,7 @@ Características do estilo de escrita:
 Público-alvo: {project['target_audience']}
 Idioma: {project['language']}
 
-Escreva o conteúdo em Markdown puro, seguindo as orientações. Foco em prático, educativo e ético. O conteúdo deve ter aproximadamente {words_per_chapter} palavras."""
+Escreva o conteúdo em Markdown puro, baseado no research fornecido. Foco em prático, educativo e ético. O conteúdo deve ter aproximadamente {words_per_chapter} palavras."""
         
         queries.append((chapter["name"], query))
     
@@ -207,8 +296,35 @@ def generate_ebook():
     print(f"Capítulos: {len(chapters)}")
     print("="*70)
     
-    # Etapa 3: Gerar queries para cada capítulo
-    chapters_queries = build_chapter_queries(chapters, brd)
+    # Etapa 3: Fazer research de cada capítulo e salvar em kb/
+    print("\n📚 ETAPA 1: RESEARCH E SALVAMENTO EM KB/")
+    print("-"*70)
+    research_data = {}
+    for idx, chapter in enumerate(chapters, 1):
+        print(f"\n[{idx}/{len(chapters)}] {chapter['name']}")
+        
+        # Gera research
+        research_content = generate_chapter_research(
+            chapter['name'],
+            chapter['purpose'],
+            chapter['elements'],
+            brd
+        )
+        research_data[chapter['name']] = research_content
+        
+        # Salva em kb/
+        kb_path = save_research_to_kb(chapter['name'], research_content, brd)
+        print(f"  ✓ Salvo em: {kb_path}")
+        
+        if idx < len(chapters):
+            time.sleep(1)  # Pequeno delay entre requests
+    
+    print("\n✓ Todas as pesquisas foram salvas em kb/")
+    print("\n📝 ETAPA 2: GERAÇÃO DE CONTEÚDO")
+    print("-"*70)
+    
+    # Etapa 4: Gerar queries para cada capítulo (agora com research como contexto)
+    chapters_queries = build_chapter_queries_with_research(chapters, research_data, brd)
     
     for idx, (chapter_name, query) in enumerate(chapters_queries, 1):
         print(f"\n[{idx}/{len(chapters_queries)}] Gerando: {chapter_name}")
