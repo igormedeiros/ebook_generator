@@ -247,15 +247,12 @@ def get_research_model(
     max_retries: Optional[int] = None,
 ) -> ChatGoogleGenerativeAI:
     """
-    Initialize and return the research model (Gemini 2.5 Flash for free tier).
+    Initialize and return the research model (Gemini 2.5 Pro for analytical tasks).
     
-    NOTE: Currently using Gemini 2.5 Flash instead of Pro for demonstration.
-    This is because free tier limits Pro to 2 req/min vs Flash with 15 req/min.
-    
-    When using paid tier, change model to "gemini-2.5-pro" for better accuracy.
+    NOTE: Using Gemini 2.5 Pro for deeper analysis and RAG integration.
     
     Configuration:
-    - Model: gemini-2.5-flash (changed from pro for free tier)
+    - Model: gemini-2.5-pro
     - Temperature: 0.3 (focused on precision and factuality)
     - top_p: 0.95
     - top_k: 40
@@ -267,7 +264,7 @@ def get_research_model(
         max_retries: Optional retry override before triggering fallback
 
     Returns:
-        ChatGoogleGenerativeAI: Configured Gemini model
+        ChatGoogleGenerativeAI: Configured Gemini 2.5 Pro model
     
     Raises:
         ValueError: If GOOGLE_API_KEY environment variable not set

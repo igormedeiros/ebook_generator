@@ -27,9 +27,9 @@ gemini_llm = ChatGoogleGenerativeAI(
     top_k=40
 )
 
-# Inicialização do modelo Gemini 2.5 (análise e research mais profundo)
+# Inicialização do modelo Gemini 2.5 Pro (análise e research mais profundo)
 gemini_research = ChatGoogleGenerativeAI(
-    model="gemini-2.5",
+    model="gemini-2.5-pro",
     api_key=google_api_key,
     temperature=0.3,
     top_p=0.95,

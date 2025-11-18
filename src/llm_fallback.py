@@ -76,12 +76,12 @@ class LLMFallback:
     
     def setup_models(self):
         """Setup LLM models in priority order."""
-        # Priority 1: Gemini 2.5 Pro (high accuracy, low quota)
+        # Priority 1: Gemini 2.5 Pro (high accuracy)
         self.models.append({
             "name": "Gemini 2.5 Pro",
             "model_id": "gemini-2.5-pro",
             "init": self._init_gemini_pro,
-            "description": "Google Gemini 2.5 Pro (Research mode, 2 req/min free tier)"
+            "description": "Google Gemini 2.5 Pro (Research mode)"
         })
         
         # Priority 2: Gemini 2.5 Flash (good accuracy, higher quota)
@@ -89,7 +89,7 @@ class LLMFallback:
             "name": "Gemini 2.5 Flash",
             "model_id": "gemini-2.5-flash",
             "init": self._init_gemini_flash,
-            "description": "Google Gemini 2.5 Flash (Writing mode, 15 req/min free tier)"
+            "description": "Google Gemini 2.5 Flash (Writing mode)"
         })
         
         # Priority 3: Groq LLaMA 3 70B (unlimited free tier)
