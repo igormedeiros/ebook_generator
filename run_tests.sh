@@ -16,7 +16,7 @@ NC='\033[0m'
 
 # Unit Tests
 echo -e "${BLUE}🧪 Running Unit Tests from /tests...${NC}"
-python3 -m unittest discover tests
+python3 -m unittest discover -s tests -t .
 echo -e "${GREEN}✅ Unit Tests: PASS${NC}\n"
 
 echo "======================================================================"

@@ -4,8 +4,11 @@ from __future__ import annotations
 
 import json
 import os
+import smtplib
 from pathlib import Path
 from typing import Any, Dict, List
+
+from email.message import EmailMessage
 
 try:
     from langchain_google_genai import GoogleGenerativeAIEmbeddings
@@ -303,6 +306,60 @@ def generate_kdp_metadata(title: str, author: str) -> Dict[str, Any]:
     return {"title": title, "author": author, "language": "pt-BR"}
 
 
+def send_epub_to_kindle(
+    epub_path: str,
+    kindle_email: str | None = None,
+    subject: str | None = None,
+    message: str | None = None,
+) -> str:
+    """Send an EPUB file as an email attachment to a Kindle address via Gmail SMTP."""
+
+    if not epub_path:
+        return "Caminho do EPUB não informado"
+
+    epub_file = Path(epub_path).expanduser()
+    if not epub_file.is_file():
+        return f"Arquivo EPUB não encontrado: {epub_path}"
+
+    kindle_email = kindle_email or os.getenv("KINDLE_EMAIL")
+    if not kindle_email:
+        return "E-mail do Kindle não configurado"
+
+    smtp_user = os.getenv("KINDLE_SMTP_USER") or os.getenv("GMAIL_USER")
+    smtp_password = os.getenv("KINDLE_SMTP_PASSWORD") or os.getenv("GMAIL_APP_PASSWORD")
+    if not smtp_user or not smtp_password:
+        return "Credenciais SMTP não configuradas"
+
+    smtp_server = os.getenv("KINDLE_SMTP_SERVER", "smtp.gmail.com")
+    smtp_port = int(os.getenv("KINDLE_SMTP_PORT", "587"))
+
+    subject = subject or f"Envio automático - {epub_file.stem}"
+    message = message or "Envio automático do Ebook Generator"
+
+    email_message = EmailMessage()
+    email_message["Subject"] = subject
+    email_message["From"] = smtp_user
+    email_message["To"] = kindle_email
+    email_message.set_content(message)
+
+    with epub_file.open("rb") as epub_handle:
+        email_message.add_attachment(
+            epub_handle.read(),
+            maintype="application",
+            subtype="epub+zip",
+            filename=epub_file.name,
+        )
+
+    try:
+        with smtplib.SMTP(smtp_server, smtp_port, timeout=30) as smtp:
+            smtp.starttls()
+            smtp.login(smtp_user, smtp_password)
+            smtp.send_message(email_message)
+        return f"EPUB enviado para {kindle_email}"
+    except Exception as exc:  # noqa: BLE001
+        return f"Erro ao enviar EPUB: {exc}"
+
+
 def replace_text_in_docx(input_file: str, output_file: str, replacements: Dict[str, str]) -> str:
     """Replace occurrences of strings inside a DOCX document."""
     try:
@@ -394,6 +451,10 @@ def get_editing_tools() -> List[Any]:
     return [format_markdown, validate_content_quality, validate_structure]
 
 
+def get_finalization_tools() -> List[Any]:
+    return get_editing_tools() + [send_epub_to_kindle]
+
+
 def get_publication_tools() -> List[Any]:
     return [
         export_to_docx,
@@ -401,6 +462,7 @@ def get_publication_tools() -> List[Any]:
         export_to_pdf,
         export_to_json,
         generate_kdp_metadata,
+        send_epub_to_kindle,
     ]
 
 
@@ -427,6 +489,8 @@ __all__ = [
     "validate_structure",
     "format_markdown",
     "validate_content_quality",
+    "send_epub_to_kindle",
+    "get_finalization_tools",
     "get_ideation_tools",
     "get_all_tools",
 ]
