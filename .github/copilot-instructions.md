@@ -225,12 +225,13 @@ Output Format:
 
 ```
 src/
-├── main.py               # Pipeline orchestration (9 stages)
-├── agents.py             # All agent definitions (25 agents)
-├── tools.py              # All tool definitions (30+ tools)
+├── main.py               # Pipeline orchestration - entry point for ebook generation
+├── agents_write.py       # Writer agent using LangChain 1.0+ with Gemini 2.5 Flash
+├── tools_write.py        # Tools for document manipulation (DOCX editing)
 ├── config.py             # Configuration, logging, models, YAML loading
 ├── input_validator.py    # Input validation and interactive prompts
-└── __init__.py           # Package initialization
+├── llm_fallback.py       # LLM fallback mechanism
+└── tools.py              # Legacy tools (to be migrated)
 
 specs/
 ├── pipeline.yaml         # 9-stage parameters with agent ID mappings
@@ -251,39 +252,27 @@ docs/
 
 ### Package Initialization
 
-**Important**: `__init__.py` files must NEVER be empty:
+**IMPORTANT**: `src/` does NOT have `__init__.py`. Each module is independent:
 
-1. **Purpose**: Export public API of each package
-2. **Content**: Include `__all__` list with exported names
-3. **Documentation**: Include module docstring explaining package purpose
-4. **Example**:
+1. **No Package Structure**: `src/` is NOT a Python package
+2. **Direct Module Import**: Import directly from module files
+3. **Execution**: Use `python -m src.main` or equivalent
+4. **Pattern**: Direct imports from root-level execution
    ```python
-   """
-   Ebook Generator 1.0 - Multi-agent editorial automation platform.
-   """
-   from config import get_model, get_research_model
-   from config import (
-       get_logger, 
-       get_config, 
-       get_pipeline_config,
-       console
-   )
-   from agents import create_ideation_agent, ...
-   from main import run_ebook_pipeline
-
-   __version__ = "1.0.0"
-   __all__ = [
-       "get_model",
-       "get_research_model",
-       "get_logger",
-       "console",
-       "create_ideation_agent",
-       "run_ebook_pipeline",
-   ]
+   # From root-level scripts or entry points
+   from src.config import get_logger
+   from src.main import generate_ebook
+   
+   # NOT: from src import generate_ebook (won't work without __init__.py)
    ```
 
-3. **Never**: Leave `__init__.py` blank or with only comments
-4. **Rationale**: Clear API surface, better IDE support, explicit exports
+5. **CLI Entry**: `src/main.py` is the execution entry point
+   ```bash
+   # Run pipeline
+   python -m src.main
+   # Or via uv
+   uv run python -m src.main
+   ```
 
 ### Logging and Output Standards
 

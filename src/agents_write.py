@@ -5,7 +5,7 @@ Agentes simples com system prompt bem definido.
 
 from langchain.agents import create_agent
 from langchain_google_genai import ChatGoogleGenerativeAI
-from .tools import replace_text_in_docx
+from .tools_write import replace_text_in_docx
 
 import os
 from dotenv import load_dotenv
