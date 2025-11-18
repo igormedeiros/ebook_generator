@@ -4,7 +4,7 @@
 deep_research:
   description: |
     Pipeline de pesquisa profunda com DOIS níveis:
-    
+
     1. PESQUISA TEMÁTICA ABRANGENTE (Fase 1)
        - Baseada em required_topics do projeto
        - 1 documento por tópico obrigatório
@@ -21,7 +21,71 @@ deep_research:
        - 2000+ palavras, 5+ fontes
        - Salvo como: research_*.md em kb/
        - SALVAMENTO: Imediato após geração (save_immediately: true)
-  
+
+  requirements:
+    thematic:
+      minimum_word_count: 3000
+      minimum_sources: 7
+    chapter:
+      minimum_word_count: 2000
+      minimum_sources: 5
+  include_word_count_in_header: true
+  prompt_template: |
+    # 📄 Prompt de Deep Research para Base de Conhecimento RAG
+
+    **INSTRUÇÃO PRINCIPAL:** Você é um Engenheiro de Pesquisa Sênior com foco em **Tecnologia Aplicada (IA, Agentes)**. Seu objetivo é conduzir uma pesquisa exaustiva e produzir um documento técnico denso, factual e altamente detalhado sobre **{topic}**.
+
+    Este documento será a **ÚNICA** fonte de verdade para um sistema Retrieval-Augmented Generation (RAG) usado por modelos de linguagem avançados. A qualidade, a profundidade e a granularidade da informação são críticas. Produza no mínimo **{minimum_words} palavras**.
+
+    ---
+
+    ## 🎯 Seções Mandatórias do Documento
+
+    O documento deve ser estruturado em tópicos e subtópicos claros, com foco na explicação técnica, em analogia a um **Artigo de Revisão Científica e um Whitepaper Técnico**.
+
+    ### 1. Resumo Executivo (Máx. 3 Parágrafos)
+    * Visão geral concisa da importância do tema e das principais conclusões técnicas do documento.
+
+    ### 2. Introdução e Contextualização do Tema
+    * **2.1. Definição e Escopo:** Definição formal, desmistificação de termos comuns e delimitação exata do escopo da pesquisa.
+    * **2.2. Relevância no Cenário Atual:** Explique por que este tema é crítico agora com estatísticas, tendências de mercado ou desafios científicos recentes.
+    * **2.3. Termos-Chave e Glossário:** Liste pelo menos 10 termos técnicos essenciais com definições precisas.
+
+    ### 3. Profundidade Técnica e Arquitetura/Fundamentos (Corpo Central)
+    * **3.1. Fundamentos Teóricos/Bases Científicas:** Princípios, equações ou modelos subjacentes.
+    * **3.2. Arquitetura/Implementação Técnica:** Componentes, workflows e tecnologias/frameworks envolvidos.
+    * **3.3. Casos de Uso Avançados e Aplicações:** Exemplos concretos, preferencialmente em saúde/neurologia ou automação corporativa.
+
+    ### 4. Desafios, Limitações e Ética (Análise Crítica)
+    * Gargalos técnicos atuais, implicações éticas, riscos e comparação com soluções alternativas (SWOT ou análise comparativa).
+
+    ### 5. Tendências Futuras e Conclusão
+    * Pesquisas em andamento, próximos passos e síntese final da viabilidade técnica e impacto potencial.
+
+    ---
+
+    ## ⚙️ Critérios de Qualidade para Geração (RAG Optimization)
+
+    1. **Granularidade (Chunking-Ready):** Cada parágrafo aborda uma única ideia ou fato técnico.
+    2. **Foco em Dados e Fatos:** Cite números, métricas, algoritmos, protocolos e referências técnicas sempre que possível.
+    3. **Priorize Fontes Oficiais:** Documentação oficial, órgãos reguladores, papers revisados por pares e fontes com reputação comprovada.
+    4. **Formato:** Use Markdown com listas numeradas/bullets para facilitar chunking.
+    5. **Profundidade:** Presuma leitor com background técnico sênior; evite explicações superficiais.
+    6. **Código:** Inclua exemplos em Python/YAML quando o tema for uma tecnologia, framework ou agente; explique linha a linha quando necessário.
+    7. **Conexão com o Ebook:** Reforce como o tema apoia o projeto "{ebook_name}" e o público-alvo "{target_audience}".
+
+    ---
+
+    ## 📌 Contexto Adicional Obrigatório
+
+    - Ebook: {ebook_name}
+    - Descrição: {ebook_description}
+    - Público-alvo: {target_audience}
+    - Tópicos Obrigatórios (BRD) para manter alinhamento entre pesquisas:
+    {required_topics_list}
+
+    **A SAÍDA DEVE SER APENAS O DOCUMENTO DE PESQUISA EM MARKDOWN, SEGUINDO A ESTRUTURA ACIMA, COM ALTA DENSIDADE INFORMACIONAL.**
+
   thematic_research:
     save_immediately: true
     description: "Salva cada pesquisa temática em kb/ imediatamente após geração"
