@@ -1,183 +1,99 @@
 """
 Pipeline de geração de ebook usando LangChain 1.0+.
 
-Orquestra a execução sequencial dos agentes com guidance estruturado
-para gerar conteúdo de autodesenvolvimento.
+Arquitetura simples:
+1. Carrega BRD do YAML
+2. Para cada capítulo, constrói query baseada no BRD
+3. Executa agent.invoke(query)
+4. Compila resultado
 """
 
 import time
 from agents import writer_agent
-from tasks import (
-    get_introduction_guidance,
-    get_problem_chapter_guidance,
-    get_identification_chapter_guidance,
-    get_solution_chapter_guidance,
-    get_protection_chapter_guidance,
-    get_permission_chapter_guidance,
-    get_power_chapter_guidance
-)
+from tasks import get_all_chapters_queries
 
-ebook_config_path = 'config/ebook_config.json'
-ebook_template_path = '../templates/ebook_template.docx'
-
-# Configuração das seções do ebook com seus parâmetros e funções de guidance
-EBOOK_SECTIONS = [
-    {
-        "name": "Introdução",
-        "guidance_fn": get_introduction_guidance,
-        "params": {
-            "topic": "Autoconhecimento e Inteligência Emocional",
-            "audience": "Iniciantes em desenvolvimento pessoal"
-        }
-    },
-    {
-        "name": "Problema",
-        "guidance_fn": get_problem_chapter_guidance,
-        "params": {
-            "topic": "Gestão emocional e autoconhecimento",
-            "context": "Desafios comuns no desenvolvimento pessoal"
-        }
-    },
-    {
-        "name": "Identificação",
-        "guidance_fn": get_identification_chapter_guidance,
-        "params": {
-            "author_stories": {
-                "Superação pessoal": "História de como superei meus limites",
-                "Transformação": "Jornada de mudança e crescimento"
-            }
-        }
-    },
-    {
-        "name": "Solução",
-        "guidance_fn": get_solution_chapter_guidance,
-        "params": {
-            "method_name": "Método de Inteligência Emocional",
-            "steps": [
-                "Reconhecer emoções",
-                "Compreender origem",
-                "Integrar aprendizado",
-                "Aplicar na vida"
-            ]
-        }
-    },
-    {
-        "name": "Proteção",
-        "guidance_fn": get_protection_chapter_guidance,
-        "params": {
-            "risks": [
-                "Autossabotagem e dúvida de si",
-                "Influências externas negativas",
-                "Falta de consistência"
-            ]
-        }
-    },
-    {
-        "name": "Permissão",
-        "guidance_fn": get_permission_chapter_guidance,
-        "params": {
-            "affirmations": [
-                "Você merece ser feliz",
-                "Você tem direito de crescer",
-                "Sua transformação é possível"
-            ]
-        }
-    },
-    {
-        "name": "Potência",
-        "guidance_fn": get_power_chapter_guidance,
-        "params": {
-            "celebration_elements": {
-                "Progresso": "Celebrar avanços realizados",
-                "Potencial": "Reconhecer capacidade de transformação"
-            }
-        }
-    }
-]
-
-def execute_agent(agent, query: str) -> str:
+def generate_ebook():
     """
-    Executa um agente com uma query e retorna a resposta.
-    
-    Args:
-        agent: Instância do agente LangChain
-        query: Query para executar
-    
-    Returns:
-        str: Resposta do agente
-    """
-    response = agent.invoke({
-        "messages": [{"role": "user", "content": query}]
-    })
-    return response.get("output", str(response))
-
-def generate_ebook_section(section_config: dict) -> dict:
-    """
-    Gera uma seção específica do ebook usando guidance estruturado.
-    
-    Args:
-        section_config: Configuração da seção com guidance_fn e parâmetros
-    
-    Returns:
-        dict: Resultado da seção com nome e conteúdo
-    """
-    section_name = section_config["name"]
-    guidance_fn = section_config["guidance_fn"]
-    params = section_config["params"]
-    
-    print(f"\n{'='*60}")
-    print(f"Gerando: {section_name}")
-    print(f"{'='*60}")
-    
-    # Obtém guidance estruturado para a seção
-    guidance = guidance_fn(**params)
-    
-    # Executa o agente com o guidance
-    query = f"{guidance}\n\nGere o conteúdo desta seção agora."
-    content = execute_agent(writer_agent, query)
-    
-    print(f"✓ {section_name} concluída")
-    
-    return {
-        "section": section_name,
-        "guidance": guidance,
-        "content": content
-    }
-
-def generate_ebook() -> dict:
-    """
-    Gera o ebook completo de forma sequencial.
-    
-    Returns:
-        dict: Dicionário com conteúdo de todas as seções
+    Gera o ebook de forma sequencial executando agente para cada capítulo.
     """
     ebook_content = {
         "title": "Autoconhecimento e Inteligência Emocional",
         "sections": []
     }
     
-    for section_config in EBOOK_SECTIONS:
-        section_result = generate_ebook_section(section_config)
-        ebook_content["sections"].append(section_result)
+    # Obtém queries para todos os capítulos
+    chapters_queries = get_all_chapters_queries()
+    
+    print("\n" + "="*60)
+    print(f"Gerando {len(chapters_queries)} capítulos do ebook")
+    print("="*60)
+    
+    for idx, (chapter_name, query) in enumerate(chapters_queries, 1):
+        print(f"\n[{idx}/{len(chapters_queries)}] Gerando: {chapter_name}")
+        print("-" * 60)
         
-        print("\nAguardando 2 segundos antes da próxima seção...")
-        time.sleep(2)
+        # Executa agente com query baseada no BRD
+        response = writer_agent.invoke({
+            "messages": [{"role": "user", "content": query}]
+        })
+        
+        # Extrai conteúdo da resposta
+        content = response.get("messages", [])
+        if content and isinstance(content, list):
+            # Última mensagem é a resposta do agent
+            chapter_content = content[-1].get("content", str(content[-1]))
+        else:
+            chapter_content = str(response)
+        
+        ebook_content["sections"].append({
+            "chapter": chapter_name,
+            "content": chapter_content
+        })
+        
+        print(f"✓ {chapter_name} concluída")
+        
+        if idx < len(chapters_queries):
+            print("\nAguardando 2 segundos antes do próximo capítulo...")
+            time.sleep(2)
     
     return ebook_content
 
+def save_ebook(content: dict, output_path: str = "result/ebook.md"):
+    """
+    Salva o ebook gerado em formato Markdown.
+    
+    Args:
+        content: Dicionário com conteúdo do ebook
+        output_path: Caminho para salvar o arquivo
+    """
+    import os
+    
+    # Cria diretório se não existir
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write(f"# {content['title']}\n\n")
+        
+        for section in content["sections"]:
+            f.write(f"## {section['chapter']}\n\n")
+            f.write(f"{section['content']}\n\n")
+    
+    print(f"\n✓ Ebook salvo em: {output_path}")
+
 if __name__ == "__main__":
     print("\n" + "="*60)
-    print("Iniciando geração de ebook com LangChain 1.0+")
+    print("Gerando ebook com LangChain 1.0+")
     print("="*60)
     
     # Gera o ebook
-    content = generate_ebook()
+    ebook = generate_ebook()
+    
+    # Salva resultado
+    save_ebook(ebook)
     
     print("\n" + "="*60)
     print("Ebook gerado com sucesso!")
     print("="*60)
-    print("\nSeções geradas:")
-    for section in content["sections"]:
-        print(f"  ✓ {section['section']}")
-    
-    print(f"\nTotal: {len(content['sections'])} seções concluídas")
+    print(f"\nCapítulos gerados: {len(ebook['sections'])}")
+    for section in ebook["sections"]:
+        print(f"  ✓ {section['chapter']}")

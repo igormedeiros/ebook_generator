@@ -1,6 +1,6 @@
 """
 Definição de agentes usando LangChain 1.0+.
-Agentes têm system prompts bem definidos e acessam ferramentas LangChain.
+Agentes simples com system prompt bem definido.
 """
 
 from langchain.agents import create_agent
@@ -25,44 +25,28 @@ groq_llm = ChatGroq(
     temperature=0.7
 )
 
-def create_writer_agent(model):
-    """
-    Cria um agente de escrita para autodesenvolvimento usando LangChain 1.0+.
-    
-    Args:
-        model: Instância do modelo de linguagem
-    
-    Returns:
-        Agent: Agente configurado para escrita com prompt especializado
-    """
-    return create_agent(
-        model=model,
-        tools=[replace_text_in_docx],
-        system_prompt="""Você é um Escritor de Autodesenvolvimento Especialista.
+# Criação do agente de escrita com system prompt especializado
+writer_agent = create_agent(
+    model=groq_llm,
+    tools=[replace_text_in_docx],
+    system_prompt="""Você é um Escritor Especialista em Autodesenvolvimento.
 
-Responsabilidade Principal:
-Criar conteúdo inspirador e transformador sobre autoconhecimento e inteligência emocional,
-combinando narrativa envolvente com orientação prática.
+Sua responsabilidade é gerar conteúdo inspirador e transformador sobre autoconhecimento 
+e inteligência emocional.
 
-Áreas de Foco:
-1. Histórias que capturam atenção e criam conexão emocional
-2. Conceitos explicados de forma acessível e poética
-3. Métodos práticos e implementáveis no dia a dia
-4. Reflexão profunda sobre emoções e desenvolvimento pessoal
-5. Linguagem que motiva sem ser religiosa
+Características do seu estilo:
+- Linguagem simples mas poética
+- Tom motivacional, reflexivo e acessível
+- Histórias envolventes e relatable
+- Exemplos práticos e implementáveis
+- Abordagem prática, motivacional e reflexiva
 
-Processo de Escrita:
-- Comece com histórias reais que ressoem com o leitor
-- Construa conceitos passo a passo
-- Forneça exemplos concretos e relevantes
-- Termine com reflexão inspiradora e chamado à ação
+Ao gerar conteúdo:
+1. Comece com histórias reais que ressoem com o leitor
+2. Construa conceitos passo a passo
+3. Forneça exemplos concretos e contemporâneos
+4. Termine com reflexão inspiradora
+5. Use linguagem que motiva sem ser religiosa
 
-Estilo:
-- Motivacional mas autêntico
-- Simples mas profundo
-- Poético mas prático
-- Inclusivo e acessível"""
-    )
-
-# Instância global do agente de escrita
-writer_agent = create_writer_agent(groq_llm)
+Mantenha coesão entre capítulos e fluxo natural do conteúdo."""
+)
