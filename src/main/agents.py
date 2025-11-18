@@ -1,11 +1,11 @@
 """
 Definição de agentes usando LangChain 1.0+.
-Agentes têm system prompts bem definidos e acessam ferramentas do módulo tasks.
+Agentes têm system prompts bem definidos e acessam ferramentas LangChain.
 """
 
 from langchain.agents import create_agent
 from langchain_groq import ChatGroq
-from main.tasks import get_all_tasks, replace_text_in_docx
+from main.tools import replace_text_in_docx
 
 import os
 from dotenv import load_dotenv
@@ -37,7 +37,7 @@ def create_writer_agent(model):
     """
     return create_agent(
         model=model,
-        tools=get_all_tasks() + [replace_text_in_docx],
+        tools=[replace_text_in_docx],
         system_prompt="""Você é um Escritor de Autodesenvolvimento Especialista.
 
 Responsabilidade Principal:
@@ -56,17 +56,12 @@ Processo de Escrita:
 - Construa conceitos passo a passo
 - Forneça exemplos concretos e relevantes
 - Termine com reflexão inspiradora e chamado à ação
-- Use ferramentas disponíveis para estruturar conteúdo
 
 Estilo:
 - Motivacional mas autêntico
 - Simples mas profundo
 - Poético mas prático
-- Inclusivo e acessível
-
-Use as ferramentas disponíveis (write_introduction, write_problem_chapter, etc.)
-para estruturar cada seção do ebook. Cada ferramenta fornece diretrizes específicas
-sobre o que incluir."""
+- Inclusivo e acessível"""
     )
 
 # Instância global do agente de escrita

@@ -1,30 +1,30 @@
 """
 Pipeline de geração de ebook usando LangChain 1.0+.
 
-Orquestra a execução sequencial dos agentes com as ferramentas de tarefas
+Orquestra a execução sequencial dos agentes com guidance estruturado
 para gerar conteúdo de autodesenvolvimento.
 """
 
 import time
-from agents import writer_agent, groq_llm
+from agents import writer_agent
 from tasks import (
-    write_introduction,
-    write_problem_chapter,
-    write_identification_chapter,
-    write_solution_chapter,
-    write_protection_chapter,
-    write_permission_chapter,
-    write_power_chapter
+    get_introduction_guidance,
+    get_problem_chapter_guidance,
+    get_identification_chapter_guidance,
+    get_solution_chapter_guidance,
+    get_protection_chapter_guidance,
+    get_permission_chapter_guidance,
+    get_power_chapter_guidance
 )
 
 ebook_config_path = 'config/ebook_config.json'
 ebook_template_path = '../templates/ebook_template.docx'
 
-# Configuração das seções do ebook com seus parâmetros
+# Configuração das seções do ebook com seus parâmetros e funções de guidance
 EBOOK_SECTIONS = [
     {
         "name": "Introdução",
-        "tool": write_introduction,
+        "guidance_fn": get_introduction_guidance,
         "params": {
             "topic": "Autoconhecimento e Inteligência Emocional",
             "audience": "Iniciantes em desenvolvimento pessoal"
@@ -32,7 +32,7 @@ EBOOK_SECTIONS = [
     },
     {
         "name": "Problema",
-        "tool": write_problem_chapter,
+        "guidance_fn": get_problem_chapter_guidance,
         "params": {
             "topic": "Gestão emocional e autoconhecimento",
             "context": "Desafios comuns no desenvolvimento pessoal"
@@ -40,7 +40,7 @@ EBOOK_SECTIONS = [
     },
     {
         "name": "Identificação",
-        "tool": write_identification_chapter,
+        "guidance_fn": get_identification_chapter_guidance,
         "params": {
             "author_stories": {
                 "Superação pessoal": "História de como superei meus limites",
@@ -50,7 +50,7 @@ EBOOK_SECTIONS = [
     },
     {
         "name": "Solução",
-        "tool": write_solution_chapter,
+        "guidance_fn": get_solution_chapter_guidance,
         "params": {
             "method_name": "Método de Inteligência Emocional",
             "steps": [
@@ -63,7 +63,7 @@ EBOOK_SECTIONS = [
     },
     {
         "name": "Proteção",
-        "tool": write_protection_chapter,
+        "guidance_fn": get_protection_chapter_guidance,
         "params": {
             "risks": [
                 "Autossabotagem e dúvida de si",
@@ -74,7 +74,7 @@ EBOOK_SECTIONS = [
     },
     {
         "name": "Permissão",
-        "tool": write_permission_chapter,
+        "guidance_fn": get_permission_chapter_guidance,
         "params": {
             "affirmations": [
                 "Você merece ser feliz",
@@ -85,7 +85,7 @@ EBOOK_SECTIONS = [
     },
     {
         "name": "Potência",
-        "tool": write_power_chapter,
+        "guidance_fn": get_power_chapter_guidance,
         "params": {
             "celebration_elements": {
                 "Progresso": "Celebrar avanços realizados",
@@ -113,35 +113,35 @@ def execute_agent(agent, query: str) -> str:
 
 def generate_ebook_section(section_config: dict) -> dict:
     """
-    Gera uma seção específica do ebook usando a ferramenta correspondente.
+    Gera uma seção específica do ebook usando guidance estruturado.
     
     Args:
-        section_config: Configuração da seção com tool e parâmetros
+        section_config: Configuração da seção com guidance_fn e parâmetros
     
     Returns:
         dict: Resultado da seção com nome e conteúdo
     """
     section_name = section_config["name"]
-    tool = section_config["tool"]
+    guidance_fn = section_config["guidance_fn"]
     params = section_config["params"]
     
     print(f"\n{'='*60}")
     print(f"Gerando: {section_name}")
     print(f"{'='*60}")
     
-    # Chama a ferramenta com os parâmetros específicos
-    tool_result = tool.invoke(params)
+    # Obtém guidance estruturado para a seção
+    guidance = guidance_fn(**params)
     
-    # Executa o agente com o resultado da ferramenta
-    query = f"Com base nesta estrutura:\n\n{tool_result}\n\nGere o conteúdo da seção '{section_name}'"
-    agent_result = execute_agent(writer_agent, query)
+    # Executa o agente com o guidance
+    query = f"{guidance}\n\nGere o conteúdo desta seção agora."
+    content = execute_agent(writer_agent, query)
     
     print(f"✓ {section_name} concluída")
     
     return {
         "section": section_name,
-        "tool_guidance": tool_result,
-        "content": agent_result
+        "guidance": guidance,
+        "content": content
     }
 
 def generate_ebook() -> dict:
