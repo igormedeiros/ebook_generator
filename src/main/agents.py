@@ -4,30 +4,32 @@ Agentes simples com system prompt bem definido.
 """
 
 from langchain.agents import create_agent
-from langchain_groq import ChatGroq
-from main.tools import replace_text_in_docx
+from langchain_google_genai import ChatGoogleGenerativeAI
+from .tools import replace_text_in_docx
 
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# Configuração do Groq LLM
-groq_api_key = os.getenv("GROQ_API_KEY")
+# Configuração do Gemini LLM
+google_api_key = os.getenv("GOOGLE_API_KEY")
 
-if not groq_api_key:
-    raise ValueError("Chave API do Groq não encontrada. Defina a variável 'GROQ_API_KEY' no arquivo .env.")
+if not google_api_key:
+    raise ValueError("Chave API do Google não encontrada. Defina a variável 'GOOGLE_API_KEY' no arquivo .env.")
 
-# Inicialização do modelo Groq
-groq_llm = ChatGroq(
-    api_key=groq_api_key,
-    model_name="llama-3.1-70b-versatile",
-    temperature=0.7
+# Inicialização do modelo Gemini 2.5 Flash (escrita rápida e criativa)
+gemini_llm = ChatGoogleGenerativeAI(
+    model="gemini-2.5-flash",
+    api_key=google_api_key,
+    temperature=0.7,
+    top_p=0.95,
+    top_k=40
 )
 
 # Criação do agente de escrita com system prompt especializado
 writer_agent = create_agent(
-    model=groq_llm,
+    model=gemini_llm,
     tools=[replace_text_in_docx],
     system_prompt="""Você é um Escritor Especialista em Autodesenvolvimento.
 

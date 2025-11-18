@@ -11,7 +11,7 @@ Padrão LangChain 1.0:
 import time
 import yaml
 from pathlib import Path
-from agents import writer_agent
+from .agents import writer_agent
 
 def load_brd():
     """Carrega BRD do arquivo specs/brd.yaml."""
@@ -86,7 +86,13 @@ def generate_ebook():
         messages = response.get("messages", [])
         if messages and isinstance(messages, list) and len(messages) > 0:
             last_msg = messages[-1]
-            content = last_msg.get("content", str(last_msg))
+            # Verifica se é AIMessage (tem .content) ou dict
+            if hasattr(last_msg, 'content'):
+                content = last_msg.content
+            elif isinstance(last_msg, dict):
+                content = last_msg.get("content", str(last_msg))
+            else:
+                content = str(last_msg)
         else:
             content = str(response)
         
