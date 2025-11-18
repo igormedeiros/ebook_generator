@@ -15,34 +15,52 @@ import time
 import yaml
 import json
 import os
+import sys
 from functools import lru_cache
 from pathlib import Path
 
-try:
-    # Quando executado como módulo (python -m src.main)
-    from .agents import writer_agent, research_agent, thematic_research_agent
-    from .ui import (
-        print_header, print_ebook_info, print_chapters_preview,
-        get_confirmation, print_phase_header, print_research_start,
-        print_research_saved, print_content_generation_start,
-        print_content_generated, print_success_message, print_error_message,
-        print_completion_summary, print_separator, print_info
-    )
-except ImportError:
-    # Quando executado diretamente (python src/main.py)
-    from src.agents import writer_agent, research_agent, thematic_research_agent
-    from src.ui import (
-        print_header, print_ebook_info, print_chapters_preview,
-        get_confirmation, print_phase_header, print_research_start,
-        print_research_saved, print_content_generation_start,
-        print_content_generated, print_success_message, print_error_message,
-        print_completion_summary, print_separator, print_info
-    )
+if __name__ == "__main__" and (__package__ is None or __package__ == ""):
+    sys.path.append(str(Path(__file__).resolve().parent.parent))
+    __package__ = "src"
 
-try:
-    from .config import get_config
-except ImportError:
-    from src.config import get_config
+from .agents import (
+    create_chapter_agent,
+    create_critical_reading_coordinator_agent,
+    create_deep_research_agent,
+    create_document_spec_agent,
+    create_editing_agent,
+    create_finalization_agent,
+    create_ideation_agent,
+    create_publication_agent,
+    create_review_coordinator_agent,
+    create_structure_agent,
+    create_title_agent,
+    create_technical_reviewer_agent,
+    create_curious_beginner_agent,
+    execute_agent,
+    execute_review_personas,
+    research_agent,
+    thematic_research_agent,
+    writer_agent,
+)
+from .config import (
+    get_config,
+    get_message,
+    get_model,
+    get_research_model,
+    print_error_panel,
+    print_pipeline_complete,
+    print_pipeline_start,
+    print_stage_complete,
+    print_stage_header,
+)
+from .ui import (
+    print_header, print_ebook_info, print_chapters_preview,
+    get_confirmation, print_phase_header, print_research_start,
+    print_research_saved, print_content_generation_start,
+    print_content_generated, print_success_message, print_error_message,
+    print_completion_summary, print_separator, print_info
+)
 
 def load_brd():
     """Carrega BRD do arquivo specs/brd.yaml."""
