@@ -37,7 +37,24 @@ def generate_chapter_structure(brd):
     project = brd["project"]
     content_cfg = brd["content_structure"]
     
+    # Prepara contexto com tópicos obrigatórios e casos de uso
+    required_topics = project.get("required_topics", [])
+    main_use_case = project.get("main_use_case", {})
+    
+    topics_list = "\n".join(f"  - {topic}" for topic in required_topics) if required_topics else ""
+    use_case_desc = main_use_case.get("description", "") if main_use_case else ""
+    use_case_features = "\n".join(f"  • {feat}" for feat in main_use_case.get("features", [])) if main_use_case else ""
+    
     query = f"""Para o ebook "{project['name']}", {content_cfg['structure_prompt']}
+
+TÓPICOS OBRIGATÓRIOS que devem ser cobertos:
+{topics_list}
+
+CASO DE USO PRINCIPAL:
+{use_case_desc}
+
+Funcionalidades principais do caso de uso:
+{use_case_features}
 
 Tom e estilo esperado:
 - Tone: {writing_style['tone']}
@@ -47,32 +64,39 @@ Tom e estilo esperado:
 Público-alvo: {project['target_audience']}
 
 Retorne APENAS um JSON array com 7 objetos, cada um com as chaves: "name" (string), "purpose" (string), "elements" (array de strings).
+Os elementos devem cobrir os tópicos obrigatórios de forma distribuída entre os capítulos.
 Exemplo formato:
 [{{"name": "Introdução", "purpose": "...", "elements": ["elem1", "elem2"]}}, ...]"""
     
-    print("\n🔄 Gerando estrutura de capítulos...")
+    print("\n🔄 Gerando estrutura de capítulos com tópicos obrigatórios...")
     response = writer_agent.invoke({
         "messages": [{"role": "user", "content": query}]
     })
     
     content = response["messages"][-1].content
     
-    # Tenta extrair JSON
-    try:
-        # Se começar com [, é JSON direto
-        if content.strip().startswith('['):
-            chapters = json.loads(content)
-            return chapters
-        
-        # Se for uma resposta com JSON embutido, tenta extrair
-        if '[' in content and ']' in content:
+    # Se for lista com artifacts (Gemini format), extrai o texto
+    if isinstance(content, list) and len(content) > 0:
+        if isinstance(content[0], dict) and 'text' in content[0]:
+            # Extrai o texto do primeiro artifact
+            content = content[0]['text']
+    
+    # Se for string, tenta extrair JSON
+    if isinstance(content, str):
+        # Se começar com `, procura pelo JSON dentro
+        if '```json' in content:
             start = content.find('[')
             end = content.rfind(']') + 1
-            json_str = content[start:end]
-            chapters = json.loads(json_str)
-            return chapters
-    except (json.JSONDecodeError, ValueError):
-        pass
+            if start >= 0 and end > start:
+                content = content[start:end]
+        
+        # Se começar com [, é JSON direto
+        if content.strip().startswith('['):
+            try:
+                chapters = json.loads(content)
+                return chapters
+            except (json.JSONDecodeError, ValueError) as e:
+                print(f"❌ Erro ao parsear como JSON array: {e}")
     
     print("❌ Não foi possível gerar estrutura de capítulos")
     return []

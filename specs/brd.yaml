@@ -7,6 +7,24 @@ project:
   description: "Guia prático sobre implementação de agentes LangChain 1.0 em ambientes clínicos com compliance e ética"
   target_audience: "Engenheiros, médicos residentes e profissionais de saúde interessados em IA clínica"
   language: "Portuguese (Brazilian)"
+  required_topics:
+    - "LangChain 1.0"
+    - "RAG"
+    - "Agentes RAG"
+    - "Registros Eletrônicos de Saúde (EHRs)"
+    - "Compliance em Saúde"
+    - "Chainlit"
+    - "Ética em IA Clínica"
+    - "Validação e Auditoria"
+    - "Transparência Algorítmica"
+  main_use_case:
+    description: "Chat conversacional com UI Chainlit usando Langchain 1.0 e RAG com chromadb para responder sobre dados de evolução clínica de pacientes internados numa UTI"
+    features:
+      - "Implementação de agentes LangChain 1.0"
+      - "Arquitetura RAG com EHRs"
+      - "Compliance e auditoria"
+      - "Balanceamento entre automação e revisão humana"
+      - "UI Chainlit"
 
 objectives:
   primary: "Ensinar implementação segura e ética de agentes LangChain em contextos clínicos"
