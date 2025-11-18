@@ -37,7 +37,9 @@ def generate_chapter_structure(brd):
     project = brd["project"]
     content_cfg = brd["content_structure"]
     
-    # Prepara contexto com tópicos obrigatórios e casos de uso
+    # Parâmetros dinâmicos do project
+    number_chapters = project.get("number_chapters", 7)
+    target_word_count = project.get("target_word_count", 10000)
     required_topics = project.get("required_topics", [])
     main_use_case = project.get("main_use_case", {})
     
@@ -45,7 +47,12 @@ def generate_chapter_structure(brd):
     use_case_desc = main_use_case.get("description", "") if main_use_case else ""
     use_case_features = "\n".join(f"  • {feat}" for feat in main_use_case.get("features", [])) if main_use_case else ""
     
-    query = f"""Para o ebook "{project['name']}", {content_cfg['structure_prompt']}
+    query = f"""Para o ebook "{project['name']}", crie uma estrutura de {number_chapters} capítulos, cada um com nome, propósito e elementos obrigatórios a incluir.
+
+REQUISITOS:
+- Total de aproximadamente {target_word_count} palavras distribuídas nos {number_chapters} capítulos
+- Cada capítulo deve ter aproximadamente {target_word_count // number_chapters} palavras
+- {content_cfg['structure_prompt']}
 
 TÓPICOS OBRIGATÓRIOS que devem ser cobertos:
 {topics_list}
@@ -63,12 +70,12 @@ Tom e estilo esperado:
 
 Público-alvo: {project['target_audience']}
 
-Retorne APENAS um JSON array com 7 objetos, cada um com as chaves: "name" (string), "purpose" (string), "elements" (array de strings).
+Retorne APENAS um JSON array com {number_chapters} objetos, cada um com as chaves: "name" (string), "purpose" (string), "elements" (array de strings).
 Os elementos devem cobrir os tópicos obrigatórios de forma distribuída entre os capítulos.
 Exemplo formato:
 [{{"name": "Introdução", "purpose": "...", "elements": ["elem1", "elem2"]}}, ...]"""
     
-    print("\n🔄 Gerando estrutura de capítulos com tópicos obrigatórios...")
+    print(f"\n🔄 Gerando estrutura de {number_chapters} capítulos com tópicos obrigatórios ({target_word_count} palavras)...")
     response = writer_agent.invoke({
         "messages": [{"role": "user", "content": query}]
     })
@@ -115,9 +122,18 @@ def build_chapter_queries(chapters, brd):
     writing_style = brd["writing_style"]
     project = brd["project"]
     
+    # Calcula palavras por capítulo
+    target_word_count = project.get("target_word_count", 10000)
+    number_chapters = len(chapters)
+    words_per_chapter = target_word_count // number_chapters
+    
     queries = []
-    for chapter in chapters:
-        query = f"""Gere o capítulo "{chapter['name']}" do ebook: {project['name']}
+    for idx, chapter in enumerate(chapters, 1):
+        query = f"""Gere o capítulo {idx}/{number_chapters} "{chapter['name']}" do ebook: {project['name']}
+
+REQUISITOS:
+- Aproximadamente {words_per_chapter} palavras
+- Este é o capítulo {idx} de {number_chapters}
 
 Propósito do capítulo:
 {chapter['purpose']}
@@ -136,7 +152,7 @@ Características do estilo de escrita:
 Público-alvo: {project['target_audience']}
 Idioma: {project['language']}
 
-Escreva o conteúdo em Markdown puro, seguindo as orientações. Foco em prático, educativo e ético."""
+Escreva o conteúdo em Markdown puro, seguindo as orientações. Foco em prático, educativo e ético. O conteúdo deve ter aproximadamente {words_per_chapter} palavras."""
         
         queries.append((chapter["name"], query))
     
