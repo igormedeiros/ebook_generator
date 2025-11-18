@@ -27,12 +27,33 @@ deep_research:
     description: "Salva cada pesquisa temática em kb/ imediatamente após geração"
     directory: "kb"
     naming_pattern: "thematic_{sanitized_topic}.md"
+    technical_depth: "deeply_technical"
+    technical_depth_description: |
+      NÍVEL DE PROFUNDIDADE: PROFUNDAMENTE TÉCNICO
+      
+      Este nível é apropriado para:
+      - Públicos com background técnico (dados scientists, engenheiros, arquitetos)
+      - Documentação que presume familiaridade com conceitos base
+      - Detalhamento de implementação, não apenas conceitos
+      - Discussão de trade-offs, performance e scalability
+      
+      Características:
+      ✓ Assume conhecimento prévio do domínio (não é introdutório)
+      ✓ Apresenta diagramas de arquitetura complexos
+      ✓ Exemplos de código são funcionais e reutilizáveis
+      ✓ Inclui performance metrics, benchmarks, comparações
+      ✓ Discussão de limitações, edge cases, anti-padrões
+      ✓ Referências a papers, RFC, documentação oficial
+      ✓ Explicação de trade-offs e decisões de design
+      ✓ Integração com ferramentas e frameworks reais
+    
     metadata_format: |
       # Pesquisa Temática: {topic}
       
       Ebook: {ebook_name}
       Data: {timestamp}
       Tipo: Pesquisa Temática Abrangente
+      Profundidade: Profundamente Técnico
       
       ---
     
@@ -65,11 +86,37 @@ deep_research:
       Exemplos de tópicos que SÃO CONCEITUAIS:
         - "Ética em IA" → discussão, não requer código
         - "Compliance em Saúde" → regulamentação, não requer código
+    
+    technical_guidelines: |
+      PROFUNDIDADE TÉCNICA - DIRETRIZES PARA REDAÇÃO:
+      
+      ✓ NÃO seja superficial: vá além de "o que é"
+      ✓ SIM para profundidade: explique "por quê", "como" e "trade-offs"
+      ✓ INCLUA diagramas de arquitetura (ASCII art)
+      ✓ DISCUTA performance: limitações, benchmarks, escalabilidade
+      ✓ ABORDE edge cases: situações especiais, erros, exceções
+      ✓ COMPARE com alternativas: qual é melhor em qual cenário?
+      ✓ CITE fontes: papers, documentação oficial, RFCs
+      ✓ USE exemplos funcionais: código que pode ser copiado e executado
+      ✓ EXPLIQUE decisões de design: por que foi feito assim?
+      ✓ CONTEXTUALIZE para saúde: como isso se aplica em ambientes clínicos?
+      
+      Estrutura esperada por seção (exemplo):
+        - Conceito
+        - Arquitetura / Como funciona internamente
+        - Implementação (com código)
+        - Performance / Limitações
+        - Trade-offs vs alternativas
+        - Casos de uso reais
+        - Erros frequentes
+        - Integração com LangChain
+        - Aplicação clínica
   
   chapter_research:
     save_immediately: true
     description: "Salva cada pesquisa por capítulo em kb/ imediatamente após geração"
     directory: "kb"
+    technical_depth: "deeply_technical"
     naming_pattern: "research_{sanitized_chapter}.md"
     metadata_format: |
       # Pesquisa: {chapter}
@@ -77,6 +124,7 @@ deep_research:
       Ebook: {ebook_name}
       Data: {timestamp}
       Tipo: Pesquisa por Capítulo
+      Profundidade: Profundamente Técnico
       
       ---
   
