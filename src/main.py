@@ -232,6 +232,35 @@ Sua pesquisa será a base para a escrita do capítulo, então seja completo, fun
     
     return content if isinstance(content, str) else str(content)
 
+def save_thematic_research_immediately(topic, content, brd):
+    """
+    Salva pesquisa temática em kb/ imediatamente após geração.
+    
+    Args:
+        topic: Nome do tópico
+        content: Conteúdo da pesquisa
+        brd: Configuração BRD
+    
+    Returns:
+        str: Caminho do arquivo salvo
+    """
+    kb_dir = Path(__file__).parent.parent / "kb"
+    kb_dir.mkdir(exist_ok=True)
+    
+    # Normaliza nome do arquivo
+    safe_name = topic.lower().replace(" ", "_").replace("(", "").replace(")", "")
+    file_path = kb_dir / f"thematic_{safe_name}.md"
+    
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write(f"# Pesquisa Temática: {topic}\n\n")
+        f.write(f"Ebook: {brd['project']['name']}\n")
+        f.write(f"Data: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+        f.write(f"Tipo: Pesquisa Temática Abrangente\n\n")
+        f.write("---\n\n")
+        f.write(content)
+    
+    return str(file_path)
+
 def generate_thematic_research(brd):
     """
     Gera pesquisas temáticas abrangentes baseadas nos required_topics do BRD.
@@ -240,11 +269,14 @@ def generate_thematic_research(brd):
     alimentar múltiplos capítulos. Diferente da pesquisa por capítulo, a pesquisa
     temática é mais abrangente e profunda.
     
+    IMPORTANTE: Cada pesquisa é SALVA IMEDIATAMENTE após geração em kb/ de acordo
+    com deep_research.thematic_research.save_immediately no config.yaml
+    
     Args:
         brd: Configuração BRD com required_topics
     
     Returns:
-        dict: {topic_name: research_content, ...}
+        dict: {topic_name: file_path, ...} (paths dos arquivos salvos)
     """
     project = brd["project"]
     required_topics = project.get("required_topics", [])
@@ -253,8 +285,9 @@ def generate_thematic_research(brd):
         print("⚠️ Nenhum tópico obrigatório encontrado no BRD")
         return {}
     
-    thematic_research_data = {}
+    thematic_research_paths = {}
     print(f"\n📚 Gerando pesquisas temáticas abrangentes para {len(required_topics)} tópicos...\n")
+    print("   (Salvamento imediato ativado - cada tema é persistido em kb/ após geração)\n")
     
     for idx, topic in enumerate(required_topics, 1):
         print(f"  [{idx}/{len(required_topics)}] 🔍 Pesquisa temática: {topic}...")
@@ -372,43 +405,13 @@ por múltiplos capítulos do ebook. Não é resumido - é abrangente."""
                 content = content[0]['text']
         
         research_content = content if isinstance(content, str) else str(content)
-        thematic_research_data[topic] = research_content
-    
-    return thematic_research_data
-
-def save_thematic_research_to_kb(thematic_research_data, brd):
-    """
-    Salva pesquisas temáticas em kb/ como arquivos Markdown.
-    
-    Args:
-        thematic_research_data: Dict {topic_name: research_content}
-        brd: Configuração BRD
-    
-    Returns:
-        dict: {topic_name: file_path}
-    """
-    kb_dir = Path(__file__).parent.parent / "kb"
-    kb_dir.mkdir(exist_ok=True)
-    
-    thematic_paths = {}
-    
-    for topic, content in thematic_research_data.items():
-        # Normaliza nome do arquivo
-        safe_name = topic.lower().replace(" ", "_").replace("(", "").replace(")", "")
-        file_path = kb_dir / f"thematic_{safe_name}.md"
         
-        with open(file_path, "w", encoding="utf-8") as f:
-            f.write(f"# Pesquisa Temática: {topic}\n\n")
-            f.write(f"Ebook: {brd['project']['name']}\n")
-            f.write(f"Data: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
-            f.write(f"Tipo: Pesquisa Temática Abrangente\n\n")
-            f.write("---\n\n")
-            f.write(content)
-        
-        thematic_paths[topic] = str(file_path)
-        print(f"  ✓ Salvo: {file_path.name}")
+        # SALVAMENTO IMEDIATO após geração de cada tema
+        file_path = save_thematic_research_immediately(topic, research_content, brd)
+        thematic_research_paths[topic] = file_path
+        print(f"  📝 Salvo imediatamente: {Path(file_path).name}\n")
     
-    return thematic_paths
+    return thematic_research_paths
 
 def save_research_to_kb(chapter_name, research_content, brd):
     """
@@ -542,11 +545,10 @@ def generate_ebook():
     # FASE 1: Pesquisa Temática Abrangente (baseada em required_topics)
     print_phase_header(1, "PESQUISA TEMÁTICA", "Pesquisas abrangentes sobre tópicos obrigatórios")
     
-    thematic_research_data = generate_thematic_research(brd)
-    if thematic_research_data:
+    thematic_research_paths = generate_thematic_research(brd)
+    if thematic_research_paths:
         print_separator()
-        thematic_paths = save_thematic_research_to_kb(thematic_research_data, brd)
-        print(f"  ✅ {len(thematic_paths)} pesquisas temáticas salvas em kb/")
+        print(f"  ✅ {len(thematic_research_paths)} pesquisas temáticas geradas e salvas imediatamente em kb/")
         print_separator()
     
     # FASE 2: Pesquisa por Capítulo (usando as temáticas como base)

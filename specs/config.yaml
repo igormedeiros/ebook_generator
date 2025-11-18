@@ -12,6 +12,7 @@ deep_research:
        - Cada documento: 3000+ palavras, 7+ fontes, 10 seções temáticas
        - Reutilizável para múltiplos capítulos
        - Salvo como: thematic_*.md em kb/
+       - SALVAMENTO: Imediato após geração (save_immediately: true)
        
     2. PESQUISA POR CAPÍTULO (Fase 2)
        - Baseada na estrutura de capítulos gerada
@@ -19,6 +20,35 @@ deep_research:
        - Integra contexto das pesquisas temáticas
        - 2000+ palavras, 5+ fontes
        - Salvo como: research_*.md em kb/
+       - SALVAMENTO: Imediato após geração (save_immediately: true)
+  
+  thematic_research:
+    save_immediately: true
+    description: "Salva cada pesquisa temática em kb/ imediatamente após geração"
+    directory: "kb"
+    naming_pattern: "thematic_{sanitized_topic}.md"
+    metadata_format: |
+      # Pesquisa Temática: {topic}
+      
+      Ebook: {ebook_name}
+      Data: {timestamp}
+      Tipo: Pesquisa Temática Abrangente
+      
+      ---
+  
+  chapter_research:
+    save_immediately: true
+    description: "Salva cada pesquisa por capítulo em kb/ imediatamente após geração"
+    directory: "kb"
+    naming_pattern: "research_{sanitized_chapter}.md"
+    metadata_format: |
+      # Pesquisa: {chapter}
+      
+      Ebook: {ebook_name}
+      Data: {timestamp}
+      Tipo: Pesquisa por Capítulo
+      
+      ---
   
   examples:
     ebook_project:
