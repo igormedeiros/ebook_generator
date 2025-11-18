@@ -75,6 +75,31 @@ def generate_ebook():
     }
     
     print("\n" + "="*70)
+    print(f"EBOOK: {ebook['title']}")
+    print("="*70)
+    print(f"\nDescrição: {ebook['description']}\n")
+    print(f"Público-alvo: {brd['project']['target_audience']}\n")
+    
+    # Mostrar capítulos
+    print("CAPÍTULOS A GERAR:")
+    print("-"*70)
+    for i, (chapter_name, _) in enumerate(chapters_queries, 1):
+        print(f"  [{i}] {chapter_name}")
+    
+    print("\n" + "="*70)
+    
+    # Pedir aprovação
+    while True:
+        response = input("Deseja prosseguir com a geração? (s/n): ").strip().lower()
+        if response in ['s', 'sim']:
+            break
+        elif response in ['n', 'não', 'nao']:
+            print("Geração cancelada.")
+            return None
+        else:
+            print("Digite 's' ou 'n'")
+    
+    print("\n" + "="*70)
     print(f"Gerando ebook: {ebook['title']}")
     print(f"Capítulos: {len(chapters_queries)}")
     print("="*70)
@@ -137,6 +162,11 @@ def save_ebook(ebook, output_file="result/ebook.md"):
 if __name__ == "__main__":
     # Gera ebook
     ebook = generate_ebook()
+    
+    # Verifica se foi cancelado
+    if ebook is None:
+        print("Nenhum ebook foi gerado.")
+        exit(0)
     
     # Salva resultado
     output_path = save_ebook(ebook)
