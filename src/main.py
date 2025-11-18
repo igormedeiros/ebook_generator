@@ -38,7 +38,9 @@ def build_chapter_queries(brd):
     
     queries = []
     for chapter in chapters:
-        query = f"""Gere o capítulo "{chapter['name']}" do ebook sobre autoconhecimento e inteligência emocional.
+        query = f"""Gere o capítulo "{chapter['name']}" do ebook: {project['title']}
+
+Subtítulo: {project.get('subtitle', '')}
 
 Propósito do capítulo:
 {chapter['purpose']}
@@ -57,7 +59,7 @@ Características do estilo de escrita:
 Público-alvo: {project['target_audience']}
 Idioma: {project['language']}
 
-Escreva o conteúdo seguindo as orientações. O texto deve ser inspirador, prático e transformador."""
+Escreva o conteúdo seguindo as orientações, mantendo foco clínico, prático e educativo."""
         
         queries.append((chapter["name"], query))
     
@@ -69,13 +71,16 @@ def generate_ebook():
     chapters_queries = build_chapter_queries(brd)
     
     ebook = {
-        "title": brd["project"]["name"],
+        "title": brd["project"]["title"],
+        "subtitle": brd["project"].get("subtitle", ""),
         "description": brd["project"]["description"],
         "chapters": []
     }
     
     print("\n" + "="*70)
     print(f"EBOOK: {ebook['title']}")
+    if ebook['subtitle']:
+        print(f"Subtítulo: {ebook['subtitle']}")
     print("="*70)
     print(f"\nDescrição: {ebook['description']}\n")
     print(f"Público-alvo: {brd['project']['target_audience']}\n")
@@ -162,6 +167,8 @@ def save_ebook(ebook, output_file="result/ebook.md"):
     
     with open(output_file, "w", encoding="utf-8") as f:
         f.write(f"# {ebook['title']}\n\n")
+        if ebook.get('subtitle'):
+            f.write(f"**{ebook['subtitle']}**\n\n")
         f.write(f"{ebook['description']}\n\n")
         f.write("---\n\n")
         
