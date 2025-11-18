@@ -627,7 +627,7 @@ def generate_ebook():
     print_separator()
     
     # Pedir aprovação
-    if not get_confirmation():
+    if not get_confirmation("Deseja prosseguir com a geração do Ebook?"):
         return None
     
     print_separator()
@@ -637,7 +637,9 @@ def generate_ebook():
     
     # Verificar se pesquisas temáticas já existem
     existing_thematic = check_existing_thematic_research(brd)
-    perform_thematic = ask_perform_thematic_research(len(existing_thematic), len(brd["project"].get("required_topics", [])))
+    
+    # Pergunta se deve realizar a pesquisa temática
+    perform_thematic = get_confirmation("Deseja realizar a PESQUISA TEMÁTICA?", default=True)
     
     thematic_research_paths = {}
     if perform_thematic:
