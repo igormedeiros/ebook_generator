@@ -18,6 +18,7 @@ import os
 import sys
 from functools import lru_cache
 from pathlib import Path
+from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeRemainingColumn
 
 if __name__ == "__main__" and (__package__ is None or __package__ == ""):
     sys.path.append(str(Path(__file__).resolve().parent.parent))
@@ -556,14 +557,31 @@ def build_chapter_queries_with_research(chapters, research_data, brd):
     for idx, chapter in enumerate(chapters, 1):
         research_context = research_data.get(chapter['name'], "")
         
+        # Detecta se a pesquisa foi pulada
+        skipped_research = research_context.startswith("# Pesquisa ignorada")
+        
+        if skipped_research:
+            context_instruction = f"""CONTEXTO DE RESEARCH:
+(A etapa de pesquisa profunda foi pulada pelo usuário)
+
+⚠️ INSTRUÇÃO CRÍTICA DE RAG:
+Como não há research prévio, você DEVE usar suas ferramentas (retrieve_rag_context, retrieve_author_stories, retrieve_author_vision, search_knowledge_base) para buscar informações no banco de dados.
+1. Busque por termos-chave do título: "{chapter['name']}"
+2. Busque por histórias do autor relacionadas ao tema.
+3. Busque por conteúdo técnico em 'rag_external'.
+
+NÃO invente fatos técnicos. Use as ferramentas para embasar o conteúdo."""
+        else:
+            context_instruction = f"""CONTEXTO DE RESEARCH (use como base):
+{research_context[:3000]}..."""
+
         query = f"""Gere o capítulo {idx}/{number_chapters} "{chapter['name']}" do ebook: {project['name']}
 
 REQUISITOS:
 - Aproximadamente {words_per_chapter} palavras
 - Este é o capítulo {idx} de {number_chapters}
 
-CONTEXTO DE RESEARCH (use como base):
-{research_context[:2000]}...
+{context_instruction}
 
 Propósito do capítulo:
 {chapter['purpose']}
@@ -582,7 +600,7 @@ Características do estilo de escrita:
 Público-alvo: {project['target_audience']}
 Idioma: {project['language']}
 
-Escreva o conteúdo em Markdown puro, baseado no research fornecido. Foco em prático, educativo e ético. O conteúdo deve ter aproximadamente {words_per_chapter} palavras."""
+Escreva o conteúdo em Markdown puro. Foco em prático, educativo e ético. O conteúdo deve ter aproximadamente {words_per_chapter} palavras."""
         
         queries.append((chapter["name"], query))
     
@@ -672,34 +690,45 @@ def generate_ebook():
     perform_deep_research = get_confirmation("Deseja realizar DEEP RESEARCH para TODOS os capítulos?", default=True)
     
     research_data = {}
-    for idx, chapter in enumerate(chapters, 1):
-        print_research_start(chapter['name'], idx, len(chapters))
+    
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+        TimeRemainingColumn(),
+    ) as progress:
+        task = progress.add_task("[cyan]Processando pesquisa...", total=len(chapters))
         
-        if perform_deep_research:
-            # Gera research real
-            research_content, research_word_count = generate_chapter_research(
-                chapter['name'],
-                chapter['purpose'],
-                chapter['elements'],
-                brd,
-                skip_prompt=True # Novo parâmetro para pular o prompt individual
+        for idx, chapter in enumerate(chapters, 1):
+            progress.update(task, description=f"[cyan]Pesquisando ({idx}/{len(chapters)}): {chapter['name']}")
+            
+            if perform_deep_research:
+                # Gera research real
+                research_content, research_word_count = generate_chapter_research(
+                    chapter['name'],
+                    chapter['purpose'],
+                    chapter['elements'],
+                    brd,
+                    skip_prompt=True # Novo parâmetro para pular o prompt individual
+                )
+            else:
+                # Pula research
+                # print(f"  ⏩ Pulando pesquisa para '{chapter['name']}'. Usando apenas conhecimento interno e contexto existente.")
+                research_content = f"# Pesquisa ignorada para {chapter['name']}\n\nO usuário optou por pular a etapa de pesquisa profunda para este capítulo."
+                research_word_count = 0
+
+            research_data[chapter['name']] = research_content
+
+            # Salva em kb/
+            kb_path = save_research_to_kb(
+                chapter['name'], research_content, brd, word_count=research_word_count
             )
-        else:
-            # Pula research
-            print(f"  ⏩ Pulando pesquisa para '{chapter['name']}'. Usando apenas conhecimento interno e contexto existente.")
-            research_content = f"# Pesquisa ignorada para {chapter['name']}\n\nO usuário optou por pular a etapa de pesquisa profunda para este capítulo."
-            research_word_count = 0
-
-        research_data[chapter['name']] = research_content
-
-        # Salva em kb/
-        kb_path = save_research_to_kb(
-            chapter['name'], research_content, brd, word_count=research_word_count
-        )
-        print_research_saved(kb_path, len(research_content))
-        
-        if idx < len(chapters):
-            time.sleep(0.5)  # Pequeno delay entre requests
+            # print_research_saved(kb_path, len(research_content))
+            
+            progress.advance(task)
+            if idx < len(chapters):
+                time.sleep(0.5)  # Pequeno delay entre requests
     
     print_separator()
     print_success_message("Todas as pesquisas foram salvas em kb/")
@@ -713,50 +742,60 @@ def generate_ebook():
     
     words_per_chapter = brd['project'].get('target_word_count', 10000) // len(chapters)
     
-    for idx, (chapter_name, query) in enumerate(chapters_queries, 1):
-        print_content_generation_start(chapter_name, idx, len(chapters_queries), words_per_chapter)
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+        TimeRemainingColumn(),
+    ) as progress:
+        task = progress.add_task("[green]Gerando conteúdo...", total=len(chapters_queries))
         
-        # Executa agent com query
-        response = writer_agent.invoke({
-            "messages": [{"role": "user", "content": query}]
-        })
-        
-        # Extrai conteúdo
-        messages = response.get("messages", [])
-        if messages and isinstance(messages, list) and len(messages) > 0:
-            last_msg = messages[-1]
-            # Verifica se é AIMessage (tem .content) ou dict
-            if hasattr(last_msg, 'content'):
-                content = last_msg.content
-            elif isinstance(last_msg, dict):
-                content = last_msg.get("content", str(last_msg))
+        for idx, (chapter_name, query) in enumerate(chapters_queries, 1):
+            progress.update(task, description=f"[green]Gerando ({idx}/{len(chapters_queries)}): {chapter_name}")
+            
+            # Executa agent com query
+            response = writer_agent.invoke({
+                "messages": [{"role": "user", "content": query}]
+            })
+            
+            # Extrai conteúdo
+            messages = response.get("messages", [])
+            if messages and isinstance(messages, list) and len(messages) > 0:
+                last_msg = messages[-1]
+                # Verifica se é AIMessage (tem .content) ou dict
+                if hasattr(last_msg, 'content'):
+                    content = last_msg.content
+                elif isinstance(last_msg, dict):
+                    content = last_msg.get("content", str(last_msg))
+                else:
+                    content = str(last_msg)
             else:
-                content = str(last_msg)
-        else:
-            content = str(response)
-        
-        # Se o conteúdo for uma lista JSON (começa com '['), extrai o texto
-        if isinstance(content, str) and content.strip().startswith('['):
-            try:
-                content_list = json.loads(content)
-                if isinstance(content_list, list) and len(content_list) > 0:
-                    # Extrai o texto do primeiro item
-                    if isinstance(content_list[0], dict):
-                        content = content_list[0].get('text', content)
-                    elif isinstance(content_list[0], str):
-                        content = content_list[0]
-            except:
-                pass  # Mantém o conteúdo original se falhar
-        
-        ebook["chapters"].append({
-            "name": chapter_name,
-            "content": content
-        })
-        
-        print_content_generated(len(content))
-        
-        if idx < len(chapters_queries):
-            time.sleep(0.5)
+                content = str(response)
+            
+            # Se o conteúdo for uma lista JSON (começa com '['), extrai o texto
+            if isinstance(content, str) and content.strip().startswith('['):
+                try:
+                    content_list = json.loads(content)
+                    if isinstance(content_list, list) and len(content_list) > 0:
+                        # Extrai o texto do primeiro item
+                        if isinstance(content_list[0], dict):
+                            content = content_list[0].get('text', content)
+                        elif isinstance(content_list[0], str):
+                            content = content_list[0]
+                except:
+                    pass  # Mantém o conteúdo original se falhar
+            
+            ebook["chapters"].append({
+                "name": chapter_name,
+                "content": content
+            })
+            
+            # print_content_generated(len(content))
+            progress.advance(task)
+            
+            if idx < len(chapters_queries):
+                time.sleep(0.5)
     
     print_separator()
     return ebook

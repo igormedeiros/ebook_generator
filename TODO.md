@@ -11,3 +11,6 @@
 [x] Renomear files para padrão final: agents_write.py, tools.py
 [x] Implementar 33 tools baseado em specs/tools.yaml
 [x] Atualizar copilot-instructions.md com padrões finais
+[x] Implement real Supabase RAG tools in src/tools.py
+[x] Add progress bars and ETA to src/main.py
+[x] Fix generation logic when skipping deep research

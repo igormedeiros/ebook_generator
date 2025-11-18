@@ -47,7 +47,7 @@ supabase_client = _init_supabase_client()
 
 
 def search_knowledge_base(query: str, max_results: int = 3) -> str:
-    """Search Supabase pgvector (if configured) for contextual documents."""
+    """Search Supabase (rag_external) for contextual documents using text search."""
 
     if not query:
         return "Empty query provided"
@@ -56,16 +56,16 @@ def search_knowledge_base(query: str, max_results: int = 3) -> str:
         return f"Supabase not configured. Returning placeholder context for '{query}'."
 
     try:
-        if GoogleGenerativeAIEmbeddings is None:
-            raise RuntimeError("GoogleGenerativeAIEmbeddings unavailable")
-        embeddings = GoogleGenerativeAIEmbeddings(model="models/text-embedding-004")
-        vector = embeddings.embed_query(query)
-        response = supabase_client.rpc(
-            "match_documents",
-            {"query_embedding": vector, "match_count": max_results},
-        ).execute()
-        data = getattr(response, "data", []) or []
-        return f"Found {len(data)} relevant documents: {data}"
+        # Search external/kb content using text search (ilike)
+        # This matches the logic in src/poc.py and works with the seeded data
+        content = supabase_client.table("rag_external").select("topic, content").or_(f"content.ilike.%{query}%,topic.ilike.%{query}%").limit(max_results).execute()
+        
+        results = []
+        for item in content.data:
+            snippet = item['content'][:500] + "..." # Truncate for context window
+            results.append(f"[Topic: {item['topic']}]\n{snippet}")
+            
+        return "\n".join(results) if results else f"No relevant documents found for '{query}'."
     except Exception as exc:  # noqa: BLE001
         return f"Supabase search error: {exc}"
 
@@ -193,17 +193,51 @@ def store_in_rag_external(vectorized_data: Dict[str, Any], topic: str) -> str:
 
 def retrieve_author_stories(author_name: str, max_results: int = 3) -> str:
     """Retrieve anecdotal stories about the author from archives."""
-    return f"Histórias de '{author_name}' (top {max_results})"
+    if not supabase_client:
+        return "Database connection unavailable."
+    
+    try:
+        # Search stories (content OR author_name)
+        query = author_name
+        stories = supabase_client.table("rag_author_stories").select("*").or_(f"story.ilike.%{query}%,author_name.ilike.%{query}%").limit(max_results).execute()
+        results = []
+        for item in stories.data:
+            results.append(f"[Story] {item['story']}")
+        return "\n".join(results) if results else "No relevant author stories found."
+    except Exception as e:
+        return f"Error searching author stories: {e}"
 
 
 def retrieve_author_positioning(author_name: str, max_results: int = 3) -> str:
     """Retrieve positioning statements about the author."""
-    return f"Posicionamento de '{author_name}' (top {max_results})"
+    if not supabase_client:
+        return "Database connection unavailable."
+    
+    try:
+        query = author_name
+        pos = supabase_client.table("rag_author_positioning").select("*").or_(f"positioning_statement.ilike.%{query}%,author_name.ilike.%{query}%").limit(max_results).execute()
+        results = []
+        for item in pos.data:
+            results.append(f"[Positioning] {item['positioning_statement']}")
+        return "\n".join(results) if results else "No relevant author positioning found."
+    except Exception as e:
+        return f"Error searching author positioning: {e}"
 
 
 def retrieve_author_vision(author_name: str, max_results: int = 3) -> str:
     """Retrieve the long-term vision of the author."""
-    return f"Visão de '{author_name}' (top {max_results})"
+    if not supabase_client:
+        return "Database connection unavailable."
+    
+    try:
+        query = author_name
+        vis = supabase_client.table("rag_author_vision").select("*").or_(f"vision_or_opinion.ilike.%{query}%,author_name.ilike.%{query}%").limit(max_results).execute()
+        results = []
+        for item in vis.data:
+            results.append(f"[Vision] {item['vision_or_opinion']}")
+        return "\n".join(results) if results else "No relevant author vision found."
+    except Exception as e:
+        return f"Error searching author vision: {e}"
 
 
 def format_markdown(title: str, content: str) -> str:
