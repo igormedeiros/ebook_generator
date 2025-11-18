@@ -16,6 +16,7 @@ import yaml
 import json
 import os
 import sys
+import ast
 from functools import lru_cache
 from pathlib import Path
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeRemainingColumn
@@ -777,14 +778,19 @@ def generate_ebook():
             if isinstance(content, str) and content.strip().startswith('['):
                 try:
                     content_list = json.loads(content)
-                    if isinstance(content_list, list) and len(content_list) > 0:
-                        # Extrai o texto do primeiro item
-                        if isinstance(content_list[0], dict):
-                            content = content_list[0].get('text', content)
-                        elif isinstance(content_list[0], str):
-                            content = content_list[0]
-                except:
-                    pass  # Mantém o conteúdo original se falhar
+                except json.JSONDecodeError:
+                    try:
+                        # Tenta parsear como literal Python (ex: lista com single quotes)
+                        content_list = ast.literal_eval(content)
+                    except:
+                        content_list = None
+
+                if isinstance(content_list, list) and len(content_list) > 0:
+                    # Extrai o texto do primeiro item
+                    if isinstance(content_list[0], dict):
+                        content = content_list[0].get('text', content)
+                    elif isinstance(content_list[0], str):
+                        content = content_list[0]
             
             ebook["chapters"].append({
                 "name": chapter_name,
