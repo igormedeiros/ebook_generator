@@ -4,8 +4,19 @@ Script de teste para validar pipeline de research e salvamento em kb/
 Executa apenas os primeiros 2 capítulos para teste rápido.
 """
 
+import os
 import sys
+
+import pytest
+
 sys.path.insert(0, '/home/igormedeiros/projects/ebook-generator')
+
+if (
+    os.getenv("PYTEST_CURRENT_TEST")
+    or not os.getenv("GOOGLE_API_KEY")
+    or os.getenv("GOOGLE_API_KEY") == "test-api-key"
+):
+    pytest.skip("Research integration test requires live credentials", allow_module_level=True)
 
 from src.main import load_brd, generate_chapter_structure, generate_chapter_research, save_research_to_kb
 

@@ -19,7 +19,37 @@ from pathlib import Path
 
 try:
     # Quando executado como módulo (python -m src.main)
-    from .agents import writer_agent, research_agent, thematic_research_agent
+    from .agents import (
+        writer_agent,
+        research_agent,
+        thematic_research_agent,
+        create_document_spec_agent,
+        create_ideation_agent,
+        create_title_agent,
+        create_structure_agent,
+        create_deep_research_agent,
+        create_chapter_agent,
+        create_review_coordinator_agent,
+        create_critical_reading_coordinator_agent,
+        create_editing_agent,
+        create_finalization_agent,
+        create_publication_agent,
+        create_technical_reviewer_agent,
+        create_curious_beginner_agent,
+        execute_agent,
+        execute_review_personas,
+    )
+    from .config import (
+        get_model,
+        get_research_model,
+        get_config,
+        get_message,
+        print_pipeline_start,
+        print_stage_header,
+        print_stage_complete,
+        print_pipeline_complete,
+        print_error_panel,
+    )
     from .ui import (
         print_header, print_ebook_info, print_chapters_preview,
         get_confirmation, print_phase_header, print_research_start,
@@ -29,7 +59,37 @@ try:
     )
 except ImportError:
     # Quando executado diretamente (python src/main.py)
-    from src.agents import writer_agent, research_agent, thematic_research_agent
+    from src.agents import (
+        writer_agent,
+        research_agent,
+        thematic_research_agent,
+        create_document_spec_agent,
+        create_ideation_agent,
+        create_title_agent,
+        create_structure_agent,
+        create_deep_research_agent,
+        create_chapter_agent,
+        create_review_coordinator_agent,
+        create_critical_reading_coordinator_agent,
+        create_editing_agent,
+        create_finalization_agent,
+        create_publication_agent,
+        create_technical_reviewer_agent,
+        create_curious_beginner_agent,
+        execute_agent,
+        execute_review_personas,
+    )
+    from src.config import (
+        get_model,
+        get_research_model,
+        get_config,
+        get_message,
+        print_pipeline_start,
+        print_stage_header,
+        print_stage_complete,
+        print_pipeline_complete,
+        print_error_panel,
+    )
     from src.ui import (
         print_header, print_ebook_info, print_chapters_preview,
         get_confirmation, print_phase_header, print_research_start,
@@ -737,7 +797,7 @@ def generate_ebook():
 def save_ebook(ebook, output_file="result/ebook.md"):
     """Salva ebook em formato Markdown."""
     import os
-    
+
     os.makedirs(os.path.dirname(output_file) or ".", exist_ok=True)
     
     with open(output_file, "w", encoding="utf-8") as f:
@@ -751,6 +811,220 @@ def save_ebook(ebook, output_file="result/ebook.md"):
             f.write("---\n\n")
     
     return output_file
+
+
+def _prepare_prompt(template: str, **context) -> str:
+    """Safely render prompt templates without raising on missing keys."""
+
+    if not template:
+        return ""
+    try:
+        return template.format(**context)
+    except KeyError:
+        return template
+
+
+def _build_review_persona_agents(model, personas_config=None):
+    """Instantiate review personas using the configured model."""
+
+    return {
+        "Technical Reviewer": create_technical_reviewer_agent(model)
+    }
+
+
+def _build_virtual_reader_agents(model, readers_config=None):
+    """Instantiate virtual reader personas."""
+
+    return {
+        "Curious Beginner": create_curious_beginner_agent(model)
+    }
+
+
+def run_ebook_pipeline(
+    topic: str,
+    target_audience: str,
+    word_count_target: int = 10000,
+    transformation_promise: str | None = None,
+    reading_level: str | None = None,
+    run_all_stages: bool = True,
+):
+    """Execute the multi-stage ebook pipeline orchestrated via LangChain agents."""
+
+    results = {}
+    try:
+        print_pipeline_start(topic, target_audience, word_count_target)
+        get_message("pipeline_start")
+        config = get_config()
+        prompt_templates = config.get("agent_prompts", {})
+
+        write_model = get_model()
+        research_model = get_research_model()
+
+        context = {
+            "topic": topic,
+            "target_audience": target_audience,
+            "word_count_target": word_count_target,
+            "transformation_promise": transformation_promise or "",
+            "reading_level": reading_level or "",
+        }
+
+        # Stage 1 - Document Spec
+        print_stage_header(1, "Document Spec", "Consolidação do BRD")
+        doc_prompt = (
+            f"Topic: {topic}\nTarget Audience: {target_audience}\n"
+            f"Word Count Target: {word_count_target}\n"
+            f"Transformation Promise: {transformation_promise or 'N/A'}\n"
+            f"Reading Level: {reading_level or 'N/A'}"
+        )
+        stage_start = time.time()
+        document_spec_agent = create_document_spec_agent(research_model)
+        doc_output = execute_agent(document_spec_agent, doc_prompt)
+        context["document_spec_output"] = doc_output
+        results["stage_1_document_spec"] = doc_output
+        print_stage_complete(1, time.time() - stage_start)
+
+        if not run_all_stages:
+            results["pipeline_status"] = "partial"
+            return results
+
+        # Stage 2 - Ideation
+        print_stage_header(2, "Ideation", "Expansão criativa")
+        ideation_prompt = _prepare_prompt(
+            prompt_templates.get("ideation_prompt_template", "{topic}"),
+            **context,
+        )
+        stage_start = time.time()
+        ideation_agent = create_ideation_agent(write_model)
+        ideation_output = execute_agent(ideation_agent, ideation_prompt)
+        context["ideation_output"] = ideation_output
+        results["stage_2_ideation"] = ideation_output
+        print_stage_complete(2, time.time() - stage_start)
+
+        # Stage 3 - Title
+        print_stage_header(3, "Title", "Geração de títulos")
+        title_prompt = _prepare_prompt(
+            prompt_templates.get("title_prompt_template", "{ideation_output}"),
+            **context,
+        )
+        stage_start = time.time()
+        title_agent = create_title_agent(write_model)
+        title_output = execute_agent(title_agent, title_prompt)
+        context["title_output"] = title_output
+        results["stage_3_title"] = title_output
+        print_stage_complete(3, time.time() - stage_start)
+
+        # Stage 4 - Structure
+        print_stage_header(4, "Structure", "Construção de capítulos")
+        structure_prompt = _prepare_prompt(
+            prompt_templates.get("structure_prompt_template", "{topic}"),
+            **context,
+        )
+        stage_start = time.time()
+        structure_agent = create_structure_agent(write_model)
+        structure_output = execute_agent(structure_agent, structure_prompt)
+        context["structure_output"] = structure_output
+        results["stage_4_structure"] = structure_output
+        print_stage_complete(4, time.time() - stage_start)
+
+        # Stage 5 - Deep Research
+        print_stage_header(5, "Deep Research", "Pesquisa especializada")
+        research_prompt = _prepare_prompt(
+            prompt_templates.get("deep_research_prompt_template", "{structure_output}"),
+            **context,
+        )
+        stage_start = time.time()
+        deep_research_agent = create_deep_research_agent(research_model)
+        deep_research_output = execute_agent(deep_research_agent, research_prompt)
+        context["deep_research_output"] = deep_research_output
+        results["stage_5_deep_research"] = deep_research_output
+        print_stage_complete(5, time.time() - stage_start)
+
+        # Stage 6 - Chapter Writing
+        print_stage_header(6, "Chapter Writing", "Redação técnica")
+        chapter_prompt = _prepare_prompt(
+            prompt_templates.get("chapter_writing_prompt_template", "{structure_output}"),
+            **context,
+        )
+        stage_start = time.time()
+        chapter_agent = create_chapter_agent(write_model)
+        chapter_output = execute_agent(chapter_agent, chapter_prompt)
+        context["chapter_output"] = chapter_output
+        results["stage_6_chapter_writing"] = chapter_output
+        print_stage_complete(6, time.time() - stage_start)
+
+        # Stage 7 - Specialized Review
+        print_stage_header(7, "Review Personas", "Coordenação de revisores")
+        review_agent = create_review_coordinator_agent(research_model)
+        review_personas = _build_review_persona_agents(research_model)
+        review_feedback = execute_review_personas(
+            review_agent, chapter_output, review_personas
+        )
+        context["review_output"] = review_feedback
+        results["stage_7_review"] = review_feedback
+        print_stage_complete(7)
+
+        # Stage 8 - Virtual Readers
+        print_stage_header(8, "Virtual Readers", "Leitura crítica")
+        critical_agent = create_critical_reading_coordinator_agent(research_model)
+        virtual_readers = _build_virtual_reader_agents(write_model)
+        critical_feedback = execute_review_personas(
+            critical_agent, chapter_output, virtual_readers
+        )
+        context["critical_output"] = critical_feedback
+        results["stage_8_critical_reading"] = critical_feedback
+        print_stage_complete(8)
+
+        # Stage 9 - Editing
+        print_stage_header(9, "Editing", "Higienização editorial")
+        editing_prompt = _prepare_prompt(
+            prompt_templates.get("editing_prompt_template", "{critical_output}"),
+            **context,
+        )
+        stage_start = time.time()
+        editing_agent = create_editing_agent(write_model)
+        editing_output = execute_agent(editing_agent, editing_prompt)
+        context["editing_output"] = editing_output
+        results["stage_9_editing"] = editing_output
+        print_stage_complete(9, time.time() - stage_start)
+
+        # Stage 10 - Finalization
+        print_stage_header(10, "Finalization", "Materiais finais")
+        final_prompt = _prepare_prompt(
+            prompt_templates.get("finalization_prompt_template", "{editing_output}"),
+            **context,
+        )
+        stage_start = time.time()
+        finalization_agent = create_finalization_agent(write_model)
+        finalization_output = execute_agent(finalization_agent, final_prompt)
+        context["finalization_output"] = finalization_output
+        results["stage_10_finalization"] = finalization_output
+        print_stage_complete(10, time.time() - stage_start)
+
+        # Stage 11 - Publication
+        print_stage_header(11, "Publication", "Exportação e KDP")
+        publication_prompt = _prepare_prompt(
+            prompt_templates.get("publication_prompt_template", "{editing_output}"),
+            **context,
+        )
+        stage_start = time.time()
+        publication_agent = create_publication_agent(write_model)
+        publication_output = execute_agent(publication_agent, publication_prompt)
+        results["stage_11_publication"] = publication_output
+        print_stage_complete(11, time.time() - stage_start)
+
+        results["pipeline_status"] = "completed"
+        results["summary"] = {
+            "topic": topic,
+            "target_audience": target_audience,
+            "stages_completed": 11,
+            "total_stages": 11,
+            "final_ebook_path": None,
+        }
+        print_pipeline_complete(results)
+        return results
+    except Exception as exc:  # noqa: BLE001
+        print_error_panel("Erro no Pipeline", str(exc))
+        return {"pipeline_status": "error", "error": str(exc)}
 
 
 if __name__ == "__main__":
