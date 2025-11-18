@@ -1,7 +1,36 @@
+import builtins
+import contextlib
+import types
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import mock_open, patch
+
+@contextlib.contextmanager
+def fake_docx_module(document_cls):
+    original_import = builtins.__import__
+
+    def _fake_import(name, globals=None, locals=None, fromlist=(), level=0):
+        if name == "docx":
+            return types.SimpleNamespace(Document=document_cls)
+        return original_import(name, globals, locals, fromlist, level)
+
+    with patch("builtins.__import__", side_effect=_fake_import):
+        yield
+
+
+@contextlib.contextmanager
+def missing_docx_module():
+    original_import = builtins.__import__
+
+    def _fake_import(name, globals=None, locals=None, fromlist=(), level=0):
+        if name == "docx":
+            raise ImportError("module not available")
+        return original_import(name, globals, locals, fromlist, level)
+
+    with patch("builtins.__import__", side_effect=_fake_import):
+        yield
 
 from src.tools import (
+    _init_supabase_client,
     search_knowledge_base,
     retrieve_rag_context,
     count_words,
@@ -11,6 +40,24 @@ from src.tools import (
     generate_amazon_optimized_title,
     validate_title_seo,
     generate_outline,
+    perform_deep_research,
+    vectorize_research,
+    store_in_rag_external,
+    retrieve_author_stories,
+    retrieve_author_positioning,
+    retrieve_author_vision,
+    review_tone_and_engagement,
+    review_clarity_and_empathy,
+    review_grammar_and_style,
+    review_logical_flow,
+    review_code_examples,
+    generate_cover,
+    export_to_docx,
+    export_to_epub,
+    export_to_pdf,
+    export_to_json,
+    generate_kdp_metadata,
+    replace_text_in_docx,
     get_ideation_tools,
     get_all_tools,
 )
@@ -126,6 +173,157 @@ class TestTools(unittest.TestCase):
         context = retrieve_rag_context("test query", max_results=1)
         self.assertIn("Mocked search result", context)
         mock_search.assert_called_once_with("test query", max_results=1)
+
+    @patch.dict("os.environ", {"SUPABASE_URL": "https://example", "SUPABASE_ANON_KEY": "key"}, clear=True)
+    @patch("src.tools.create_client", return_value="client")
+    def test_init_supabase_client_success(self, mock_create):
+        client = _init_supabase_client()
+        self.assertEqual(client, "client")
+        mock_create.assert_called_once_with("https://example", "key")
+
+    @patch.dict("os.environ", {"SUPABASE_URL": "https://example", "SUPABASE_ANON_KEY": "key"}, clear=True)
+    @patch("src.tools.create_client", side_effect=RuntimeError("boom"))
+    def test_init_supabase_client_handles_errors(self, mock_create):
+        self.assertIsNone(_init_supabase_client())
+        mock_create.assert_called_once()
+
+    def test_search_knowledge_base_empty_query(self):
+        self.assertEqual(search_knowledge_base(""), "Empty query provided")
+
+    @patch("src.tools.GoogleGenerativeAIEmbeddings", None)
+    @patch("src.tools.supabase_client")
+    def test_search_knowledge_base_missing_embeddings(self, mock_client):
+        mock_client.rpc.return_value.execute.return_value.data = []
+        result = search_knowledge_base("topic")
+        self.assertIn("Supabase search error", result)
+
+def test_research_helpers_cover_branches():
+    findings = perform_deep_research("IA", research_depth="avançado")
+    assert findings["topic"] == "IA"
+    assert findings["depth"] == "avançado"
+    vectorized = vectorize_research(findings)
+    assert vectorized["vectorized"] is True
+    assert vectorized["findings_count"] == len(findings["findings"])
+    stored = store_in_rag_external(vectorized, "IA")
+    assert "Dados armazenados" in stored
+
+
+def test_author_helpers_return_formatted_strings():
+    stories = retrieve_author_stories("Ana", max_results=2)
+    positioning = retrieve_author_positioning("Ana", max_results=1)
+    vision = retrieve_author_vision("Ana", max_results=5)
+    assert "Histórias" in stories and "Posicionamento" in positioning and "Visão" in vision
+
+
+def test_review_helpers_return_expected_schema():
+    content = "Parágrafo com insights"
+    assert review_tone_and_engagement(content)["tone"] == "Apropriado"
+    assert review_clarity_and_empathy(content)["clarity"] == "Claro"
+    assert review_grammar_and_style(content)["style_score"] == 90
+    assert review_logical_flow(content)["coherence_score"] == 88
+    assert review_code_examples(content)["coverage"] == "Alta"
+
+
+def test_generate_cover_and_simple_exports():
+    assert "Capa gerada" in generate_cover("Titulo", "Sub", "Autor")
+    assert export_to_epub("conteudo", "Titulo") == "Exportado para EPUB: Titulo.epub"
+    assert export_to_pdf("conteudo", "Titulo") == "Exportado para PDF: Titulo.pdf"
+
+    mocked_open = mock_open()
+    with patch("builtins.open", mocked_open):
+        message = export_to_json("conteudo", "Titulo", metadata={"lang": "pt"})
+    assert "export_Titulo.json" in message
+    mocked_open.assert_called_once_with("export_Titulo.json", "w", encoding="utf-8")
+
+
+def test_generate_kdp_metadata_contains_language():
+    metadata = generate_kdp_metadata("Titulo", "Autor")
+    assert metadata == {"title": "Titulo", "author": "Autor", "language": "pt-BR"}
+
+
+def test_export_to_docx_handles_missing_dependency():
+    with missing_docx_module():
+        message = export_to_docx("conteudo", "Titulo")
+    assert message == "python-docx not installed"
+
+
+def test_export_to_docx_writes_heading_and_paragraph():
+    class RecordingDocument:
+        instances = []
+
+        def __init__(self):
+            self.heading_calls = []
+            self.paragraph_calls = []
+            self.saved_file = None
+            RecordingDocument.instances.append(self)
+
+        def add_heading(self, title, level):
+            self.heading_calls.append((title, level))
+
+        def add_paragraph(self, content):
+            self.paragraph_calls.append(content)
+
+        def save(self, filename):
+            self.saved_file = filename
+
+    with fake_docx_module(RecordingDocument):
+        message = export_to_docx("texto", "Titulo")
+
+    assert "export_Titulo.docx" in message
+    doc = RecordingDocument.instances[-1]
+    assert doc.heading_calls == [("Titulo", 0)]
+    assert doc.paragraph_calls == ["texto"]
+    assert doc.saved_file == "export_Titulo.docx"
+
+
+def test_replace_text_in_docx_successfully_updates_text():
+    class ReplaceDocument:
+        instances = []
+
+        def __init__(self, _path):
+            paragraph = types.SimpleNamespace(text="Olá [NOME]")
+            cell = types.SimpleNamespace(text="[NOME] na tabela")
+            row = types.SimpleNamespace(cells=[cell])
+            table = types.SimpleNamespace(rows=[row])
+            self.paragraphs = [paragraph]
+            self.tables = [table]
+            self.saved = None
+            ReplaceDocument.instances.append(self)
+
+        def save(self, filename):
+            self.saved = filename
+
+    with fake_docx_module(ReplaceDocument):
+        message = replace_text_in_docx(
+            "entrada.docx", "saida.docx", {"[NOME]": "Alice"}
+        )
+
+    assert "saida.docx" in message
+    doc = ReplaceDocument.instances[-1]
+    assert doc.paragraphs[0].text == "Olá Alice"
+    assert doc.tables[0].rows[0].cells[0].text == "Alice na tabela"
+    assert doc.saved == "saida.docx"
+
+
+def test_replace_text_in_docx_import_error():
+    with missing_docx_module():
+        message = replace_text_in_docx("entrada.docx", "saida.docx", {"a": "b"})
+    assert message == "python-docx not installed"
+
+
+def test_replace_text_in_docx_handles_processing_error():
+    class ExplodingDocument:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+        def save(self, filename):
+            raise RuntimeError("boom")
+
+    with fake_docx_module(ExplodingDocument):
+        message = replace_text_in_docx("entrada.docx", "saida.docx", {"a": "b"})
+
+    assert "Erro ao processar" in message
+
 
 if __name__ == '__main__':
     unittest.main()
