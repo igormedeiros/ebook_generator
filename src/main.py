@@ -3,13 +3,14 @@ Pipeline de geração de ebook usando LangChain 1.0+.
 
 Padrão LangChain 1.0:
 - Carrega BRD do YAML
-- Cria queries dinamicamente para cada capítulo
-- Executa agent.invoke() para cada query
+- Gera estrutura de capítulos via agent
+- Gera conteúdo para cada capítulo
 - Salva resultado
 """
 
 import time
 import yaml
+import json
 from pathlib import Path
 
 try:
@@ -25,22 +26,74 @@ def load_brd():
     with open(brd_path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
-def build_chapter_queries(brd):
+def generate_chapter_structure(brd):
     """
-    Constrói queries para cada capítulo baseado no BRD.
+    Gera a estrutura de capítulos usando o writer_agent.
+    
+    Returns:
+        list: Lista de dicts com {name, purpose, elements}
+    """
+    writing_style = brd["writing_style"]
+    project = brd["project"]
+    content_cfg = brd["content_structure"]
+    
+    query = f"""Para o ebook "{project['name']}", {content_cfg['structure_prompt']}
+
+Tom e estilo esperado:
+- Tone: {writing_style['tone']}
+- Abordagem: {writing_style['approach']}
+- Características: {', '.join(writing_style['characteristics'])}
+
+Público-alvo: {project['target_audience']}
+
+Retorne APENAS um JSON array com 7 objetos, cada um com as chaves: "name" (string), "purpose" (string), "elements" (array de strings).
+Exemplo formato:
+[{{"name": "Introdução", "purpose": "...", "elements": ["elem1", "elem2"]}}, ...]"""
+    
+    print("\n🔄 Gerando estrutura de capítulos...")
+    response = writer_agent.invoke({
+        "messages": [{"role": "user", "content": query}]
+    })
+    
+    content = response["messages"][-1].content
+    
+    # Tenta extrair JSON
+    try:
+        # Se começar com [, é JSON direto
+        if content.strip().startswith('['):
+            chapters = json.loads(content)
+            return chapters
+        
+        # Se for uma resposta com JSON embutido, tenta extrair
+        if '[' in content and ']' in content:
+            start = content.find('[')
+            end = content.rfind(']') + 1
+            json_str = content[start:end]
+            chapters = json.loads(json_str)
+            return chapters
+    except (json.JSONDecodeError, ValueError):
+        pass
+    
+    print("❌ Não foi possível gerar estrutura de capítulos")
+    return []
+
+def build_chapter_queries(chapters, brd):
+    """
+    Constrói queries para cada capítulo já gerado.
+    
+    Args:
+        chapters: Lista de dicts com estrutura de capítulos
+        brd: Configuração BRD
     
     Returns:
         list: Lista de tuplas (chapter_name, query_text)
     """
-    chapters = brd["content_structure"]["chapters"]
     writing_style = brd["writing_style"]
     project = brd["project"]
     
     queries = []
     for chapter in chapters:
-        query = f"""Gere o capítulo "{chapter['name']}" do ebook: {project['title']}
-
-Subtítulo: {project.get('subtitle', '')}
+        query = f"""Gere o capítulo "{chapter['name']}" do ebook: {project['name']}
 
 Propósito do capítulo:
 {chapter['purpose']}
@@ -59,37 +112,42 @@ Características do estilo de escrita:
 Público-alvo: {project['target_audience']}
 Idioma: {project['language']}
 
-Escreva o conteúdo seguindo as orientações, mantendo foco clínico, prático e educativo."""
+Escreva o conteúdo em Markdown puro, seguindo as orientações. Foco em prático, educativo e ético."""
         
         queries.append((chapter["name"], query))
     
     return queries
 
 def generate_ebook():
-    """Gera o ebook executando agente para cada capítulo."""
+    """Gera o ebook executando agente para estrutura e depois para cada capítulo."""
     brd = load_brd()
-    chapters_queries = build_chapter_queries(brd)
     
+    # Etapa 1: Gerar estrutura
+    chapters = generate_chapter_structure(brd)
+    
+    if not chapters:
+        print("Falha ao gerar estrutura. Abortando.")
+        return None
+    
+    # Etapa 2: Preparar dados do ebook
     ebook = {
-        "title": brd["project"]["title"],
-        "subtitle": brd["project"].get("subtitle", ""),
+        "title": brd["project"]["name"],
         "description": brd["project"]["description"],
         "chapters": []
     }
     
     print("\n" + "="*70)
     print(f"EBOOK: {ebook['title']}")
-    if ebook['subtitle']:
-        print(f"Subtítulo: {ebook['subtitle']}")
     print("="*70)
     print(f"\nDescrição: {ebook['description']}\n")
     print(f"Público-alvo: {brd['project']['target_audience']}\n")
     
-    # Mostrar capítulos
+    # Mostrar capítulos gerados
     print("CAPÍTULOS A GERAR:")
     print("-"*70)
-    for i, (chapter_name, _) in enumerate(chapters_queries, 1):
-        print(f"  [{i}] {chapter_name}")
+    for i, chapter in enumerate(chapters, 1):
+        print(f"  [{i}] {chapter['name']}")
+        print(f"      Propósito: {chapter['purpose']}")
     
     print("\n" + "="*70)
     
@@ -106,8 +164,11 @@ def generate_ebook():
     
     print("\n" + "="*70)
     print(f"Gerando ebook: {ebook['title']}")
-    print(f"Capítulos: {len(chapters_queries)}")
+    print(f"Capítulos: {len(chapters)}")
     print("="*70)
+    
+    # Etapa 3: Gerar queries para cada capítulo
+    chapters_queries = build_chapter_queries(chapters, brd)
     
     for idx, (chapter_name, query) in enumerate(chapters_queries, 1):
         print(f"\n[{idx}/{len(chapters_queries)}] Gerando: {chapter_name}")
@@ -167,8 +228,6 @@ def save_ebook(ebook, output_file="result/ebook.md"):
     
     with open(output_file, "w", encoding="utf-8") as f:
         f.write(f"# {ebook['title']}\n\n")
-        if ebook.get('subtitle'):
-            f.write(f"**{ebook['subtitle']}**\n\n")
         f.write(f"{ebook['description']}\n\n")
         f.write("---\n\n")
         
