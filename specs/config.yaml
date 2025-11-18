@@ -2,10 +2,107 @@
 # Todas as mensagens, labels e textos parametrizáveis
 
 deep_research:
+  description: |
+    Pipeline de pesquisa profunda com DOIS níveis:
+    
+    1. PESQUISA TEMÁTICA ABRANGENTE (Fase 1)
+       - Baseada em required_topics do projeto
+       - 1 documento por tópico obrigatório
+       - Exemplos: "LangChain 1.0", "RAG", "EHRs", "Compliance em Saúde", "Ética em IA"
+       - Cada documento: 3000+ palavras, 7+ fontes, 10 seções temáticas
+       - Reutilizável para múltiplos capítulos
+       - Salvo como: thematic_*.md em kb/
+       
+    2. PESQUISA POR CAPÍTULO (Fase 2)
+       - Baseada na estrutura de capítulos gerada
+       - 1 documento por capítulo do ebook
+       - Integra contexto das pesquisas temáticas
+       - 2000+ palavras, 5+ fontes
+       - Salvo como: research_*.md em kb/
+  
+  examples:
+    ebook_project:
+      name: "LangChain na Saúde - Agentes de IA para Clínica"
+      chapters: 10
+      required_topics: 9
+      phase_1_thematic_research:
+        - topic: "LangChain 1.0"
+          filename: "thematic_langchain_1_0.md"
+          word_count: "3500+"
+          sources: "8+"
+          sections:
+            - "Resumo Executivo (história, evolução, estado-da-arte)"
+            - "Arquitetura de Agentes"
+            - "Integração com LangChain 1.0"
+            - "Melhores Práticas"
+            - "Anti-padrões"
+            - "Aplicabilidade Clínica"
+            - "Compliance e Ética"
+            - "Implementação Prática com Exemplos"
+            - "Integração com EHRs"
+            - "Referências e Glossário"
+        
+        - topic: "RAG (Retrieval-Augmented Generation)"
+          filename: "thematic_rag.md"
+          word_count: "3500+"
+          sources: "8+"
+          focus: "RAG em ambientes clínicos, integração com dados sensíveis, melhores práticas"
+        
+        - topic: "Registros Eletrônicos de Saúde (EHRs)"
+          filename: "thematic_ehrs.md"
+          word_count: "3500+"
+          sources: "8+"
+          focus: "Estrutura de dados EHR, segurança, compliance LGPD, padrões clínicos"
+        
+        - topic: "Compliance em Saúde"
+          filename: "thematic_compliance.md"
+          word_count: "3500+"
+          sources: "8+"
+          focus: "LGPD, normas clínicas brasileiras, auditoria, rastreabilidade"
+        
+        - topic: "Ética em IA Clínica"
+          filename: "thematic_ethics.md"
+          word_count: "3500+"
+          sources: "8+"
+          focus: "Vieses algorítmicos, transparência, responsabilidade, consentimento informado"
+      
+      phase_2_chapter_research:
+        - chapter: "Capítulo 1: Introdução à IA na Saúde"
+          filename: "research_introducao_ia_saude.md"
+          word_count: "2000+"
+          sources: "5+"
+          uses_thematic: ["LangChain 1.0", "Ética em IA Clínica"]
+        
+        - chapter: "Capítulo 2: Fundamentos do LangChain 1.0"
+          filename: "research_fundamentos_langchain.md"
+          word_count: "2000+"
+          sources: "5+"
+          uses_thematic: ["LangChain 1.0"]
+        
+        - chapter: "Capítulo 3: RAG e Arquiteturas Avançadas"
+          filename: "research_rag_arquiteturas.md"
+          word_count: "2000+"
+          sources: "5+"
+          uses_thematic: ["RAG", "Registros Eletrônicos de Saúde (EHRs)"]
+        
+        - chapter: "Capítulo 4: EHRs e Pré-processamento"
+          filename: "research_ehrs_preprocessamento.md"
+          word_count: "2000+"
+          sources: "5+"
+          uses_thematic: ["Registros Eletrônicos de Saúde (EHRs)", "Compliance em Saúde"]
+        
+        - chapter: "Capítulo 5: Implementação de Agentes"
+          filename: "research_implementacao_agentes.md"
+          word_count: "2000+"
+          sources: "5+"
+          uses_thematic: ["LangChain 1.0", "RAG", "Compliance em Saúde"]
+  
   search_prompt: "Realize uma pesquisa profunda sobre o seguinte tópico e retorne um resumo detalhado com fontes confiáveis:"
   storage_confirmation: "Os resultados da pesquisa foram armazenados com sucesso no sistema RAG."
   minimum_word_count: 2000
   minimum_sources: 5
+  thematic_minimum_word_count: 3000
+  thematic_minimum_sources: 7
   retrieval_prompt: "Recupere o contexto relevante do sistema RAG para a seguinte consulta:"
 
 
