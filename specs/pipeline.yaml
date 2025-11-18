@@ -95,6 +95,11 @@ stages:
     description: "Produz capítulos integrais com RAG e voz do autor."
     agent: "chapter_writing_agent"
     parameters:
+      rag_strategy:
+        type: string
+        default: "local_full_context"
+        enum: ["local_full_context", "local_chromadb", "supabase_cloud"]
+        description: "Define a origem do contexto: KB local completa, vetor local (Chroma) ou Supabase Cloud."
       rag_context_limit:
         type: integer
         default: 3

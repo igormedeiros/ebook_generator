@@ -626,6 +626,16 @@ output = response["messages"][-1].content
 
 The system includes integration points for Retrieval-Augmented Generation:
 
+### Chapter Writing RAG Modes
+
+Stage 6 of the workflow (Escrita) now supports three explicit strategies for supplying context to the chapter-writing agent:
+
+1. **RAG Local (KB completa)** — Carrega integralmente cada arquivo da pasta `kb/` para o contexto imediato do modelo. Ideal para bases pequenas ou estáticas.
+2. **RAG Local com ChromaDB** — Indexa os arquivos da pasta `kb/` em um vetorstore local (ChromaDB) e recupera apenas os trechos relevantes (`rag_strategy: local_chromadb`).
+3. **RAG Cloud Supabase** — Utiliza o backend Supabase pgvector para buscar conteúdos com embeddings hospedados na nuvem (`rag_strategy: supabase_cloud`).
+
+Configure a estratégia desejada no `specs/pipeline.yaml` (parâmetro `rag_strategy` do estágio `stage_6_writing`) ou sobrescreva via input do pipeline.
+
 ```python
 # Tools marked with RAG integration points
 @tool
