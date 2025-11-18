@@ -1,6 +1,74 @@
 # Configuração centralizada de strings em Português
 # Todas as mensagens, labels e textos parametrizáveis
 
+llm_profiles:
+  fast_generation:
+    label: "Modo Rápido"
+    description: |
+      Perfil otimizado para tarefas que precisam de respostas rápidas e criativas,
+      como brainstorming inicial ou ajustes de texto em tempo real.
+    usage_notes: |
+      Utilize este perfil quando a prioridade for velocidade e custo reduzido.
+      É ideal para ações iterativas onde várias versões precisam ser geradas rapidamente.
+    primary:
+      name: "Gemini 2.5 Flash"
+      provider: "Google AI"
+      model_id: "gemini-2.5-flash"
+      api_key_env: "GOOGLE_API_KEY"
+      strengths:
+        - "Respostas em baixa latência"
+        - "Texto criativo e fluído"
+        - "Boa relação custo/benefício"
+      use_cases:
+        - "Geração de capítulos e seções em rascunho"
+        - "Criação rápida de títulos e subtítulos"
+        - "Sugestões instantâneas durante entrevistas com o autor"
+    fallback:
+      name: "Groq LLaMA 3 70B"
+      provider: "Groq"
+      model_id: "llama-3.3-70b-versatile"
+      api_key_env: "GROQ_API_KEY"
+      rationale: |
+        Entra em ação quando a API principal estiver indisponível ou
+        atingir limites de uso. Mantém o foco em velocidade com custo previsível.
+      use_cases:
+        - "Mesmas tarefas do modo rápido quando a API principal falhar"
+        - "Backups de geração de texto curto"
+
+  deep_reasoning:
+    label: "Modo Profundo"
+    description: |
+      Perfil para análises detalhadas, validação de fatos, integração com RAG
+      e qualquer tarefa que exija maior raciocínio estruturado.
+    usage_notes: |
+      Utilize este perfil quando precisão, consistência lógica e contexto
+      longo forem indispensáveis. É o modo padrão para pesquisas e revisões finais.
+    primary:
+      name: "Gemini 2.5 Pro"
+      provider: "Google AI"
+      model_id: "gemini-2.5-pro"
+      api_key_env: "GOOGLE_API_KEY"
+      strengths:
+        - "Contexto extenso com alta coerência"
+        - "Melhor entendimento de instruções complexas"
+        - "Adequado para integrar múltiplas fontes"
+      use_cases:
+        - "Pesquisa técnica profunda e validação factual"
+        - "Síntese final do ebook"
+        - "Planejamento estratégico de capítulos"
+    fallback:
+      name: "Claude 3 Opus"
+      provider: "Anthropic"
+      model_id: "claude-3-opus-20240229"
+      api_key_env: "ANTHROPIC_API_KEY"
+      rationale: |
+        Mantém alta qualidade analítica quando o modelo principal estiver indisponível.
+        Útil especialmente para revisões críticas de conteúdo ou checagens de coerência.
+      use_cases:
+        - "Auditoria de conteúdo e fact-checking"
+        - "Reescrita estratégica de trechos sensíveis"
+        - "Tomadas de decisão com múltiplos critérios"
+
 deep_research:
   description: |
     Pipeline de pesquisa profunda com DOIS níveis:
