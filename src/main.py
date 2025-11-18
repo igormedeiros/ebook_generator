@@ -127,6 +127,7 @@ def save_ebook(ebook, output_file="result/ebook.md"):
     
     return output_file
 
+
 if __name__ == "__main__":
     # Gera ebook
     ebook = generate_ebook()

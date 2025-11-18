@@ -226,12 +226,13 @@ Output Format:
 ```
 src/
 ├── main.py               # Pipeline orchestration - entry point for ebook generation
-├── agents_write.py       # Writer agent using LangChain 1.0+ with Gemini 2.5 Flash
-├── tools_write.py        # Tools for document manipulation (DOCX editing)
+├── agents.py             # Writer agent using LangChain 1.0+ with Gemini 2.5 Flash
+├── tools.py              # All tool implementations with @tool decorator
 ├── config.py             # Configuration, logging, models, YAML loading
 ├── input_validator.py    # Input validation and interactive prompts
 ├── llm_fallback.py       # LLM fallback mechanism
-└── tools.py              # Legacy tools (to be migrated)
+├── seed_supabase.py      # Script to seed Supabase RAG tables
+└── tests/                # Test modules
 
 specs/
 ├── pipeline.yaml         # 9-stage parameters with agent ID mappings
@@ -239,7 +240,7 @@ specs/
 ├── config.yaml           # Portuguese strings and messages (centralized)
 ├── models.yaml           # Gemini model configuration
 ├── tools.yaml            # Tool specifications (30+)
-├── book.yaml             # Generated from input validation (gitignore)
+├── brd.yaml              # Book content structure and metadata
 └── README.md             # Specs documentation
 
 input/
@@ -250,28 +251,47 @@ docs/
 └── ARCHITECTURE.md       # Technical Architecture (v1.0)
 ```
 
-### Package Initialization
+### Package Initialization & Entry Points
 
-**IMPORTANT**: `src/` does NOT have `__init__.py`. Each module is independent:
+**CRITICAL RULE: No `__init__.py` in src/ and NO `__main__.py`**
 
 1. **No Package Structure**: `src/` is NOT a Python package
-2. **Direct Module Import**: Import directly from module files
-3. **Execution**: Use `python -m src.main` or equivalent
-4. **Pattern**: Direct imports from root-level execution
-   ```python
-   # From root-level scripts or entry points
-   from src.config import get_logger
-   from src.main import generate_ebook
+2. **Entry Point**: `src/main.py` is the ONLY entry point file
+3. **Execution Methods**:
+   ```bash
+   # ✅ CORRECT - Use python -m src.main
+   uv run python -m src.main
    
-   # NOT: from src import generate_ebook (won't work without __init__.py)
+   # ✅ CORRECT - Direct execution with if __name__ == "__main__"
+   uv run python src/main.py
+   
+   # ❌ WRONG - Do NOT create __main__.py
+   # ❌ WRONG - Do NOT use python -m src (requires __main__.py)
+   # ❌ WRONG - Do NOT use python src/main.py (without uv run)
    ```
 
-5. **CLI Entry**: `src/main.py` is the execution entry point
-   ```bash
-   # Run pipeline
-   python -m src.main
-   # Or via uv
-   uv run python -m src.main
+4. **Why No `__main__.py`**:
+   - Adds unnecessary complexity
+   - `main.py` with `if __name__ == "__main__"` block is sufficient
+   - Keeps src/ directory flat and simple
+   - All logic stays in main.py, not split across files
+
+5. **Import Pattern**:
+   ```python
+   # ✅ Good (in src/ files)
+   from langchain.agents import create_agent
+   from .config import get_model
+   from .tools import get_all_tools
+   
+   # ✅ Good (from root level scripts)
+   from src.config import get_model
+   from src.main import generate_ebook
+   
+   # ❌ NEVER (src in imports from src/ files)
+   from src.config import get_model  # WRONG in src/ files
+   
+   # ❌ Avoid
+   from langchain.agents import *
    ```
 
 ### Logging and Output Standards
