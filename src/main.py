@@ -804,23 +804,154 @@ def generate_ebook():
                 time.sleep(0.5)
     
     print_separator()
+    
+    # FASE 4: Revisão e Refinamento
+    print_phase_header(4, "REVISÃO E REFINAMENTO", "Revisão técnica, leitura crítica e edição final")
+    
+    # Pergunta se deve realizar a revisão
+    perform_review = get_confirmation("Deseja realizar a REVISÃO E REFINAMENTO?", default=True)
+    
+    if perform_review:
+        write_model = get_model()
+        research_model = get_research_model()
+        
+        # Inicializa agentes
+        review_agent = create_review_coordinator_agent(research_model)
+        review_personas = _build_review_persona_agents(research_model)
+        
+        critical_agent = create_critical_reading_coordinator_agent(research_model)
+        virtual_readers = _build_virtual_reader_agents(write_model)
+        
+        editing_agent = create_editing_agent(write_model)
+        
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+            TimeRemainingColumn(),
+        ) as progress:
+            task = progress.add_task("[magenta]Revisando e Editando...", total=len(ebook["chapters"]))
+            
+            for idx, chapter in enumerate(ebook["chapters"], 1):
+                progress.update(task, description=f"[magenta]Revisando ({idx}/{len(ebook['chapters'])}): {chapter['name']}")
+                
+                original_content = chapter["content"]
+                
+                # 1. Revisão Técnica
+                review_results = execute_review_personas(
+                    review_agent, original_content, review_personas
+                )
+                review_text = "\n\n".join([f"### {k}\n{v}" for k, v in review_results.items()])
+                
+                # 2. Leitura Crítica
+                critical_results = execute_review_personas(
+                    critical_agent, original_content, virtual_readers
+                )
+                critical_text = "\n\n".join([f"### {k}\n{v}" for k, v in critical_results.items()])
+                
+                # 3. Edição e Refinamento
+                editing_prompt = f"""Refine o seguinte capítulo do ebook com base nos feedbacks recebidos.
+                
+CAPÍTULO: {chapter['name']}
+CONTEÚDO ORIGINAL:
+{original_content}
+
+FEEDBACK TÉCNICO:
+{review_text}
+
+FEEDBACK LEITURA CRÍTICA:
+{critical_text}
+
+INSTRUÇÕES DE EDIÇÃO:
+- Melhore a clareza e fluidez.
+- Corrija imprecisões técnicas apontadas.
+- Torne o texto mais acessível conforme sugerido pela leitura crítica.
+- Mantenha o formato Markdown.
+- Retorne APENAS o conteúdo refinado do capítulo.
+"""
+                response = editing_agent.invoke({
+                    "messages": [{"role": "user", "content": editing_prompt}]
+                })
+                
+                refined_content = response["messages"][-1].content
+                
+                # Limpeza básica se vier como lista/json
+                if isinstance(refined_content, str) and refined_content.strip().startswith('['):
+                    try:
+                        content_list = json.loads(refined_content)
+                    except json.JSONDecodeError:
+                        try:
+                            content_list = ast.literal_eval(refined_content)
+                        except:
+                            content_list = None
+
+                    if isinstance(content_list, list) and len(content_list) > 0:
+                        if isinstance(content_list[0], dict):
+                            refined_content = content_list[0].get('text', refined_content)
+                        elif isinstance(content_list[0], str):
+                            refined_content = content_list[0]
+                
+                chapter["content"] = refined_content
+                
+                progress.advance(task)
+                if idx < len(ebook["chapters"]):
+                    time.sleep(0.5)
+        
+        print_separator()
+        print_success_message("Revisão e refinamento concluídos!")
+        print_separator()
+
     return ebook
 
 def save_ebook(ebook, output_file="result/ebook.md"):
-    """Salva ebook em formato Markdown."""
+    """Salva ebook em formato Markdown, usando template se disponível."""
     import os
+    import datetime
 
     os.makedirs(os.path.dirname(output_file) or ".", exist_ok=True)
     
-    with open(output_file, "w", encoding="utf-8") as f:
-        f.write(f"# {ebook['title']}\n\n")
-        f.write(f"{ebook['description']}\n\n")
-        f.write("---\n\n")
+    # Tenta carregar o template
+    template_path = Path(__file__).parent.parent / "template" / "template.md"
+    template_content = ""
+    
+    if template_path.exists():
+        with open(template_path, "r", encoding="utf-8") as f:
+            template_content = f.read()
+    
+    # Constrói o conteúdo dos capítulos
+    chapters_content = ""
+    for chapter in ebook["chapters"]:
+        chapters_content += f"## {chapter['name']}\n\n"
+        chapters_content += f"{chapter['content']}\n\n"
+        chapters_content += "---\n\n"
+    
+    final_content = ""
+    
+    if template_content:
+        # Substitui placeholders
+        final_content = template_content.replace("<<titulo_do_livro>>", ebook['title'])
+        final_content = final_content.replace("<<data de lançamento>>", datetime.date.today().strftime("%d/%m/%Y"))
+        final_content = final_content.replace("<<numero do ASIN>>", "PENDENTE")
+        final_content = final_content.replace("<<link da amazon>>", "https://amazon.com.br/dp/PENDENTE")
         
-        for chapter in ebook["chapters"]:
-            f.write(f"## {chapter['name']}\n\n")
-            f.write(f"{chapter['content']}\n\n")
-            f.write("---\n\n")
+        # Substitui [Capitulos] pelo conteúdo real
+        if "[Capitulos]" in final_content:
+            final_content = final_content.replace("[Capitulos]", chapters_content)
+        else:
+            # Se não achar o placeholder, anexa ao final
+            final_content += "\n\n" + chapters_content
+            
+        # Remove outros placeholders não usados se necessário ou deixa como está
+    else:
+        # Fallback se não houver template
+        final_content = f"# {ebook['title']}\n\n"
+        final_content += f"{ebook['description']}\n\n"
+        final_content += "---\n\n"
+        final_content += chapters_content
+    
+    with open(output_file, "w", encoding="utf-8") as f:
+        f.write(final_content)
     
     return output_file
 

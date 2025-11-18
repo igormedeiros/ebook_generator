@@ -14,3 +14,6 @@
 [x] Implement real Supabase RAG tools in src/tools.py
 [x] Add progress bars and ETA to src/main.py
 [x] Fix generation logic when skipping deep research
+[x] Integrate template/template.md into save_ebook
+[x] Implement Review, Critical Reading, and Editing phases in generate_ebook
+[x] Fix output parsing for Python list strings
