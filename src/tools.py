@@ -10,13 +10,13 @@ from typing import Any, Dict, List
 try:
     from langchain_google_genai import GoogleGenerativeAIEmbeddings
 except ImportError:  # pragma: no cover
-    GoogleGenerativeAIEmbeddings = None
+    GoogleGenerativeAIEmbeddings = None  # pragma: no cover
 
 try:
     from supabase import Client, create_client
 except ImportError:  # pragma: no cover
-    Client = None
-    create_client = None
+    Client = None  # pragma: no cover
+    create_client = None  # pragma: no cover
 
 
 # ============================================================================
