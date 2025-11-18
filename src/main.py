@@ -127,6 +127,20 @@ def generate_ebook():
         else:
             content = str(response)
         
+        # Se o conteúdo for uma lista JSON (começa com '['), extrai o texto
+        if isinstance(content, str) and content.strip().startswith('['):
+            import json
+            try:
+                content_list = json.loads(content)
+                if isinstance(content_list, list) and len(content_list) > 0:
+                    # Extrai o texto do primeiro item
+                    if isinstance(content_list[0], dict):
+                        content = content_list[0].get('text', content)
+                    elif isinstance(content_list[0], str):
+                        content = content_list[0]
+            except:
+                pass  # Mantém o conteúdo original se falhar
+        
         ebook["chapters"].append({
             "name": chapter_name,
             "content": content
