@@ -194,6 +194,8 @@ Each reader generates independent reports that feed into the **3-iteration refin
 
 ### Basic Usage
 
+The project now ships with a dedicated CLI entry point exposed through `src/__main__.py`. Running `python -m src` (or `uv run python -m src` inside the managed environment) boots the validator shim and executes the same pipeline used in tests, so you no longer need wrapper scripts or ad-hoc modules.
+
 #### Option 1: Interactive Mode (Recommended)
 
 The pipeline automatically loads specifications from `input/book_input.yaml`. If any required fields are missing, it will prompt you interactively:
@@ -227,6 +229,8 @@ uv run python -m src
 ```
 
 #### Option 3: Programmatic Usage
+
+The CLI ultimately delegates to `run_ebook_pipeline` in `src/main.py`, so you can import the same helper inside notebooks or automation scripts:
 
 ```python
 from src.input_validator import InputValidator
