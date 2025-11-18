@@ -318,6 +318,21 @@ REQUISITOS DE QUALIDADE OBRIGATÓRIOS:
 ✓ Diagramas textuais de arquitetura
 ✓ Glossário de termos técnicos do tema
 
+REQUISITO ESPECIAL - EXEMPLOS DE CÓDIGO FONTE:
+Se o tema for um FRAMEWORK, BIBLIOTECA ou TECNOLOGIA (ex: LangChain, RAG, EHRs):
+  ✓ OBRIGATÓRIO incluir exemplos de código fonte prático
+  ✓ Estrutura de código comentada e funcional
+  ✓ Padrões de uso comum em Python
+  ✓ Integração com LangChain quando aplicável
+  ✓ Fluxo de execução com pseudocódigo
+  ✓ Casos de uso clínicos reais com código
+  ✓ Erros frequentes e como evitá-los (com exemplos)
+
+Se o tema for CONCEITUAL (ex: Ética em IA, Compliance):
+  ✓ Exemplos de código NÃO são necessários
+  ✓ Foco em discussão, regulamentação, princípios
+  ✓ Use tabelas e diagramas conceituais
+
 ESTRUTURA ESPERADA:
 1. Resumo Executivo (300-400 palavras)
    - O que é o tema

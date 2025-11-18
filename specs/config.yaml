@@ -35,6 +35,36 @@ deep_research:
       Tipo: Pesquisa Temática Abrangente
       
       ---
+    
+    code_examples_requirement: |
+      IMPORTANTE: Se o tópico for um FRAMEWORK, BIBLIOTECA ou TECNOLOGIA:
+      
+      ✓ OBRIGATÓRIO incluir exemplos de código fonte:
+        - Estrutura de código comentada
+        - Snippets práticos funcionais
+        - Padrões de uso comum
+        - Integração com LangChain quando aplicável
+      
+      ✓ Formatos de código:
+        - Python (primário para este ebook)
+        - YAML para configurações
+        - Pseudocódigo para conceitos abstratos
+      
+      ✓ Elementos adicionais para frameworks:
+        - Diagrama de arquitetura textual (usando ASCII)
+        - Fluxo de execução comentado
+        - Casos de uso reais
+        - Erros comuns e como evitá-los
+      
+      Exemplos de tópicos que REQUEREM código:
+        - "LangChain 1.0" → código de agents, tools, chains
+        - "RAG" → código de retrieval, augmentation, generation
+        - "EHRs" → estrutura de dados, queries
+        - Qualquer ferramenta ou framework específico
+      
+      Exemplos de tópicos que SÃO CONCEITUAIS:
+        - "Ética em IA" → discussão, não requer código
+        - "Compliance em Saúde" → regulamentação, não requer código
   
   chapter_research:
     save_immediately: true
