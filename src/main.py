@@ -11,7 +11,13 @@ Padrão LangChain 1.0:
 import time
 import yaml
 from pathlib import Path
-from .agents import writer_agent
+
+try:
+    # Quando executado como módulo (python -m src.main)
+    from .agents import writer_agent
+except ImportError:
+    # Quando executado diretamente (python src/main.py)
+    from src.agents import writer_agent
 
 def load_brd():
     """Carrega BRD do arquivo specs/brd.yaml."""

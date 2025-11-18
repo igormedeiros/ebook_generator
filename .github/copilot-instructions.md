@@ -253,28 +253,18 @@ docs/
 
 ### Package Initialization & Entry Points
 
-**CRITICAL RULE: No `__init__.py` in src/ and NO `__main__.py`**
-
-1. **No Package Structure**: `src/` is NOT a Python package
-2. **Entry Point**: `src/main.py` is the ONLY entry point file
-3. **Execution Method**:
+1. **src/ IS a Python package** with `__init__.py` for re-exports
+2. **Entry Point**: `src/main.py` with `if __name__ == "__main__"` block
+3. **Execution Methods**:
    ```bash
-   # ✅ CORRECT - Only way to run (python -m requires src/ parent directory)
+   # ✅ CORRECT - Primary method
    uv run python -m src.main
    
-   # ❌ WRONG - Do NOT use: python src/main.py (relative imports fail)
-   # ❌ WRONG - Do NOT create __main__.py
-   # ❌ WRONG - Do NOT add __init__.py to src/
+   # ✅ CORRECT - Also works with __init__.py
+   uv run python src/main.py
    ```
 
-4. **Why This Pattern**:
-   - No `__init__.py` keeps src/ truly flat and simple
-   - `python -m src.main` works because current directory is in sys.path
-   - `src/main.py` with `if __name__ == "__main__"` is the pattern
-   - Relative imports work only via `python -m` module execution
-   - Keeps code organization clean and dependency-free
-
-5. **Import Pattern**:
+4. **Import Pattern**:
    ```python
    # ✅ Good (in src/ files)
    from langchain.agents import create_agent
@@ -287,11 +277,15 @@ docs/
    
    # ❌ NEVER (src in imports from src/ files)
    from src.config import get_model  # WRONG in src/ files
-   from src.tools import get_all_tools  # WRONG
    
    # ❌ Avoid
    from langchain.agents import *
    ```
+
+5. **__init__.py Pattern**:
+   - Re-exports main functions for convenience
+   - Allows both `python -m src.main` and `python src/main.py`
+   - Keeps imports clean and simple
 
 ### Logging and Output Standards
 
