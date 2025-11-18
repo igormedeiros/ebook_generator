@@ -23,6 +23,7 @@ venv/
 specs/book.yaml
 output/
 env/
+kb/
 
 # Editors
 .vscode/
