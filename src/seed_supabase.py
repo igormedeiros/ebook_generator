@@ -17,6 +17,7 @@ from supabase import Client, create_client
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 BOOK_SPEC_PATH = PROJECT_ROOT / "specs" / "book.yaml"
 ENV_PATH = PROJECT_ROOT / ".env"
+KB_PATH = PROJECT_ROOT / "kb"
 
 
 def _load_env_file() -> None:
@@ -41,18 +42,20 @@ def _load_book_metadata() -> dict:
 
 
 def _build_markdown_payloads() -> list[dict[str, Any]]:
-    """Monta payloads a partir de arquivos markdown no diretório supabase."""
-    
-    supabase_dir = PROJECT_ROOT / "supabase"
+    """Monta payloads a partir de todos os arquivos markdown dentro de kb/."""
+
     payloads = []
 
-    for md_file in supabase_dir.glob("*.md"):
+    if not KB_PATH.exists():
+        return payloads
+
+    for md_file in sorted(KB_PATH.rglob("*.md")):
         payloads.append({
-            "source": md_file.name,
+            "source": str(md_file.relative_to(PROJECT_ROOT)),
             "content": md_file.read_text(encoding="utf-8"),
             "type": "markdown",
         })
-    
+
     return payloads
 
 
