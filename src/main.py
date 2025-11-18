@@ -20,9 +20,23 @@ from pathlib import Path
 try:
     # Quando executado como módulo (python -m src.main)
     from .agents import writer_agent, research_agent
+    from .ui import (
+        print_header, print_ebook_info, print_chapters_preview,
+        get_confirmation, print_phase_header, print_research_start,
+        print_research_saved, print_content_generation_start,
+        print_content_generated, print_success_message, print_error_message,
+        print_completion_summary, print_separator, print_info
+    )
 except ImportError:
     # Quando executado diretamente (python src/main.py)
     from src.agents import writer_agent, research_agent
+    from src.ui import (
+        print_header, print_ebook_info, print_chapters_preview,
+        get_confirmation, print_phase_header, print_research_start,
+        print_research_saved, print_content_generation_start,
+        print_content_generated, print_success_message, print_error_message,
+        print_completion_summary, print_separator, print_info
+    )
 
 def load_brd():
     """Carrega BRD do arquivo specs/brd.yaml."""
@@ -251,12 +265,21 @@ def generate_ebook():
     """Gera o ebook executando agente para estrutura e depois para cada capítulo."""
     brd = load_brd()
     
+    # Header
+    print_header(
+        "📚 Gerador de Ebook Técnico",
+        "LangChain 1.0 na Saúde Clínica"
+    )
+    
     # Etapa 1: Gerar estrutura
+    print_info("Gerando estrutura de capítulos...")
     chapters = generate_chapter_structure(brd)
     
     if not chapters:
-        print("Falha ao gerar estrutura. Abortando.")
+        print_error_message("Falha ao gerar estrutura de capítulos")
         return None
+    
+    print_separator()
     
     # Etapa 2: Preparar dados do ebook
     ebook = {
@@ -265,43 +288,30 @@ def generate_ebook():
         "chapters": []
     }
     
-    print("\n" + "="*70)
-    print(f"EBOOK: {ebook['title']}")
-    print("="*70)
-    print(f"\nDescrição: {ebook['description']}\n")
-    print(f"Público-alvo: {brd['project']['target_audience']}\n")
+    # Exibir informações do ebook
+    print_ebook_info(
+        ebook['title'],
+        ebook['description'],
+        brd['project']['target_audience']
+    )
+    print_separator()
     
-    # Mostrar capítulos gerados
-    print("CAPÍTULOS A GERAR:")
-    print("-"*70)
-    for i, chapter in enumerate(chapters, 1):
-        print(f"  [{i}] {chapter['name']}")
-        print(f"      Propósito: {chapter['purpose']}")
-    
-    print("\n" + "="*70)
+    # Exibir preview dos capítulos
+    print_chapters_preview(chapters)
+    print_separator()
     
     # Pedir aprovação
-    while True:
-        response = input("Deseja prosseguir com a geração? (s/n): ").strip().lower()
-        if response in ['s', 'sim']:
-            break
-        elif response in ['n', 'não', 'nao']:
-            print("Geração cancelada.")
-            return None
-        else:
-            print("Digite 's' ou 'n'")
+    if not get_confirmation():
+        return None
     
-    print("\n" + "="*70)
-    print(f"Gerando ebook: {ebook['title']}")
-    print(f"Capítulos: {len(chapters)}")
-    print("="*70)
+    print_separator()
     
     # Etapa 3: Fazer research de cada capítulo e salvar em kb/
-    print("\n📚 ETAPA 1: RESEARCH E SALVAMENTO EM KB/")
-    print("-"*70)
+    print_phase_header(1, "RESEARCH E SALVAMENTO", "Pesquisa profunda e salvamento em kb/")
+    
     research_data = {}
     for idx, chapter in enumerate(chapters, 1):
-        print(f"\n[{idx}/{len(chapters)}] {chapter['name']}")
+        print_research_start(chapter['name'], idx, len(chapters))
         
         # Gera research
         research_content = generate_chapter_research(
@@ -314,21 +324,25 @@ def generate_ebook():
         
         # Salva em kb/
         kb_path = save_research_to_kb(chapter['name'], research_content, brd)
-        print(f"  ✓ Salvo em: {kb_path}")
+        print_research_saved(kb_path, len(research_content))
         
         if idx < len(chapters):
-            time.sleep(1)  # Pequeno delay entre requests
+            time.sleep(0.5)  # Pequeno delay entre requests
     
-    print("\n✓ Todas as pesquisas foram salvas em kb/")
-    print("\n📝 ETAPA 2: GERAÇÃO DE CONTEÚDO")
-    print("-"*70)
+    print_separator()
+    print_success_message("Todas as pesquisas foram salvas em kb/")
+    print_separator()
     
-    # Etapa 4: Gerar queries para cada capítulo (agora com research como contexto)
+    # Etapa 4: Geração de conteúdo
+    print_phase_header(2, "GERAÇÃO DE CONTEÚDO", "Geração de conteúdo final baseado em research")
+    
+    # Gerar queries para cada capítulo (agora com research como contexto)
     chapters_queries = build_chapter_queries_with_research(chapters, research_data, brd)
     
+    words_per_chapter = brd['project'].get('target_word_count', 10000) // len(chapters)
+    
     for idx, (chapter_name, query) in enumerate(chapters_queries, 1):
-        print(f"\n[{idx}/{len(chapters_queries)}] Gerando: {chapter_name}")
-        print("-" * 70)
+        print_content_generation_start(chapter_name, idx, len(chapters_queries), words_per_chapter)
         
         # Executa agent com query
         response = writer_agent.invoke({
@@ -351,7 +365,6 @@ def generate_ebook():
         
         # Se o conteúdo for uma lista JSON (começa com '['), extrai o texto
         if isinstance(content, str) and content.strip().startswith('['):
-            import json
             try:
                 content_list = json.loads(content)
                 if isinstance(content_list, list) and len(content_list) > 0:
@@ -368,12 +381,12 @@ def generate_ebook():
             "content": content
         })
         
-        print(f"✓ {chapter_name} concluída")
+        print_content_generated(len(content))
         
         if idx < len(chapters_queries):
-            print("\nAguardando 2 segundos...")
-            time.sleep(2)
+            time.sleep(0.5)
     
+    print_separator()
     return ebook
 
 def save_ebook(ebook, output_file="result/ebook.md"):
@@ -396,19 +409,35 @@ def save_ebook(ebook, output_file="result/ebook.md"):
 
 
 if __name__ == "__main__":
-    # Gera ebook
-    ebook = generate_ebook()
-    
-    # Verifica se foi cancelado
-    if ebook is None:
-        print("Nenhum ebook foi gerado.")
-        exit(0)
-    
-    # Salva resultado
-    output_path = save_ebook(ebook)
-    
-    print("\n" + "="*70)
-    print("✓ Ebook gerado com sucesso!")
-    print(f"✓ Salvo em: {output_path}")
-    print(f"✓ Capítulos: {len(ebook['chapters'])}")
-    print("="*70)
+    try:
+        # Gera ebook
+        ebook = generate_ebook()
+        
+        # Verifica se foi cancelado
+        if ebook is None:
+            exit(0)
+        
+        # Salva resultado
+        print_info("Salvando ebook em Markdown...")
+        output_path = save_ebook(ebook)
+        
+        print_separator()
+        
+        # Exibe resumo final
+        print_completion_summary(
+            ebook['title'],
+            len(ebook['chapters']),
+            output_path
+        )
+        
+        print_separator()
+        print_success_message("Pipeline concluído com sucesso!")
+        
+    except KeyboardInterrupt:
+        print_separator()
+        print_error_message("Pipeline interrompido pelo usuário")
+        exit(1)
+    except Exception as e:
+        print_separator()
+        print_error_message(f"Erro durante execução: {str(e)}")
+        exit(1)
