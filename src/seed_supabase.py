@@ -15,7 +15,7 @@ import yaml
 from supabase import Client, create_client
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-BOOK_SPEC_PATH = PROJECT_ROOT / "specs" / "book.yaml"
+BOOK_SPEC_PATH = PROJECT_ROOT / "specs" / "brd.yaml"
 ENV_PATH = PROJECT_ROOT / ".env"
 KB_PATH = PROJECT_ROOT / "kb"
 
@@ -34,11 +34,11 @@ def _load_env_file() -> None:
 
 
 def _load_book_metadata() -> dict:
-    """Carrega metadados do arquivo specs/book.yaml."""
+    """Carrega metadados do arquivo specs/brd.yaml."""
 
     with BOOK_SPEC_PATH.open("r", encoding="utf-8") as handler:
         content: dict[str, Any] = yaml.safe_load(handler) or {}
-    return content.get("metadata", {})
+    return content.get("project", {})
 
 
 def _build_markdown_payloads() -> list[dict[str, Any]]:
@@ -50,10 +50,18 @@ def _build_markdown_payloads() -> list[dict[str, Any]]:
         return payloads
 
     for md_file in sorted(KB_PATH.rglob("*.md")):
+        # Extract topic from filename, replacing underscores with spaces and title casing
+        topic = md_file.stem.replace("_", " ").title()
+        
+        # Extract category from parent directory name
+        category = md_file.parent.name
+        
         payloads.append({
-            "source": str(md_file.relative_to(PROJECT_ROOT)),
+            "topic": topic,
+            "category": category,
             "content": md_file.read_text(encoding="utf-8"),
-            "type": "markdown",
+            "source": str(md_file.relative_to(PROJECT_ROOT)),
+            "metadata": {"filename": md_file.name, "extension": md_file.suffix},
         })
 
     return payloads
