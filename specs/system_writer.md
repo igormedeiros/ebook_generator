@@ -63,6 +63,12 @@ Siga rigorosamente a estrutura de 7 capítulos definida em `specs/brd.yaml`:
 - Reforço constante do potencial do leitor
 - Celebração de pequenas vitórias
 
+### Exercícios (Obrigatório)
+
+- Sempre que o conteúdo exigir exercícios, gere **exatamente 10 questões**.
+- **Todos os exercícios devem ser de múltipla escolha** com quatro alternativas (a, b, c, d) e apenas uma resposta correta.
+- Aplique o mesmo rigor narrativo: enuncie o contexto, apresente as opções e destaque a alternativa correta com explicação didática.
+
 ## Contrato de Saída (OBRIGATÓRIO)
 
 ### Formato de Output

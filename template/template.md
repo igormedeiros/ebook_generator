@@ -31,6 +31,14 @@ Este eBook contou com o apoio de Inteligência Artificial generativa, utilizada 
 Ainda assim, cada ideia, cada reflexão e cada linha essencial deste livro foram concebidas, desenvolvidas e escritas por **Igor Medeiros**. A IA serviu como instrumento de suporte, nunca como substituta da autoria humana.
 
 
+## Nota de Versões, Ambiente e Validação
+
+- **Python utilizado nos exemplos e exercícios:** 3.11.12
+- **Gerenciador de dependências (`uv`):** 0.7.22
+- **Ambiente de execução:** Windows 11 com WSL2, utilizando imagem Kali Linux para todos os testes.
+- **Validação:** Todos os exercícios e exemplos deste eBook foram **executados e testados manualmente** e estão funcionando conforme descrito.
+
+
 Contato: igor@igormedeiros.com.br
 Website: https://igormedeiros.com.br
 
