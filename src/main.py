@@ -11,7 +11,7 @@ Padrão LangChain 1.0:
 import time
 import yaml
 from pathlib import Path
-from .agents_write import writer_agent
+from .agents import writer_agent
 
 def load_brd():
     """Carrega BRD do arquivo specs/brd.yaml."""
