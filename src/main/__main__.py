@@ -1,99 +1,135 @@
 """
 Pipeline de geração de ebook usando LangChain 1.0+.
 
-Arquitetura simples:
-1. Carrega BRD do YAML
-2. Para cada capítulo, constrói query baseada no BRD
-3. Executa agent.invoke(query)
-4. Compila resultado
+Padrão LangChain 1.0:
+- Carrega BRD do YAML
+- Cria queries dinamicamente para cada capítulo
+- Executa agent.invoke() para cada query
+- Salva resultado
 """
 
 import time
+import yaml
+from pathlib import Path
 from agents import writer_agent
-from tasks import get_all_chapters_queries
+
+def load_brd():
+    """Carrega BRD do arquivo specs/brd.yaml."""
+    brd_path = Path(__file__).parent.parent.parent / "specs" / "brd.yaml"
+    with open(brd_path, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f)
+
+def build_chapter_queries(brd):
+    """
+    Constrói queries para cada capítulo baseado no BRD.
+    
+    Returns:
+        list: Lista de tuplas (chapter_name, query_text)
+    """
+    chapters = brd["content_structure"]["chapters"]
+    writing_style = brd["writing_style"]
+    project = brd["project"]
+    
+    queries = []
+    for chapter in chapters:
+        query = f"""Gere o capítulo "{chapter['name']}" do ebook sobre autoconhecimento e inteligência emocional.
+
+Propósito do capítulo:
+{chapter['purpose']}
+
+Elementos obrigatórios a incluir:
+{chr(10).join(f"• {elem}" for elem in chapter['elements'])}
+
+Tom e estilo:
+- Tom: {writing_style['tone']}
+- Abordagem: {writing_style['approach']}
+- Inspirações literárias: {', '.join(writing_style['inspiration'])}
+
+Características do estilo de escrita:
+{chr(10).join(f"✓ {char}" for char in writing_style['characteristics'])}
+
+Público-alvo: {project['target_audience']}
+Idioma: {project['language']}
+
+Escreva o conteúdo seguindo as orientações. O texto deve ser inspirador, prático e transformador."""
+        
+        queries.append((chapter["name"], query))
+    
+    return queries
 
 def generate_ebook():
-    """
-    Gera o ebook de forma sequencial executando agente para cada capítulo.
-    """
-    ebook_content = {
-        "title": "Autoconhecimento e Inteligência Emocional",
-        "sections": []
+    """Gera o ebook executando agente para cada capítulo."""
+    brd = load_brd()
+    chapters_queries = build_chapter_queries(brd)
+    
+    ebook = {
+        "title": brd["project"]["name"],
+        "description": brd["project"]["description"],
+        "chapters": []
     }
     
-    # Obtém queries para todos os capítulos
-    chapters_queries = get_all_chapters_queries()
-    
-    print("\n" + "="*60)
-    print(f"Gerando {len(chapters_queries)} capítulos do ebook")
-    print("="*60)
+    print("\n" + "="*70)
+    print(f"Gerando ebook: {ebook['title']}")
+    print(f"Capítulos: {len(chapters_queries)}")
+    print("="*70)
     
     for idx, (chapter_name, query) in enumerate(chapters_queries, 1):
         print(f"\n[{idx}/{len(chapters_queries)}] Gerando: {chapter_name}")
-        print("-" * 60)
+        print("-" * 70)
         
-        # Executa agente com query baseada no BRD
+        # Executa agent com query
         response = writer_agent.invoke({
             "messages": [{"role": "user", "content": query}]
         })
         
-        # Extrai conteúdo da resposta
-        content = response.get("messages", [])
-        if content and isinstance(content, list):
-            # Última mensagem é a resposta do agent
-            chapter_content = content[-1].get("content", str(content[-1]))
+        # Extrai conteúdo
+        messages = response.get("messages", [])
+        if messages and isinstance(messages, list) and len(messages) > 0:
+            last_msg = messages[-1]
+            content = last_msg.get("content", str(last_msg))
         else:
-            chapter_content = str(response)
+            content = str(response)
         
-        ebook_content["sections"].append({
-            "chapter": chapter_name,
-            "content": chapter_content
+        ebook["chapters"].append({
+            "name": chapter_name,
+            "content": content
         })
         
         print(f"✓ {chapter_name} concluída")
         
         if idx < len(chapters_queries):
-            print("\nAguardando 2 segundos antes do próximo capítulo...")
+            print("\nAguardando 2 segundos...")
             time.sleep(2)
     
-    return ebook_content
+    return ebook
 
-def save_ebook(content: dict, output_path: str = "result/ebook.md"):
-    """
-    Salva o ebook gerado em formato Markdown.
-    
-    Args:
-        content: Dicionário com conteúdo do ebook
-        output_path: Caminho para salvar o arquivo
-    """
+def save_ebook(ebook, output_file="result/ebook.md"):
+    """Salva ebook em formato Markdown."""
     import os
     
-    # Cria diretório se não existir
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    os.makedirs(os.path.dirname(output_file) or ".", exist_ok=True)
     
-    with open(output_path, "w", encoding="utf-8") as f:
-        f.write(f"# {content['title']}\n\n")
+    with open(output_file, "w", encoding="utf-8") as f:
+        f.write(f"# {ebook['title']}\n\n")
+        f.write(f"{ebook['description']}\n\n")
+        f.write("---\n\n")
         
-        for section in content["sections"]:
-            f.write(f"## {section['chapter']}\n\n")
-            f.write(f"{section['content']}\n\n")
+        for chapter in ebook["chapters"]:
+            f.write(f"## {chapter['name']}\n\n")
+            f.write(f"{chapter['content']}\n\n")
+            f.write("---\n\n")
     
-    print(f"\n✓ Ebook salvo em: {output_path}")
+    return output_file
 
 if __name__ == "__main__":
-    print("\n" + "="*60)
-    print("Gerando ebook com LangChain 1.0+")
-    print("="*60)
-    
-    # Gera o ebook
+    # Gera ebook
     ebook = generate_ebook()
     
     # Salva resultado
-    save_ebook(ebook)
+    output_path = save_ebook(ebook)
     
-    print("\n" + "="*60)
-    print("Ebook gerado com sucesso!")
-    print("="*60)
-    print(f"\nCapítulos gerados: {len(ebook['sections'])}")
-    for section in ebook["sections"]:
-        print(f"  ✓ {section['chapter']}")
+    print("\n" + "="*70)
+    print("✓ Ebook gerado com sucesso!")
+    print(f"✓ Salvo em: {output_path}")
+    print(f"✓ Capítulos: {len(ebook['chapters'])}")
+    print("="*70)
