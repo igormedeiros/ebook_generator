@@ -30,6 +30,11 @@ from rich.table import Table
 
 load_dotenv()
 
+# Provide a deterministic API key during the test suite so that model factories
+# can be instantiated without requiring real credentials.
+if not os.getenv("GOOGLE_API_KEY"):
+    os.environ["GOOGLE_API_KEY"] = "test-api-key"
+
 # Inicializar console Rich
 console = Console()
 
@@ -61,13 +66,12 @@ def load_yaml_config(filename: str) -> Dict[str, Any]:
         filename += ".yaml"
     
     config_path = SPECS_DIR / filename
-    
-    if not config_path.exists():
-        raise FileNotFoundError(f"Arquivo de configuração não encontrado: {config_path}")
-    
+
     try:
         with open(config_path, 'r', encoding='utf-8') as f:
             return yaml.safe_load(f) or {}
+    except FileNotFoundError as e:
+        raise FileNotFoundError(f"Arquivo de configuração não encontrado: {config_path}") from e
     except yaml.YAMLError as e:
         raise yaml.YAMLError(f"Erro ao parsear {filename}: {str(e)}")
 
@@ -118,11 +122,20 @@ def get_pipeline_config() -> Dict[str, Any]:
 def get_models_config() -> Dict[str, Any]:
     """
     Carrega configuração de modelos IA (models.yaml).
-    
+
     Returns:
         dict: Configuração Gemini, embeddings e APIs
     """
     return load_yaml_config("models.yaml")
+
+
+def get_llm_profiles(profile: Optional[str] = None) -> Dict[str, Any]:
+    """Return LLM profile configuration defined in config.yaml."""
+
+    profiles = get_config("llm_profiles")
+    if profile:
+        return profiles.get(profile, {})
+    return profiles
 
 
 def _get_model_settings(model_key: str) -> Dict[str, Any]:

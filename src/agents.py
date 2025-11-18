@@ -1,199 +1,290 @@
-"""
-Definição de agentes usando LangChain 1.0+.
-Agentes especializados para research, escrita e validação.
-"""
+"""LangChain agent factory functions and execution helpers."""
 
-from langchain.agents import create_agent
-from langchain_google_genai import ChatGoogleGenerativeAI
-from .tools import get_all_tools, get_research_tools
+from __future__ import annotations
 
 import os
+from dataclasses import dataclass
+from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional
+
 from dotenv import load_dotenv
+from langchain.agents import create_agent
+from langchain_core.callbacks.base import BaseCallbackHandler
+from langchain_google_genai import ChatGoogleGenerativeAI
+
+from .config import (
+    get_agents_config,
+    get_model,
+    get_personas_config,
+    get_research_model,
+)
+from .tools import (
+    get_all_tools,
+    get_editing_tools,
+    get_ideation_tools,
+    get_publication_tools,
+    get_research_tools,
+    get_review_tools,
+    get_structure_tools,
+    get_title_tools,
+    get_writing_tools,
+)
 
 load_dotenv()
 
-# Configuração do Gemini LLM
-google_api_key = os.getenv("GOOGLE_API_KEY")
 
-if not google_api_key:
-    raise ValueError("Chave API do Google não encontrada. Defina a variável 'GOOGLE_API_KEY' no arquivo .env.")
+# ============================================================================
+# Callback + Helpers
+# ============================================================================
 
-# Inicialização do modelo Gemini 2.5 Flash (escrita rápida e criativa)
-gemini_llm = ChatGoogleGenerativeAI(
-    model="gemini-2.5-flash",
-    api_key=google_api_key,
-    temperature=0.7,
-    top_p=0.95,
-    top_k=40
-)
 
-# Inicialização do modelo Gemini 2.5 Pro (análise e research mais profundo)
-gemini_research = ChatGoogleGenerativeAI(
-    model="gemini-2.5-pro",
-    api_key=google_api_key,
-    temperature=0.3,
-    top_p=0.95,
-    top_k=40
-)
+class AgentExecutionLogger(BaseCallbackHandler):
+    """Minimal callback handler used during agent execution in tests."""
 
-# Agent de Research para deep research temática abrangente
-thematic_research_agent = create_agent(
-    model=gemini_research,
-    tools=get_research_tools(),
-    system_prompt="""Você é um Especialista em Pesquisa Temática Abrangente para Ebooks Técnicos.
+    def on_llm_start(self, *args: Any, **kwargs: Any) -> None:  # noqa: D401, ANN401
+        """No-op hook required by BaseCallbackHandler."""
 
-Sua responsabilidade é conduzir pesquisas profundas e independentes sobre tópicos específicos, gerando documentos de referência autossuficientes que podem alimentar múltiplos capítulos.
+    def on_llm_end(self, *args: Any, **kwargs: Any) -> None:  # noqa: D401, ANN401
+        """No-op hook required by BaseCallbackHandler."""
 
-Objetivo Principal:
-Criar documentos de pesquisa abrangentes, bem estruturados e profundos que servem como base de conhecimento consolidada para múltiplos capítulos do ebook, garantindo cobertura completa e evitar redundância.
 
-Escopo de Pesquisa:
-Cada documento de pesquisa temática deve cobrir:
-- Fundamentação teórica completa do tema
-- Estado-da-arte e evolução histórica
-- Conceitos-chave e terminologia
-- Arquitetura e componentes principais
-- Melhores práticas e padrões de implementação
-- Anti-padrões e armadilhas comuns
-- Integração com outros componentes do sistema maior
-- Compliance, segurança e considerações éticas
-- Exemplos práticos e casos de uso
-- Referências e fontes validadas
+@dataclass
+class LazyAgentProxy:
+    """Lazy loader for heavyweight LangChain agents."""
 
-Requisitos de Qualidade:
-- Mínimo 3000 palavras por documento temático
-- Mínimo 7 fontes confiáveis e referências primárias
-- Estrutura hierárquica com no mínimo 8 seções temáticas
-- Diagrama ou descrição de arquitetura quando relevante
-- Exemplos de código ou pseudocódigo LangChain quando aplicável
-- Tabelas comparativas de soluções/abordagens
-- Boxes de atenção para pontos críticos
-- Roadmap de implementação prática
+    factory: Callable[[], Any]
+    _agent: Optional[Any] = None
 
-Características do Trabalho:
-- Análise profunda e holística do tema
-- Independência: cada documento é autocontido
-- Reutilizabilidade: projetado para ser referência para vários capítulos
-- Precisão técnica com profundidade apropriada
-- Balanceamento entre teoria acadêmica e prática industrial
-- Foco em aplicabilidade em contextos clínicos reais
+    def _ensure(self) -> Any:
+        if self._agent is None:
+            self._agent = self.factory()
+        return self._agent
 
-Formato de Saída:
-Retorne documentos temáticos estruturados em Markdown com:
-- Título descritivo e contexto do tema
-- Resumo Executivo (3-4 parágrafos com highlights principais)
-- Índice de conteúdo (TOC) com seções e subseções
-- Seções numeradas com profundidade técnica
-- Diagramas textuais ou descrições de arquitetura
-- Tabelas comparativas quando relevante
-- Blocos de código ou pseudocódigo comentado
-- Boxes de destaque para conceitos críticos
-- Seção de Compliance e Ética específica
-- Seção de Implementação Prática com exemplos
-- Referências numeradas com URLs e datas de acesso
-- Glossário de termos técnicos
-- Conclusões e próximos passos
+    def __getattr__(self, item: str) -> Any:  # noqa: D401
+        return getattr(self._ensure(), item)
 
-Cada documento deve ser denso, completo e pronto para ser referenciado por múltiplos capítulos do ebook."""
-)
 
-# Agent de Research para deep research dos conteúdos
-research_agent = create_agent(
-    model=gemini_research,
-    tools=get_research_tools(),
-    system_prompt="""Você é um Especialista em Research sobre Saúde Clínica e Agentes de IA.
+def _render_prompt(agent_key: str, section: str = "main_pipeline_agents") -> str:
+    config = get_agents_config()
+    section_cfg = config.get(section, {})
+    prompt = section_cfg.get(agent_key, {}).get("system_prompt")
+    if prompt:
+        return prompt
+    # Fallback prompt for missing entries
+    return f"You are {agent_key.replace('_', ' ')} for the Ebook Generator pipeline."
 
-Sua responsabilidade é conduzir pesquisas profundas, rigorosas e contextualizadas sobre tópicos de implementação de IA em ambientes clínicos.
 
-Objetivo Principal:
-Realizar pesquisa profunda que alimente a geração de conteúdo técnico de alta qualidade, garantindo precisão, profundidade e aplicabilidade prática em contextos clínicos reais.
+def _create_agent_from_config(
+    agent_key: str,
+    model: Any,
+    tools_factory: Callable[[], Iterable[Any]],
+    section: str = "main_pipeline_agents",
+) -> Any:
+    system_prompt = _render_prompt(agent_key, section)
+    tools = list(tools_factory())
+    return create_agent(
+        model=model,
+        tools=tools,
+        system_prompt=system_prompt,
+    )
 
-Foco de Pesquisa:
-1. LangChain 1.0 - arquitetura de agentes, padrões de design, casos de uso
-2. RAG (Retrieval-Augmented Generation) - integração com dados clínicos, melhores práticas
-3. EHRs (Registros Eletrônicos de Saúde) - estrutura de dados, segurança, compliance
-4. Compliance e Segurança - LGPD, regulações clínicas, auditoria, rastreabilidade
-5. Ética em IA Clínica - vieses algorítmicos, transparência, responsabilidade, consentimento
-6. Validação e Auditoria - testes em ambiente clínico, métricas de confiança
-7. Implementação Prática - exemplos executáveis, padrões de código, integrações
 
-Requisitos de Qualidade:
-- Mínimo 2000 palavras por tópico pesquisado
-- Mínimo 5 fontes confiáveis e referências validadas
-- Estrutura clara: Contexto → Problema → Solução → Aplicação Prática → Considerações Éticas
-- Referências técnicas e científicas de fontes reconhecidas
-- Mapeamento de melhores práticas e anti-padrões
-- Identificação explícita de riscos, limitações e trade-offs
-- Exemplos de código quando aplicável (pseudocódigo ou sintaxe LangChain)
-- Conexão clara com o contexto clínico humanizado
+def _build_persona_prompt(persona_key: str) -> str:
+    personas = get_personas_config().get("review_personas", {})
+    persona = personas.get(persona_key, {})
+    name = persona.get("name", persona_key.replace("_", " ").title())
+    role = persona.get("role", "Specialist")
+    expertise = persona.get("expertise_areas", [])
+    criteria = persona.get("evaluation_criteria", [])
+    expertise_lines = "\n".join(f"- {item}" for item in expertise) or "- Provide expert review"
+    criteria_lines = "\n".join(f"- {item}" for item in criteria) or "- Share actionable feedback"
+    return (
+        f"You are {persona_key} - {name}, acting as a {role}.\n"
+        f"Focus your review on the following expertise areas:\n{expertise_lines}\n\n"
+        f"Evaluation criteria:\n{criteria_lines}\n\n"
+        "Return concise Markdown feedback that the coordinator can merge into the master report."
+    )
 
-Características do Trabalho:
-- Análise profunda baseada em evidências e fonte primária
-- Pensamento crítico sobre aplicabilidade em ambientes clínicos
-- Balanceamento entre teoria rigorosa e prática aplicável
-- Consideração de stakeholders (médicos, engenheiros, compliance, pacientes)
-- Foco em responsabilidade e segurança como princípios-chave
 
-Formato de Saída:
-Retorne análises estruturadas em Markdown com:
-- Título claro do tópico
-- Resumo executivo (2-3 parágrafos)
-- Seções temáticas bem delimitadas
-- Referências numeradas e fontes validadas
-- Boxes de destaque para considerações críticas
-- Exemplos práticos quando relevante
-- Conclusões e próximos passos
+def _build_reader_prompt(reader_key: str) -> str:
+    readers = get_personas_config().get("virtual_readers", {})
+    reader = readers.get(reader_key, {})
+    name = reader.get("name", reader_key.replace("_", " ").title())
+    profile = reader.get("profile", "Reader persona")
+    focus = reader.get("focus_areas", [])
+    focus_lines = "\n".join(f"- {item}" for item in focus) or "- Overall clarity"
+    validation = reader.get("validation_focus", [])
+    validation_lines = "\n".join(f"- {item}" for item in validation) or "- Provide suggestions"
+    return (
+        f"You are {name}, {profile}.\n"
+        f"Focus areas:\n{focus_lines}\n\n"
+        f"Validation checklist:\n{validation_lines}\n\n"
+        "Respond with empathetic, reader-friendly feedback highlighting confusing sections and actionable improvements."
+    )
 
-Cada análise deve ser completa, independente e pronta para integração direto em conteúdo técnico."""
-)
 
-# Agente de escrita com system prompt especializado
-writer_agent = create_agent(
-    model=gemini_llm,
-    tools=get_all_tools(),
-    system_prompt="""Você é um Especialista em Escrita de Ebooks Técnicos sobre LangChain na Saúde Clínica.
+# ============================================================================
+# Stage Agent Factories
+# ============================================================================
 
+
+def create_document_spec_agent(model: Any) -> Any:
+    return _create_agent_from_config("document_spec_agent", model, get_research_tools)
+
+
+def create_ideation_agent(model: Any) -> Any:
+    return _create_agent_from_config("ideation_agent", model, get_ideation_tools)
+
+
+def create_title_agent(model: Any) -> Any:
+    return _create_agent_from_config("title_agent", model, get_title_tools)
+
+
+def create_structure_agent(model: Any) -> Any:
+    return _create_agent_from_config("structure_agent", model, get_structure_tools)
+
+
+def create_deep_research_agent(model: Any) -> Any:
+    return _create_agent_from_config("deep_research_agent", model, get_research_tools)
+
+
+def create_chapter_agent(model: Any) -> Any:
+    return _create_agent_from_config("chapter_writing_agent", model, get_writing_tools)
+
+
+def create_review_coordinator_agent(model: Any) -> Any:
+    return _create_agent_from_config("review_coordinator_agent", model, get_review_tools)
+
+
+def create_critical_reading_coordinator_agent(model: Any) -> Any:
+    return _create_agent_from_config("critical_reading_coordinator_agent", model, get_review_tools)
+
+
+def create_editing_agent(model: Any) -> Any:
+    return _create_agent_from_config("editing_agent", model, get_editing_tools)
+
+
+def create_finalization_agent(model: Any) -> Any:
+    return _create_agent_from_config("finalization_agent", model, get_editing_tools)
+
+
+def create_publication_agent(model: Any) -> Any:
+    return _create_agent_from_config("publication_agent", model, get_publication_tools)
+
+
+def create_technical_reviewer_agent(model: Any) -> Any:
+    prompt = _build_persona_prompt("technical_reviewer")
+    return create_agent(model=model, tools=list(get_review_tools()), system_prompt=prompt)
+
+
+def create_curious_beginner_agent(model: Any) -> Any:
+    prompt = _build_reader_prompt("curious_beginner")
+    return create_agent(model=model, tools=list(get_review_tools()), system_prompt=prompt)
+
+
+# ============================================================================
+# Agent Execution Utilities
+# ============================================================================
+
+
+def _extract_text_from_response(response: Any) -> str:
+    if isinstance(response, Mapping) and "messages" in response:
+        messages = response["messages"] or []
+        if messages:
+            last = messages[-1]
+            content = getattr(last, "content", None)
+            if content:
+                return content if isinstance(content, str) else str(content)
+    return response if isinstance(response, str) else str(response)
+
+
+def execute_agent(agent: Any, query: str) -> str:
+    """Execute an agent safely and normalize the response."""
+
+    messages = [{"role": "user", "content": query}]
+    callbacks = [AgentExecutionLogger()]
+    try:
+        result = agent.invoke({"messages": messages}, config={"callbacks": callbacks})
+        return _extract_text_from_response(result)
+    except Exception as exc:  # noqa: BLE001
+        return f"Error executing agent: {exc}"
+
+
+def execute_review_personas(primary_agent: Any, content: str, personas: Dict[str, Any]) -> Dict[str, str]:
+    """Execute a set of persona agents and collect their feedback."""
+
+    feedback: Dict[str, str] = {}
+    for persona_name, persona_agent in personas.items():
+        prompt = f"[{persona_name}] Review and provide specialized feedback:\n\n{content}"
+        feedback[persona_name] = execute_agent(persona_agent, prompt)
+    return feedback
+
+
+# ============================================================================
+# Legacy Lazy Agents (used by the classic pipeline)
+# ============================================================================
+
+_WRITER_PROMPT = """Você é um Especialista em Escrita de Ebooks Técnicos sobre LangChain na Saúde Clínica.
 Sua responsabilidade é gerar conteúdo de alta qualidade sobre implementação de agentes LangChain em contextos clínicos com foco em compliance, ética e responsabilidade.
+"""
 
-Tópicos Obrigatórios que devem permear o conteúdo:
-- LangChain 1.0 e sua arquitetura de agentes
-- RAG (Retrieval-Augmented Generation)
-- Agentes RAG avançados
-- Registros Eletrônicos de Saúde (EHRs)
-- Compliance em Saúde (LGPD, normas clínicas)
-- Chainlit para interfaces conversacionais
-- Ética em IA Clínica
-- Validação e Auditoria de decisões
-- Transparência Algorítmica
+_RESEARCH_PROMPT = """Você é um Especialista em Research sobre Saúde Clínica e Agentes de IA.
+Conduza pesquisas profundas, rigorosas e contextualizadas sobre implementação de IA em ambientes clínicos.
+"""
 
-Contexto do Caso de Uso Principal:
-Chat conversacional com UI Chainlit usando Langchain 1.0 e RAG (chromadb) para responder sobre dados de evolução clínica de pacientes internados em UTI, com foco em:
-- Implementação de agentes LangChain 1.0
-- Arquitetura RAG com EHRs
-- Compliance e auditoria
-- Balanceamento entre automação e revisão humana
+_THEMATIC_RESEARCH_PROMPT = """Você é um Especialista em Pesquisa Temática Abrangente para Ebooks Técnicos.
+Crie documentos de referência completos e reutilizáveis para múltiplos capítulos.
+"""
 
-Características do seu estilo:
-- Linguagem técnica mas acessível para engenheiros e profissionais de saúde
-- Balanceamento entre rigor científico e compreensão prática
-- Exemplos de código reais, testáveis e focados em segurança
-- Discussão profunda de considerações éticas, compliance e responsabilidade
-- Foco em humanização da IA em saúde
 
-Ao gerar conteúdo:
-1. Contextualize clinicamente por que o tópico importa
-2. Explique conceitos técnicos com clareza e precisão
-3. Forneça código prático, seguro e testado
-4. Discuta trade-offs éticos, compliance e responsabilidade
-5. Termine com reflexão sobre impacto na clínica e pacientes
+def _build_writer_agent() -> Any:
+    model = get_model()
+    return create_agent(
+        model=model,
+        tools=list(get_all_tools()),
+        system_prompt=_WRITER_PROMPT,
+    )
 
-IMPORTANTE - Formato de Saída:
-- Responda APENAS com Markdown puro
-- Use headers (##, ###, ####) para estruturar o conteúdo
-- Use listas com - ou * para pontos
-- Use ` para código inline e ``` para blocos de código
-- NÃO inclua JSON, metadados ou objetos estruturados
-- NÃO inclua assinaturas ou informações de rastreamento
 
-O conteúdo DEVE ser apenas Markdown formatado, nada mais."""
-)
+def _build_research_agent() -> Any:
+    model = get_research_model()
+    return create_agent(
+        model=model,
+        tools=list(get_research_tools()),
+        system_prompt=_RESEARCH_PROMPT,
+    )
+
+
+def _build_thematic_research_agent() -> Any:
+    model = get_research_model()
+    return create_agent(
+        model=model,
+        tools=list(get_research_tools()),
+        system_prompt=_THEMATIC_RESEARCH_PROMPT,
+    )
+
+
+writer_agent = LazyAgentProxy(_build_writer_agent)
+research_agent = LazyAgentProxy(_build_research_agent)
+thematic_research_agent = LazyAgentProxy(_build_thematic_research_agent)
+
+
+__all__ = [
+    "create_document_spec_agent",
+    "create_ideation_agent",
+    "create_title_agent",
+    "create_structure_agent",
+    "create_deep_research_agent",
+    "create_chapter_agent",
+    "create_review_coordinator_agent",
+    "create_critical_reading_coordinator_agent",
+    "create_editing_agent",
+    "create_finalization_agent",
+    "create_publication_agent",
+    "create_technical_reviewer_agent",
+    "create_curious_beginner_agent",
+    "execute_agent",
+    "execute_review_personas",
+    "writer_agent",
+    "research_agent",
+    "thematic_research_agent",
+]
