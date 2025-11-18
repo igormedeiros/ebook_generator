@@ -44,6 +44,70 @@ def load_brd():
     with open(brd_path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
+def check_existing_thematic_research(brd):
+    """
+    Verifica se pesquisas temáticas já existem em kb/.
+    
+    Returns:
+        dict: {topic_name: file_path} dos arquivos existentes
+    """
+    kb_dir = Path(__file__).parent.parent / "kb"
+    required_topics = brd["project"].get("required_topics", [])
+    
+    existing = {}
+    for topic in required_topics:
+        safe_name = topic.lower().replace(" ", "_").replace("(", "").replace(")", "")
+        file_path = kb_dir / f"thematic_{safe_name}.md"
+        if file_path.exists():
+            existing[topic] = str(file_path)
+    
+    return existing
+
+def ask_perform_thematic_research(existing_count, total_count):
+    """
+    Pergunta se deve realizar pesquisa temática.
+    
+    Args:
+        existing_count: Número de pesquisas temáticas já existentes
+        total_count: Total de pesquisas temáticas necessárias
+    
+    Returns:
+        bool: True se deve fazer a pesquisa, False caso contrário
+    """
+    if existing_count > 0:
+        print(f"\n⚠️  Encontradas {existing_count}/{total_count} pesquisas temáticas já salvas em kb/\n")
+        print("Opções:")
+        print("  [s] Sim, fazer nova pesquisa (sobrescrever existentes)")
+        print("  [n] Não, usar pesquisas existentes")
+        
+        while True:
+            choice = input("\nDeseja fazer a pesquisa temática? (s/n): ").strip().lower()
+            if choice in ['s', 'n']:
+                return choice == 's'
+            print("Resposta inválida. Digite 's' ou 'n'")
+    
+    return True
+
+def ask_rag_storage_method():
+    """
+    Pergunta onde o RAG deve ser armazenado.
+    
+    Returns:
+        str: 'supabase' ou 'local'
+    """
+    print("\n🗂️  Onde armazenar o RAG (contexto de pesquisa)?\n")
+    print("Opções:")
+    print("  [s] Supabase (recomendado para produção, requer credenciais)")
+    print("  [l] Local (pasta kb/, sem dependências externas)")
+    
+    while True:
+        choice = input("\nEscolha o armazenamento: (s/l): ").strip().lower()
+        if choice == 's':
+            return 'supabase'
+        elif choice == 'l':
+            return 'local'
+        print("Resposta inválida. Digite 's' ou 'l'")
+
 def generate_chapter_structure(brd):
     """
     Gera a estrutura de capítulos usando o writer_agent.
@@ -560,11 +624,32 @@ def generate_ebook():
     # FASE 1: Pesquisa Temática Abrangente (baseada em required_topics)
     print_phase_header(1, "PESQUISA TEMÁTICA", "Pesquisas abrangentes sobre tópicos obrigatórios")
     
-    thematic_research_paths = generate_thematic_research(brd)
-    if thematic_research_paths:
+    # Verificar se pesquisas temáticas já existem
+    existing_thematic = check_existing_thematic_research(brd)
+    perform_thematic = ask_perform_thematic_research(len(existing_thematic), len(brd["project"].get("required_topics", [])))
+    
+    thematic_research_paths = {}
+    if perform_thematic:
+        thematic_research_paths = generate_thematic_research(brd)
+        if thematic_research_paths:
+            print_separator()
+            print(f"  ✅ {len(thematic_research_paths)} pesquisas temáticas geradas e salvas imediatamente em kb/")
+            print_separator()
+    else:
+        thematic_research_paths = existing_thematic
         print_separator()
-        print(f"  ✅ {len(thematic_research_paths)} pesquisas temáticas geradas e salvas imediatamente em kb/")
+        print(f"  ℹ️  Usando {len(existing_thematic)} pesquisas temáticas já existentes em kb/")
         print_separator()
+    
+    # Pergunta sobre armazenamento RAG
+    rag_storage = ask_rag_storage_method()
+    
+    print_separator()
+    if rag_storage == 'supabase':
+        print("  📤 RAG será armazenado em Supabase (implementação futura)")
+    else:
+        print("  📁 RAG será armazenado localmente em kb/")
+    print_separator()
     
     # FASE 2: Pesquisa por Capítulo (usando as temáticas como base)
     print_phase_header(2, "RESEARCH E SALVAMENTO", "Pesquisa profunda e salvamento em kb/")
