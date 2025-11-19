@@ -17,6 +17,7 @@ import json
 import os
 import sys
 import ast
+import json_repair
 from functools import lru_cache
 from pathlib import Path
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeRemainingColumn
@@ -351,16 +352,24 @@ Exemplo formato:
                 if content.endswith('```'): content = content[:-3]
                 content = content.strip()
                 
-                # Se começar com [, é JSON direto
+                # Tenta parsear com json_repair (mais robusto)
+                try:
+                    chapters = json_repair.loads(content)
+                    if isinstance(chapters, list):
+                        return chapters
+                except Exception as e:
+                    print(f"  ❌ Erro ao parsear JSON com json_repair (tentativa {attempt + 1}): {e}")
+                    print(f"  📄 Conteúdo problemático (início): {content[:200]}...")
+                    
+                # Fallback antigo (apenas se json_repair falhar ou não retornar lista)
                 if content.startswith('['):
                     try:
                         chapters = json.loads(content)
                         return chapters
                     except (json.JSONDecodeError, ValueError) as e:
-                        print(f"  ❌ Erro ao parsear JSON (tentativa {attempt + 1}): {e}")
-                        print(f"  📄 Conteúdo problemático (início): {content[:200]}...")
+                        print(f"  ❌ Erro ao parsear JSON nativo (tentativa {attempt + 1}): {e}")
                         
-                        # Tenta ast.literal_eval como fallback
+                        # Tenta ast.literal_eval como último recurso
                         try:
                             chapters = ast.literal_eval(content)
                             if isinstance(chapters, list):
