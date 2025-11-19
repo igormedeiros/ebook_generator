@@ -22,3 +22,4 @@
 [x] Fix NameError: name 'brd' is not defined in save_ebook
 [x] Implement incremental saving of chapters to ebook.md
 [x] Update get_confirmation to support skip_prompt parameter
+[x] Fix JSON parsing errors in chapter structure generation using json_repair
