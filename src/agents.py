@@ -210,7 +210,7 @@ def execute_agent(agent: Any, query: str) -> str:
         return f"Error executing agent: {exc}"
 
 
-def execute_review_personas(primary_agent: Any, content: str, personas: Dict[str, Any]) -> Dict[str, str]:
+def execute_review_personas(content: str, personas: Dict[str, Any]) -> Dict[str, str]:
     """Execute a set of persona agents and collect their feedback."""
 
     feedback: Dict[str, str] = {}

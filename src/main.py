@@ -955,23 +955,24 @@ def generate_ebook():
             task = global_progress.add_task("[magenta]Revisando e Editando...", total=len(ebook["chapters"]))
             
             for idx, chapter in enumerate(ebook["chapters"], 1):
-                global_progress.update(task, description=f"[magenta]Revisando ({idx}/{len(ebook['chapters'])}): {chapter['name']}")
-                
                 original_content = chapter["content"]
-                
+
                 # 1. Revisão Técnica
+                global_progress.update(task, description=f"[magenta]Revisão Técnica ({idx}/{len(ebook['chapters'])}): {chapter['name']}")
                 review_results = execute_review_personas(
-                    review_agent, original_content, review_personas
+                    original_content, review_personas
                 )
                 review_text = "\n\n".join([f"### {k}\n{v}" for k, v in review_results.items()])
                 
                 # 2. Leitura Crítica
+                global_progress.update(task, description=f"[magenta]Leitura Crítica ({idx}/{len(ebook['chapters'])}): {chapter['name']}")
                 critical_results = execute_review_personas(
-                    critical_agent, original_content, virtual_readers
+                    original_content, virtual_readers
                 )
                 critical_text = "\n\n".join([f"### {k}\n{v}" for k, v in critical_results.items()])
                 
                 # 3. Edição e Refinamento
+                global_progress.update(task, description=f"[magenta]Editando ({idx}/{len(ebook['chapters'])}): {chapter['name']}")
                 editing_prompt = f"""Refine o seguinte capítulo do ebook com base nos feedbacks recebidos.
                 
 CAPÍTULO: {chapter['name']}
