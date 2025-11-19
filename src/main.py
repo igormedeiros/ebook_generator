@@ -459,7 +459,7 @@ def save_thematic_research_immediately(topic, content, brd, word_count=None):
 
     return str(file_path)
 
-def generate_thematic_research(brd):
+def generate_thematic_research(brd, progress=None):
     """Gera pesquisas temáticas abrangentes baseadas nos required_topics do BRD."""
 
     project = brd["project"]
@@ -478,17 +478,24 @@ def generate_thematic_research(brd):
     print(f"\n📚 Gerando pesquisas temáticas abrangentes para {len(required_topics)} tópicos...\n")
     print("   (Salvamento imediato ativado - cada tema é persistido em kb/ após geração)\n")
 
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        BarColumn(),
-        TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
-        TimeRemainingColumn(),
-    ) as progress:
-        task = progress.add_task("[cyan]Pesquisando temas...", total=len(required_topics))
+    # Configura o gerenciador de progresso
+    if progress is None:
+        progress_ctx = Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+            TimeRemainingColumn(),
+        )
+        progress_ctx.start()
+    else:
+        progress_ctx = progress
+
+    try:
+        task = progress_ctx.add_task("[cyan]Pesquisando temas...", total=len(required_topics))
 
         for idx, topic in enumerate(required_topics, 1):
-            progress.update(task, description=f"[cyan]Pesquisando tema ({idx}/{len(required_topics)}): {topic}")
+            progress_ctx.update(task, description=f"[cyan]Pesquisando tema ({idx}/{len(required_topics)}): {topic}")
 
             base_prompt = build_deep_research_prompt(topic=topic, project=project, minimum_words=min_words)
 
@@ -536,7 +543,13 @@ def generate_thematic_research(brd):
             thematic_research_paths[topic] = file_path
             # print(f"  📝 Salvo imediatamente: {Path(file_path).name}\n")
             
-            progress.advance(task)
+            progress_ctx.advance(task)
+
+    finally:
+        if progress is None:
+            progress_ctx.stop()
+        else:
+            progress_ctx.remove_task(task)
 
     return thematic_research_paths
 
@@ -659,95 +672,106 @@ def generate_ebook():
         "LangChain 1.0 na Saúde Clínica"
     )
     
-    # Etapa 1: Gerar estrutura
-    print_info("Gerando estrutura de capítulos...")
-    chapters = generate_chapter_structure(brd)
-    
-    if not chapters:
-        print_error_message("Falha ao gerar estrutura de capítulos")
-        return None
-    
-    print_separator()
-    
-    # Etapa 2: Preparar dados do ebook
-    ebook = {
-        "title": brd["project"]["name"],
-        "description": brd["project"]["description"],
-        "chapters": []
-    }
-    
-    # Exibir informações do ebook
-    print_ebook_info(
-        ebook['title'],
-        ebook['description'],
-        brd['project']['target_audience']
-    )
-    print_separator()
-    
-    # Exibir preview dos capítulos
-    print_chapters_preview(chapters)
-    print_separator()
-    
-    # Pedir aprovação
-    if not get_confirmation("Deseja prosseguir com a geração do Ebook?"):
-        return None
-    
-    # Inicializa arquivo do ebook imediatamente
-    initialize_ebook_file(brd)
-    
-    print_separator()
-    
-    # FASE 1: Pesquisa Temática Abrangente (baseada em required_topics)
-    print_phase_header(1, "PESQUISA TEMÁTICA", "Pesquisas abrangentes sobre tópicos obrigatórios")
-    
-    # Verificar se pesquisas temáticas já existem
-    existing_thematic = check_existing_thematic_research(brd)
-    
-    # Pergunta se deve realizar a pesquisa temática
-    perform_thematic = get_confirmation("Deseja realizar a PESQUISA TEMÁTICA?", default=True)
-    
-    thematic_research_paths = {}
-    if perform_thematic:
-        thematic_research_paths = generate_thematic_research(brd)
-        if thematic_research_paths:
-            print_separator()
-            print(f"  ✅ {len(thematic_research_paths)} pesquisas temáticas geradas e salvas imediatamente em kb/")
-            print_separator()
-    else:
-        thematic_research_paths = existing_thematic
-        print_separator()
-        print(f"  ℹ️  Usando {len(existing_thematic)} pesquisas temáticas já existentes em kb/")
-        print_separator()
-    
-    # Pergunta sobre armazenamento RAG
-    rag_storage = ask_rag_storage_method()
-    
-    print_separator()
-    if rag_storage == 'supabase':
-        print("  📤 RAG será armazenado em Supabase (implementação futura)")
-    else:
-        print("  📁 RAG será armazenado localmente em kb/")
-    print_separator()
-    
-    # FASE 2: Pesquisa por Capítulo (usando as temáticas como base)
-    print_phase_header(2, "DEEP RESEARCH DE TODOS OS CAPÍTULOS E SALVAMENTO", "Pesquisa profunda e salvamento em kb/")
-    
-    # Pergunta global se deve realizar Deep Research para TODOS os capítulos
-    perform_deep_research = get_confirmation("Deseja realizar DEEP RESEARCH para TODOS os capítulos?", default=True)
-    
-    research_data = {}
-    
+    # Inicializa barra de progresso global
     with Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
         BarColumn(),
         TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
         TimeRemainingColumn(),
-    ) as progress:
-        task = progress.add_task("[cyan]Processando pesquisa...", total=len(chapters))
+    ) as global_progress:
+        
+        # Define etapas principais
+        total_stages = 5 # Estrutura, Temática, Deep Research, Conteúdo, Revisão
+        overall_task = global_progress.add_task("[bold blue]Progresso Total do Ebook", total=total_stages)
+        
+        # Etapa 1: Gerar estrutura
+        print_info("Gerando estrutura de capítulos...")
+        struct_task = global_progress.add_task("[cyan]Gerando estrutura...", total=None)
+        chapters = generate_chapter_structure(brd)
+        global_progress.remove_task(struct_task)
+        global_progress.advance(overall_task)
+        
+        if not chapters:
+            print_error_message("Falha ao gerar estrutura de capítulos")
+            return None
+        
+        print_separator()
+        
+        # Etapa 2: Preparar dados do ebook
+        ebook = {
+            "title": brd["project"]["name"],
+            "description": brd["project"]["description"],
+            "chapters": []
+        }
+        
+        # Exibir informações do ebook
+        print_ebook_info(
+            ebook['title'],
+            ebook['description'],
+            brd['project']['target_audience']
+        )
+        print_separator()
+        
+        # Exibir preview dos capítulos
+        print_chapters_preview(chapters)
+        print_separator()
+        
+        # Pedir aprovação
+        if not get_confirmation("Deseja prosseguir com a geração do Ebook?"):
+            return None
+        
+        # Inicializa arquivo do ebook imediatamente
+        initialize_ebook_file(brd)
+        
+        print_separator()
+        
+        # FASE 1: Pesquisa Temática Abrangente (baseada em required_topics)
+        print_phase_header(1, "PESQUISA TEMÁTICA", "Pesquisas abrangentes sobre tópicos obrigatórios")
+        
+        # Verificar se pesquisas temáticas já existem
+        existing_thematic = check_existing_thematic_research(brd)
+        
+        # Pergunta se deve realizar a pesquisa temática
+        perform_thematic = get_confirmation("Deseja realizar a PESQUISA TEMÁTICA?", default=True)
+        
+        thematic_research_paths = {}
+        if perform_thematic:
+            thematic_research_paths = generate_thematic_research(brd, progress=global_progress)
+            if thematic_research_paths:
+                print_separator()
+                print(f"  ✅ {len(thematic_research_paths)} pesquisas temáticas geradas e salvas imediatamente em kb/")
+                print_separator()
+        else:
+            thematic_research_paths = existing_thematic
+            print_separator()
+            print(f"  ℹ️  Usando {len(existing_thematic)} pesquisas temáticas já existentes em kb/")
+            print_separator()
+        
+        global_progress.advance(overall_task)
+        
+        # Pergunta sobre armazenamento RAG
+        rag_storage = ask_rag_storage_method()
+        
+        print_separator()
+        if rag_storage == 'supabase':
+            print("  📤 RAG será armazenado em Supabase (implementação futura)")
+        else:
+            print("  📁 RAG será armazenado localmente em kb/")
+        print_separator()
+        
+        # FASE 2: Pesquisa por Capítulo (usando as temáticas como base)
+        print_phase_header(2, "DEEP RESEARCH DE TODOS OS CAPÍTULOS E SALVAMENTO", "Pesquisa profunda e salvamento em kb/")
+        
+        # Pergunta global se deve realizar Deep Research para TODOS os capítulos
+        perform_deep_research = get_confirmation("Deseja realizar DEEP RESEARCH para TODOS os capítulos?", default=True)
+        
+        research_data = {}
+        
+        task = global_progress.add_task("[cyan]Processando pesquisa...", total=len(chapters))
         
         for idx, chapter in enumerate(chapters, 1):
-            progress.update(task, description=f"[cyan]Pesquisando ({idx}/{len(chapters)}): {chapter['name']}")
+            global_progress.update(task, description=f"[cyan]Pesquisando ({idx}/{len(chapters)}): {chapter['name']}")
             
             if perform_deep_research:
                 # Gera research real
@@ -772,33 +796,29 @@ def generate_ebook():
             )
             # print_research_saved(kb_path, len(research_content))
             
-            progress.advance(task)
+            global_progress.advance(task)
             if idx < len(chapters):
                 time.sleep(0.5)  # Pequeno delay entre requests
-    
-    print_separator()
-    print_success_message("Todas as pesquisas foram salvas em kb/")
-    print_separator()
-    
-    # FASE 3: Geração de conteúdo
-    print_phase_header(3, "GERAÇÃO DE CONTEÚDO", "Geração de conteúdo final baseado em research")
-    
-    # Gerar queries para cada capítulo (agora com research como contexto)
-    chapters_queries = build_chapter_queries_with_research(chapters, research_data, brd)
-    
-    words_per_chapter = brd['project'].get('target_word_count', 10000) // len(chapters)
-    
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        BarColumn(),
-        TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
-        TimeRemainingColumn(),
-    ) as progress:
-        task = progress.add_task("[green]Gerando conteúdo...", total=len(chapters_queries))
+        
+        global_progress.remove_task(task)
+        global_progress.advance(overall_task)
+        
+        print_separator()
+        print_success_message("Todas as pesquisas foram salvas em kb/")
+        print_separator()
+        
+        # FASE 3: Geração de conteúdo
+        print_phase_header(3, "GERAÇÃO DE CONTEÚDO", "Geração de conteúdo final baseado em research")
+        
+        # Gerar queries para cada capítulo (agora com research como contexto)
+        chapters_queries = build_chapter_queries_with_research(chapters, research_data, brd)
+        
+        words_per_chapter = brd['project'].get('target_word_count', 10000) // len(chapters)
+        
+        task = global_progress.add_task("[green]Gerando conteúdo...", total=len(chapters_queries))
         
         for idx, (chapter_name, query) in enumerate(chapters_queries, 1):
-            progress.update(task, description=f"[green]Gerando ({idx}/{len(chapters_queries)}): {chapter_name}")
+            global_progress.update(task, description=f"[green]Gerando ({idx}/{len(chapters_queries)}): {chapter_name}")
             
             # Executa agent com query
             response = writer_agent.invoke({
@@ -847,43 +867,39 @@ def generate_ebook():
                  append_chapter_to_ebook(chapter_name, content)
             
             # print_content_generated(len(content))
-            progress.advance(task)
+            global_progress.advance(task)
             
             if idx < len(chapters_queries):
                 time.sleep(0.5)
-    
-    print_separator()
-    
-    # FASE 4: Revisão e Refinamento
-    print_phase_header(4, "REVISÃO E REFINAMENTO", "Revisão técnica, leitura crítica e edição final")
-    
-    # Pergunta se deve realizar a revisão
-    perform_review = get_confirmation("Deseja realizar a REVISÃO E REFINAMENTO?", default=True)
-    
-    if perform_review:
-        write_model = get_model()
-        research_model = get_research_model()
         
-        # Inicializa agentes
-        review_agent = create_review_coordinator_agent(research_model)
-        review_personas = _build_review_persona_agents(research_model)
+        global_progress.remove_task(task)
+        global_progress.advance(overall_task)
         
-        critical_agent = create_critical_reading_coordinator_agent(research_model)
-        virtual_readers = _build_virtual_reader_agents(write_model)
+        print_separator()
         
-        editing_agent = create_editing_agent(write_model)
+        # FASE 4: Revisão e Refinamento
+        print_phase_header(4, "REVISÃO E REFINAMENTO", "Revisão técnica, leitura crítica e edição final")
         
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            BarColumn(),
-            TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
-            TimeRemainingColumn(),
-        ) as progress:
-            task = progress.add_task("[magenta]Revisando e Editando...", total=len(ebook["chapters"]))
+        # Pergunta se deve realizar a revisão
+        perform_review = get_confirmation("Deseja realizar a REVISÃO E REFINAMENTO?", default=True)
+        
+        if perform_review:
+            write_model = get_model()
+            research_model = get_research_model()
+            
+            # Inicializa agentes
+            review_agent = create_review_coordinator_agent(research_model)
+            review_personas = _build_review_persona_agents(research_model)
+            
+            critical_agent = create_critical_reading_coordinator_agent(research_model)
+            virtual_readers = _build_virtual_reader_agents(write_model)
+            
+            editing_agent = create_editing_agent(write_model)
+            
+            task = global_progress.add_task("[magenta]Revisando e Editando...", total=len(ebook["chapters"]))
             
             for idx, chapter in enumerate(ebook["chapters"], 1):
-                progress.update(task, description=f"[magenta]Revisando ({idx}/{len(ebook['chapters'])}): {chapter['name']}")
+                global_progress.update(task, description=f"[magenta]Revisando ({idx}/{len(ebook['chapters'])}): {chapter['name']}")
                 
                 original_content = chapter["content"]
                 
@@ -946,13 +962,17 @@ INSTRUÇÕES DE EDIÇÃO:
                 # Salva incrementalmente o capítulo revisado
                 append_chapter_to_ebook(chapter['name'], refined_content)
                 
-                progress.advance(task)
+                global_progress.advance(task)
                 if idx < len(ebook["chapters"]):
                     time.sleep(0.5)
+            
+            global_progress.remove_task(task)
+            
+            print_separator()
+            print_success_message("Revisão e refinamento concluídos!")
+            print_separator()
         
-        print_separator()
-        print_success_message("Revisão e refinamento concluídos!")
-        print_separator()
+        global_progress.advance(overall_task)
 
     return ebook
 
