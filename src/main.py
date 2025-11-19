@@ -358,12 +358,15 @@ Exemplo formato:
                         return chapters
                     except (json.JSONDecodeError, ValueError) as e:
                         print(f"  ❌ Erro ao parsear JSON (tentativa {attempt + 1}): {e}")
+                        print(f"  📄 Conteúdo problemático (início): {content[:200]}...")
+                        
                         # Tenta ast.literal_eval como fallback
                         try:
                             chapters = ast.literal_eval(content)
                             if isinstance(chapters, list):
                                 return chapters
-                        except:
+                        except Exception as ast_e:
+                            print(f"  ❌ Erro no fallback AST: {ast_e}")
                             pass
         except Exception as e:
             print(f"  ❌ Erro na execução do agente (tentativa {attempt + 1}): {e}")
