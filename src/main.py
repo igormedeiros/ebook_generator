@@ -312,36 +312,63 @@ Exemplo formato:
 [{{"name": "Introdução", "purpose": "...", "elements": ["elem1", "elem2"]}}, ...]"""
     
     print(f"\n🔄 Gerando estrutura de {number_chapters} capítulos com tópicos obrigatórios ({target_word_count} palavras)...")
-    response = writer_agent.invoke({
-        "messages": [{"role": "user", "content": query}]
-    })
     
-    content = response["messages"][-1].content
-    
-    # Se for lista com artifacts (Gemini format), extrai o texto
-    if isinstance(content, list) and len(content) > 0:
-        if isinstance(content[0], dict) and 'text' in content[0]:
-            # Extrai o texto do primeiro artifact
-            content = content[0]['text']
-    
-    # Se for string, tenta extrair JSON
-    if isinstance(content, str):
-        # Se começar com `, procura pelo JSON dentro
-        if '```json' in content:
-            start = content.find('[')
-            end = content.rfind(']') + 1
-            if start >= 0 and end > start:
-                content = content[start:end]
-        
-        # Se começar com [, é JSON direto
-        if content.strip().startswith('['):
-            try:
-                chapters = json.loads(content)
-                return chapters
-            except (json.JSONDecodeError, ValueError) as e:
-                print(f"❌ Erro ao parsear como JSON array: {e}")
-    
-    print("❌ Não foi possível gerar estrutura de capítulos")
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            if attempt > 0:
+                print(f"  ⚠️ Tentativa {attempt + 1}/{max_retries} de gerar estrutura...")
+                
+            response = writer_agent.invoke({
+                "messages": [{"role": "user", "content": query}]
+            })
+            
+            content = response["messages"][-1].content
+            
+            # Se for lista com artifacts (Gemini format), extrai o texto
+            if isinstance(content, list) and len(content) > 0:
+                if isinstance(content[0], dict) and 'text' in content[0]:
+                    # Extrai o texto do primeiro artifact
+                    content = content[0]['text']
+            
+            # Se for string, tenta extrair JSON
+            if isinstance(content, str):
+                # Se começar com `, procura pelo JSON dentro
+                if '```json' in content:
+                    start = content.find('[')
+                    end = content.rfind(']') + 1
+                    if start >= 0 and end > start:
+                        content = content[start:end]
+                elif '```' in content: # Tenta achar qualquer bloco de código
+                     start = content.find('[')
+                     end = content.rfind(']') + 1
+                     if start >= 0 and end > start:
+                        content = content[start:end]
+
+                # Limpeza básica
+                content = content.strip()
+                if content.startswith('```json'): content = content[7:]
+                if content.endswith('```'): content = content[:-3]
+                content = content.strip()
+                
+                # Se começar com [, é JSON direto
+                if content.startswith('['):
+                    try:
+                        chapters = json.loads(content)
+                        return chapters
+                    except (json.JSONDecodeError, ValueError) as e:
+                        print(f"  ❌ Erro ao parsear JSON (tentativa {attempt + 1}): {e}")
+                        # Tenta ast.literal_eval como fallback
+                        try:
+                            chapters = ast.literal_eval(content)
+                            if isinstance(chapters, list):
+                                return chapters
+                        except:
+                            pass
+        except Exception as e:
+            print(f"  ❌ Erro na execução do agente (tentativa {attempt + 1}): {e}")
+            
+    print("❌ Não foi possível gerar estrutura de capítulos após várias tentativas")
     return []
 
 def generate_chapter_research(chapter_name, chapter_purpose, chapter_elements, brd, skip_prompt=False):
