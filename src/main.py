@@ -757,8 +757,12 @@ def generate_ebook():
         print_separator()
         
         # Pedir aprovação
-        if not get_confirmation("Deseja prosseguir com a geração do Ebook?"):
-            return None
+        global_progress.stop()
+        try:
+            if not get_confirmation("Deseja prosseguir com a geração do Ebook?"):
+                return None
+        finally:
+            global_progress.start()
         
         # Inicializa arquivo do ebook imediatamente
         initialize_ebook_file(brd)
@@ -772,7 +776,11 @@ def generate_ebook():
         existing_thematic = check_existing_thematic_research(brd)
         
         # Pergunta se deve realizar a pesquisa temática
-        perform_thematic = get_confirmation("Deseja realizar a PESQUISA TEMÁTICA?", default=True)
+        global_progress.stop()
+        try:
+            perform_thematic = get_confirmation("Deseja realizar a PESQUISA TEMÁTICA?", default=True)
+        finally:
+            global_progress.start()
         
         thematic_research_paths = {}
         if perform_thematic:
@@ -790,7 +798,8 @@ def generate_ebook():
         global_progress.advance(overall_task)
         
         # Pergunta sobre armazenamento RAG
-        rag_storage = ask_rag_storage_method()
+        # rag_storage = ask_rag_storage_method() # TODO: Implementar ask_rag_storage_method com stop/start se for interativo
+        rag_storage = 'local' # Simplificação temporária ou implementar ask_rag_storage_method corretamente
         
         print_separator()
         if rag_storage == 'supabase':
@@ -803,7 +812,11 @@ def generate_ebook():
         print_phase_header(2, "DEEP RESEARCH DE TODOS OS CAPÍTULOS E SALVAMENTO", "Pesquisa profunda e salvamento em kb/")
         
         # Pergunta global se deve realizar Deep Research para TODOS os capítulos
-        perform_deep_research = get_confirmation("Deseja realizar DEEP RESEARCH para TODOS os capítulos?", default=True)
+        global_progress.stop()
+        try:
+            perform_deep_research = get_confirmation("Deseja realizar DEEP RESEARCH para TODOS os capítulos?", default=True)
+        finally:
+            global_progress.start()
         
         research_data = {}
         
@@ -920,7 +933,11 @@ def generate_ebook():
         print_phase_header(4, "REVISÃO E REFINAMENTO", "Revisão técnica, leitura crítica e edição final")
         
         # Pergunta se deve realizar a revisão
-        perform_review = get_confirmation("Deseja realizar a REVISÃO E REFINAMENTO?", default=True)
+        global_progress.stop()
+        try:
+            perform_review = get_confirmation("Deseja realizar a REVISÃO E REFINAMENTO?", default=True)
+        finally:
+            global_progress.start()
         
         if perform_review:
             write_model = get_model()
