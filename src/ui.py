@@ -72,8 +72,11 @@ def print_chapters_preview(chapters: list):
     
     console.print(table)
 
-def get_confirmation(prompt_text: str = "Deseja prosseguir com a geração?", default: bool = True):
+def get_confirmation(prompt_text: str = "Deseja prosseguir com a geração?", default: bool = True, skip_prompt: bool = False):
     """Obtém confirmação do usuário de forma bonita."""
+    if skip_prompt:
+        return default
+    
     default_str = "(S/n)" if default else "(s/N)"
     
     panel = Panel(

@@ -842,6 +842,10 @@ def generate_ebook():
                 "content": content
             })
             
+            # Salva incrementalmente se não for fazer revisão
+            if not get_confirmation("Deseja realizar a REVISÃO E REFINAMENTO?", default=True, skip_prompt=True):
+                 append_chapter_to_ebook(chapter_name, content)
+            
             # print_content_generated(len(content))
             progress.advance(task)
             
@@ -939,6 +943,9 @@ INSTRUÇÕES DE EDIÇÃO:
                 
                 chapter["content"] = refined_content
                 
+                # Salva incrementalmente o capítulo revisado
+                append_chapter_to_ebook(chapter['name'], refined_content)
+                
                 progress.advance(task)
                 if idx < len(ebook["chapters"]):
                     time.sleep(0.5)
@@ -949,34 +956,50 @@ INSTRUÇÕES DE EDIÇÃO:
 
     return ebook
 
-def save_ebook(ebook, output_file="result/ebook.md"):
-    """Salva ebook em formato Markdown, usando template se disponível."""
+def append_chapter_to_ebook(chapter_name, content, output_file="result/ebook.md"):
+    """Adiciona um capítulo ao arquivo do ebook, substituindo o placeholder [Capitulos] ou anexando."""
     import os
-    import datetime
-
-    os.makedirs(os.path.dirname(output_file) or ".", exist_ok=True)
     
-    # Tenta carregar o template
-    template_path = Path(__file__).parent.parent / "template" / "template.md"
-    template_content = ""
+    if not os.path.exists(output_file):
+        return False
+        
+    with open(output_file, "r", encoding="utf-8") as f:
+        current_content = f.read()
     
-    if template_path.exists():
-        with open(template_path, "r", encoding="utf-8") as f:
-            template_content = f.read()
+    new_chapter_block = f"## {chapter_name}\n\n{content}\n\n---\n\n"
+    
+    if "[Capitulos]" in current_content:
+        # Substitui o placeholder pelo capítulo + novo placeholder para o próximo
+        updated_content = current_content.replace(
+            "[Capitulos]", 
+            f"{new_chapter_block}[Capitulos]"
+        )
     else:
-        # Fallback template if file missing
-        template_content = "# <<titulo_do_livro>>\n\n[Capitulos]"
+        # Se não tiver placeholder, anexa ao final
+        updated_content = current_content + "\n\n" + new_chapter_block
+        
+    with open(output_file, "w", encoding="utf-8") as f:
+        f.write(updated_content)
+        
+    return True
 
-    # Substitui placeholders iniciais
-    final_content = template_content.replace("<<titulo_do_livro>>", brd['project']['name'])
-    final_content = final_content.replace("<<data de lançamento>>", datetime.date.today().strftime("%d/%m/%Y"))
-    final_content = final_content.replace("<<numero do ASIN>>", "PENDENTE")
-    final_content = final_content.replace("<<link da amazon>>", "https://amazon.com.br/dp/PENDENTE")
+def finalize_ebook_file(output_file="result/ebook.md"):
+    """Remove o placeholder [Capitulos] restante."""
+    import os
+    if not os.path.exists(output_file):
+        return
+        
+    with open(output_file, "r", encoding="utf-8") as f:
+        content = f.read()
+        
+    final_content = content.replace("[Capitulos]", "")
     
     with open(output_file, "w", encoding="utf-8") as f:
         f.write(final_content)
-    
-    print(f"  📄 Arquivo inicial criado: {output_file}")
+
+def save_ebook(ebook, output_file="result/ebook.md"):
+    """Finaliza o arquivo do ebook."""
+    finalize_ebook_file(output_file)
     return output_file
 
 

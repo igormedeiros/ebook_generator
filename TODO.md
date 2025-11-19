@@ -19,3 +19,6 @@
 [x] Fix output parsing for Python list strings
 [x] Initialize ebook.md immediately after confirmation using template
 [x] Add progress bar to thematic research phase
+[x] Fix NameError: name 'brd' is not defined in save_ebook
+[x] Implement incremental saving of chapters to ebook.md
+[x] Update get_confirmation to support skip_prompt parameter
