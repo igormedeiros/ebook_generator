@@ -314,13 +314,6 @@ EXTENSÃO: Aproximadamente 800-1200 palavras.
 FORMATO: Markdown puro, sem título de seção (o título "Introdução" já estará no template).
 TOM: Inspirador, técnico mas acessível, prático.
 
-**IMPORTANTE - FORMATO DE SAÍDA:**
-- Retorne APENAS o conteúdo da introdução em Markdown puro
-- NÃO retorne JSON, NÃO retorne listas, NÃO retorne objetos
-- NÃO inclua o título "Introdução" (ele já será adicionado automaticamente)
-- Comece diretamente com o conteúdo
-- Use formatação Markdown: ##, ###, **negrito**, *itálico*, listas, etc.
-
 Retorne APENAS o conteúdo da introdução em Markdown."""
     
     from .agents import writer_agent
@@ -406,13 +399,6 @@ EXTENSÃO: Aproximadamente 600-800 palavras.
 FORMATO: Markdown puro, sem título de seção (o título "Palavras Finais" já estará no template).
 TOM: Inspirador, empoderador, prático, otimista.
 
-**IMPORTANTE - FORMATO DE SAÍDA:**
-- Retorne APENAS o conteúdo das palavras finais em Markdown puro
-- NÃO retorne JSON, NÃO retorne listas, NÃO retorne objetos
-- NÃO inclua o título "Palavras Finais" (ele já será adicionado automaticamente)
-- Comece diretamente com o conteúdo
-- Use formatação Markdown: ##, ###, **negrito**, *itálico*, listas, etc.
-
 Retorne APENAS o conteúdo das palavras finais em Markdown."""
     
     from .agents import writer_agent
@@ -482,6 +468,16 @@ CONTEÚDO DOS CAPÍTULOS (AMOSTRA):
 
 FORMATO DE SAÍDA:
 - Markdown puro
+- Sem título de seção (já estará no template)
+- Organizado alfabeticamente
+- Cada termo em uma linha
+- Definições claras e objetivas
+
+EXEMPLO:
+**Agent**: Sistema autônomo capaz de tomar decisões e executar ações.
+**API**: Application Programming Interface, interface para comunicação entre sistemas.
+
+Retorne APENAS o glossário em Markdown."""
     
     from .agents import writer_agent
     
@@ -558,11 +554,6 @@ FORMATO DE SAÍDA:
 - Organizado por categorias
 - Formato de lista numerada ou bullets
 - Inclua URLs quando possível
-
-**IMPORTANTE - FORMATO DE SAÍDA:**
-- Retorne APENAS as referências em Markdown puro
-- NÃO retorne JSON, NÃO retorne listas Python, NÃO retorne objetos
-- Use formatação Markdown com ## para categorias e listas numeradas
 
 EXEMPLO:
 
@@ -809,7 +800,7 @@ def generate_chapter_research(chapter_name, chapter_purpose, chapter_elements, b
 - Informe a contagem aproximada de palavras logo após o título do documento.
 
 ## ✅ Checklist Obrigatório
-- Estruture o texto seguindo as seções do template principal (Resumo Executivo -> Introdução -> Corpo Técnico -> Desafios -> Tendências).
+- Estruture o texto seguindo as seções do template principal (Resumo Executivo → Introdução → Corpo Técnico → Desafios → Tendências).
 - Cada parágrafo deve conter apenas uma ideia e pode ser convertido em chunk RAG sem perda de contexto.
 - Destaque riscos de segurança de dados clínicos, implicações éticas e comparações com abordagens alternativas.
 - Inclua exemplos de código Python/LangChain quando o capítulo abordar tecnologias, frameworks ou agentes."""
@@ -1028,6 +1019,17 @@ def build_chapter_queries_with_research(chapters, research_data, brd):
         
         # Detecta se a pesquisa foi pulada
         skipped_research = research_context.startswith("# Pesquisa ignorada")
+        
+        if skipped_research:
+            context_instruction = f"""CONTEXTO DE RESEARCH:
+(A etapa de pesquisa profunda foi pulada pelo usuário)
+
+⚠️ INSTRUÇÃO CRÍTICA DE RAG:
+Como não há research prévio, você DEVE usar suas ferramentas (retrieve_rag_context, retrieve_author_stories, retrieve_author_vision, search_knowledge_base) para buscar informações no banco de dados.
+1. Busque por termos-chave do título: "{chapter['name']}"
+2. Busque por histórias do autor relacionadas ao tema.
+3. Busque por conteúdo técnico em 'rag_external'.
+
 NÃO invente fatos técnicos. Use as ferramentas para embasar o conteúdo."""
         else:
             context_instruction = f"""CONTEXTO DE RESEARCH (use como base):
@@ -1058,15 +1060,7 @@ Características do estilo de escrita:
 Público-alvo: {project['target_audience']}
 Idioma: {project['language']}
 
-**IMPORTANTE - FORMATO DE SAÍDA:**
-- Retorne APENAS o conteúdo do capítulo em Markdown puro
-- NÃO retorne JSON, NÃO retorne listas, NÃO retorne objetos
-- NÃO inclua o título do capítulo (ele já será adicionado automaticamente)
-- Comece diretamente com o conteúdo do capítulo
-- Use formatação Markdown: ##, ###, **negrito**, *itálico*, listas, código, etc.
-- O conteúdo deve ter aproximadamente {words_per_chapter} palavras
-
-Escreva o conteúdo em Markdown puro. Foco em prático, educativo e ético."""
+Escreva o conteúdo em Markdown puro. Foco em prático, educativo e ético. O conteúdo deve ter aproximadamente {words_per_chapter} palavras."""
         
         queries.append((chapter["name"], query))
     
@@ -1330,7 +1324,7 @@ def generate_ebook(test_mode: bool = False):
                     "messages": [{"role": "user", "content": query}]
                 })
             
-            # Extrai conteúdo com lógica melhorada para Gemini
+            # Extrai conteúdo
             messages = response.get("messages", [])
             if messages and isinstance(messages, list) and len(messages) > 0:
                 last_msg = messages[-1]
@@ -1344,38 +1338,23 @@ def generate_ebook(test_mode: bool = False):
             else:
                 content = str(response)
             
-            # Gemini às vezes retorna lista de dicts com 'text' key
-            if isinstance(content, list) and len(content) > 0:
-                if isinstance(content[0], dict) and 'text' in content[0]:
-                    content = content[0]['text']
-                elif isinstance(content[0], str):
-                    content = content[0]
-            
-            # Se o conteúdo for uma string JSON, extrai o texto
+            # Se o conteúdo for uma lista JSON (começa com '['), extrai o texto
             if isinstance(content, str) and content.strip().startswith('['):
                 try:
                     content_list = json.loads(content)
-                    if isinstance(content_list, list) and len(content_list) > 0:
-                        if isinstance(content_list[0], dict) and 'text' in content_list[0]:
-                            content = content_list[0]['text']
-                        elif isinstance(content_list[0], str):
-                            content = content_list[0]
-                except (json.JSONDecodeError, ValueError):
-                    # Se falhar o parse JSON, tenta ast.literal_eval
+                except json.JSONDecodeError:
                     try:
+                        # Tenta parsear como literal Python (ex: lista com single quotes)
                         content_list = ast.literal_eval(content)
-                        if isinstance(content_list, list) and len(content_list) > 0:
-                            if isinstance(content_list[0], dict) and 'text' in content_list[0]:
-                                content = content_list[0]['text']
-                            elif isinstance(content_list[0], str):
-                                content = content_list[0]
                     except:
-                        # Se tudo falhar, usa o conteúdo como está
-                        pass
-            
-            # Garante que content é string
-            if not isinstance(content, str):
-                content = str(content)
+                        content_list = None
+
+                if isinstance(content_list, list) and len(content_list) > 0:
+                    # Extrai o texto do primeiro item
+                    if isinstance(content_list[0], dict):
+                        content = content_list[0].get('text', content)
+                    elif isinstance(content_list[0], str):
+                        content = content_list[0]
             
             ebook["chapters"].append({
                 "name": chapter_name,
