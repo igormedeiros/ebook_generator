@@ -1619,12 +1619,6 @@ def save_ebook(ebook, output_file="result/ebook.md", test_mode=False):
     else:
         print_success_message("✓ Todos os placeholders foram preenchidos!")
     
-    # Copia markdown para dist/ e gera EPUB
-    os.makedirs("dist", exist_ok=True)
-    dist_markdown = "dist/ebook.md"
-    shutil.copy2(output_file, dist_markdown)
-    print_success_message(f"✓ Markdown salvo: {dist_markdown}")
-    
     # Gera arquivo .pub com metadata de publicação
     print_info("Gerando metadata de publicação...")
     metadata = extract_epub_metadata(ebook, brd)
@@ -1640,12 +1634,12 @@ def save_ebook(ebook, output_file="result/ebook.md", test_mode=False):
         "chapters": len(ebook.get("chapters", [])),
         "word_count": count_words(content),
         "formats": {
-            "markdown": "dist/ebook.md",
-            "epub": "dist/ebook.epub"
+            "markdown": output_file,
+            "epub": output_file.replace(".md", ".epub")
         }
     }
     
-    pub_file = "dist/ebook.pub"
+    pub_file = output_file.replace(".md", ".pub")
     with open(pub_file, "w", encoding="utf-8") as f:
         json.dump(pub_data, f, ensure_ascii=False, indent=2)
     print_success_message(f"✓ Metadata de publicação salvo: {pub_file}")
@@ -1654,9 +1648,9 @@ def save_ebook(ebook, output_file="result/ebook.md", test_mode=False):
     try:
         from .epub_generator import generate_epub_from_markdown, validate_epub
         
-        epub_output_path = "dist/ebook.epub"
+        epub_output_path = output_file.replace(".md", ".epub")
         success = generate_epub_from_markdown(
-            markdown_file_path=dist_markdown,
+            markdown_file_path=output_file,
             output_file_path=epub_output_path,
             metadata=metadata
         )
