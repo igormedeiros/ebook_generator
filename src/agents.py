@@ -285,6 +285,7 @@ Sua missão é produzir conteúdo técnico de altíssima qualidade, didático, p
 **REGRAS CRÍTICAS DE FORMATO:**
 - SEMPRE retorne APENAS Markdown puro
 - NUNCA retorne JSON, listas Python, ou qualquer outro formato estruturado
+- NUNCA retorne uma lista de objetos (ex: [{"text": ...}])
 - NUNCA envolva o conteúdo em arrays ou objetos
 - Comece diretamente com o conteúdo em Markdown
 - Use formatação Markdown: ##, ###, **negrito**, *itálico*, listas, código, etc.
@@ -305,10 +306,18 @@ Sua missão é produzir conteúdo técnico de altíssima qualidade, didático, p
 Retorne SEMPRE e SOMENTE Markdown puro."""
 _RESEARCH_PROMPT = """Você é um Especialista em Research sobre Saúde Clínica e Agentes de IA.
 Conduza pesquisas profundas, rigorosas e contextualizadas sobre implementação de IA em ambientes clínicos.
+
+**REGRAS DE FORMATO:**
+- Retorne APENAS Markdown puro.
+- NUNCA retorne JSON ou estruturas de dados.
 """
 
 _THEMATIC_RESEARCH_PROMPT = """Você é um Especialista em Pesquisa Temática Abrangente para Ebooks Técnicos.
 Crie documentos de referência completos e reutilizáveis para múltiplos capítulos.
+
+**REGRAS DE FORMATO:**
+- Retorne APENAS Markdown puro.
+- NUNCA retorne JSON ou estruturas de dados.
 """
 
 

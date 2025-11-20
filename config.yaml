@@ -12,11 +12,16 @@ llm_profiles:
     provider: "Google AI"
     api_key_env: "GOOGLE_API_KEY"
 
+# Controle de auto-aprovação de fases do pipeline
+# Valores aceitos:
+#   "yes" - Auto-aprova a fase sem perguntar ao usuário
+#   "no"  - Sempre pergunta ao usuário antes de executar a fase
 phase_auto_approve:
-  deep_research: "no"  # Perguntar antes de fazer deep research
-  content_generation: "yes"  # Perguntar antes de gerar conteúdo
-  review_refinement: "yes"  # Perguntar antes de revisar
-  supabase_upload: "no"  # Perguntar antes de fazer upload para Supabase
+  deep_research: "no"              # Deep research de TODOS os capítulos (Fase 1)
+  deep_research_individual: "no"   # Deep research individual por capítulo
+  content_generation: "yes"        # Geração de conteúdo dos capítulos (Fase 2)
+  review_refinement: "yes"         # Revisão e refinamento (Fase 3)
+  supabase_upload: "no"            # Upload para Supabase (se aplicável)
 
 # Configuração de observabilidade detalhada dos agentes
 observability:

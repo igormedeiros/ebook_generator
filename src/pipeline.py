@@ -11,6 +11,13 @@ Padrão LangChain 1.0:
 - Upload para Supabase (future)
 """
 
+from .pipeline_helpers import (
+    extract_markdown_content, 
+    invoke_agent, 
+    get_test_mock_content, 
+    verify_python_code
+)
+
 import time
 import yaml
 import json
@@ -318,36 +325,17 @@ Retorne APENAS o conteúdo da introdução em Markdown."""
     
     from .agents import writer_agent
     
-    response = writer_agent.invoke({
-        "messages": [{"role": "user", "content": intro_prompt}]
-    })
+    response = invoke_agent(
+        writer_agent,
+        {"messages": [{"role": "user", "content": intro_prompt}]},
+        agent_name="Writer Agent (Intro)",
+        mode="write"
+    )
     
-    # Extrai conteúdo
-    messages = response.get("messages", [])
-    if messages and isinstance(messages, list) and len(messages) > 0:
-        last_msg = messages[-1]
-        if hasattr(last_msg, 'content'):
-            content = last_msg.content
-        elif isinstance(last_msg, dict):
-            content = last_msg.get("content", str(last_msg))
-        else:
-            content = str(last_msg)
-    else:
-        content = str(response)
+    # Extrai conteúdo usando helper robusto
+    content = extract_markdown_content(response)
     
-    # Se o conteúdo for uma lista JSON, extrai o texto
-    if isinstance(content, str) and content.strip().startswith('['):
-        try:
-            content_list = json.loads(content)
-            if isinstance(content_list, list) and len(content_list) > 0:
-                if isinstance(content_list[0], dict):
-                    content = content_list[0].get('text', content)
-                elif isinstance(content_list[0], str):
-                    content = content_list[0]
-        except:
-            pass
-    
-    return content if isinstance(content, str) else str(content)
+    return content
 
 def generate_conclusion(brd, chapters, test_mode=False):
     """
@@ -403,36 +391,17 @@ Retorne APENAS o conteúdo das palavras finais em Markdown."""
     
     from .agents import writer_agent
     
-    response = writer_agent.invoke({
-        "messages": [{"role": "user", "content": conclusion_prompt}]
-    })
+    response = invoke_agent(
+        writer_agent,
+        {"messages": [{"role": "user", "content": conclusion_prompt}]},
+        agent_name="Writer Agent (Conclusion)",
+        mode="write"
+    )
     
-    # Extrai conteúdo
-    messages = response.get("messages", [])
-    if messages and isinstance(messages, list) and len(messages) > 0:
-        last_msg = messages[-1]
-        if hasattr(last_msg, 'content'):
-            content = last_msg.content
-        elif isinstance(last_msg, dict):
-            content = last_msg.get("content", str(last_msg))
-        else:
-            content = str(last_msg)
-    else:
-        content = str(response)
+    # Extrai conteúdo usando helper robusto
+    content = extract_markdown_content(response)
     
-    # Se o conteúdo for uma lista JSON, extrai o texto
-    if isinstance(content, str) and content.strip().startswith('['):
-        try:
-            content_list = json.loads(content)
-            if isinstance(content_list, list) and len(content_list) > 0:
-                if isinstance(content_list[0], dict):
-                    content = content_list[0].get('text', content)
-                elif isinstance(content_list[0], str):
-                    content = content_list[0]
-        except:
-            pass
-    
-    return content if isinstance(content, str) else str(content)
+    return content
 
 def generate_glossary(ebook, test_mode=False):
     """
@@ -481,36 +450,17 @@ Retorne APENAS o glossário em Markdown."""
     
     from .agents import writer_agent
     
-    response = writer_agent.invoke({
-        "messages": [{"role": "user", "content": glossary_prompt}]
-    })
+    response = invoke_agent(
+        writer_agent,
+        {"messages": [{"role": "user", "content": glossary_prompt}]},
+        agent_name="Writer Agent (Glossary)",
+        mode="write"
+    )
     
-    # Extrai conteúdo
-    messages = response.get("messages", [])
-    if messages and isinstance(messages, list) and len(messages) > 0:
-        last_msg = messages[-1]
-        if hasattr(last_msg, 'content'):
-            content = last_msg.content
-        elif isinstance(last_msg, dict):
-            content = last_msg.get("content", str(last_msg))
-        else:
-            content = str(last_msg)
-    else:
-        content = str(response)
+    # Extrai conteúdo usando helper robusto
+    content = extract_markdown_content(response)
     
-    # Se o conteúdo for uma lista JSON, extrai o texto
-    if isinstance(content, str) and content.strip().startswith('['):
-        try:
-            content_list = json.loads(content)
-            if isinstance(content_list, list) and len(content_list) > 0:
-                if isinstance(content_list[0], dict):
-                    content = content_list[0].get('text', content)
-                elif isinstance(content_list[0], str):
-                    content = content_list[0]
-        except:
-            pass
-    
-    return content if isinstance(content, str) else str(content)
+    return content
 
 def generate_bibliography(ebook, test_mode=False):
     """
@@ -568,36 +518,17 @@ Retorne APENAS as referências em Markdown."""
     
     from .agents import writer_agent
     
-    response = writer_agent.invoke({
-        "messages": [{"role": "user", "content": bibliography_prompt}]
-    })
+    response = invoke_agent(
+        writer_agent,
+        {"messages": [{"role": "user", "content": bibliography_prompt}]},
+        agent_name="Writer Agent (Bibliography)",
+        mode="write"
+    )
     
-    # Extrai conteúdo
-    messages = response.get("messages", [])
-    if messages and isinstance(messages, list) and len(messages) > 0:
-        last_msg = messages[-1]
-        if hasattr(last_msg, 'content'):
-            content = last_msg.content
-        elif isinstance(last_msg, dict):
-            content = last_msg.get("content", str(last_msg))
-        else:
-            content = str(last_msg)
-    else:
-        content = str(response)
+    # Extrai conteúdo usando helper robusto
+    content = extract_markdown_content(response)
     
-    # Se o conteúdo for uma lista JSON, extrai o texto
-    if isinstance(content, str) and content.strip().startswith('['):
-        try:
-            content_list = json.loads(content)
-            if isinstance(content_list, list) and len(content_list) > 0:
-                if isinstance(content_list[0], dict):
-                    content = content_list[0].get('text', content)
-                elif isinstance(content_list[0], str):
-                    content = content_list[0]
-        except:
-            pass
-    
-    return content if isinstance(content, str) else str(content)
+    return content
 
 def validate_template_placeholders(output_file="result/ebook.md"):
     """
@@ -684,9 +615,12 @@ Exemplo formato:
             if attempt > 0:
                 print(f"  ⚠️ Tentativa {attempt + 1}/{max_retries} de gerar estrutura...")
                 
-            response = writer_agent.invoke({
-                "messages": [{"role": "user", "content": query}]
-            })
+            response = invoke_agent(
+                writer_agent,
+                {"messages": [{"role": "user", "content": query}]},
+                agent_name="Structure Agent",
+                mode="write"
+            )
             
             content = response["messages"][-1].content
             
@@ -758,7 +692,7 @@ def generate_chapter_research(chapter_name, chapter_purpose, chapter_elements, b
         should_research = get_confirmation(
             f"Deseja realizar pesquisa profunda (Deep Research) para o capítulo '{chapter_name}'?",
             default=True,
-            phase="deep_research"
+            phase="deep_research_individual"
         )
         
         if not should_research:
@@ -809,18 +743,15 @@ def generate_chapter_research(chapter_name, chapter_purpose, chapter_elements, b
     query = "\n\n".join(block for block in query_blocks if block).strip()
 
     print(f"  🔍 Pesquisando: {chapter_name}...")
-    response = research_agent.invoke({
-        "messages": [{"role": "user", "content": query}]
-    })
+    response = invoke_agent(
+        research_agent,
+        {"messages": [{"role": "user", "content": query}]},
+        agent_name=f"Research Agent ({chapter_name})",
+        mode="research"
+    )
 
-    content = response["messages"][-1].content
-
-    # Se for lista com artifacts (Gemini format), extrai o texto
-    if isinstance(content, list) and len(content) > 0:
-        if isinstance(content[0], dict) and 'text' in content[0]:
-            content = content[0]['text']
-
-    research_content = content if isinstance(content, str) else str(content)
+    # Extrai conteúdo usando helper robusto
+    research_content = extract_markdown_content(response)
     word_count = count_words(research_content)
 
     if word_count < min_words:
@@ -921,18 +852,15 @@ def generate_thematic_research(brd, progress=None):
             query_blocks = [base_prompt.strip(), thematic_instructions.strip()] + optional_blocks
             query = "\n\n".join(block for block in query_blocks if block).strip()
 
-            response = thematic_research_agent.invoke({
-                "messages": [{"role": "user", "content": query}]
-            })
+            response = invoke_agent(
+                thematic_research_agent,
+                {"messages": [{"role": "user", "content": query}]},
+                agent_name=f"Thematic Research ({topic})",
+                mode="research"
+            )
 
-            content = response["messages"][-1].content
-
-            # Se for lista com artifacts (Gemini format), extrai o texto
-            if isinstance(content, list) and len(content) > 0:
-                if isinstance(content[0], dict) and 'text' in content[0]:
-                    content = content[0]['text']
-
-            research_content = content if isinstance(content, str) else str(content)
+            # Extrai conteúdo usando helper robusto
+            research_content = extract_markdown_content(response)
             word_count = count_words(research_content)
 
             if word_count < min_words:
@@ -1224,7 +1152,11 @@ def generate_ebook(test_mode: bool = False):
             if test_mode:
                 perform_deep_research = True
             else:
-                perform_deep_research = get_confirmation("Deseja realizar DEEP RESEARCH para TODOS os capítulos?", default=True)
+                perform_deep_research = get_confirmation(
+                    "Deseja realizar DEEP RESEARCH para TODOS os capítulos?", 
+                    default=True,
+                    phase="deep_research"
+                )
         finally:
             global_progress.start()
         
@@ -1317,44 +1249,27 @@ def generate_ebook(test_mode: bool = False):
             
             # Executa agent com query
             if test_mode:
-                response = {"messages": [{"content": f"# Conteúdo Mockado - {chapter_name}\n\nEste é um texto gerado em modo de teste para validar o fluxo."}]}
+                response = {"messages": [{"content": get_test_mock_content(chapter_name)}]}
                 time.sleep(0.1)
             else:
-                response = writer_agent.invoke({
-                    "messages": [{"role": "user", "content": query}]
-                })
+                response = invoke_agent(
+                    writer_agent,
+                    {"messages": [{"role": "user", "content": query}]},
+                    agent_name=f"Writer Agent ({chapter_name})",
+                    mode="write"
+                )
             
-            # Extrai conteúdo
-            messages = response.get("messages", [])
-            if messages and isinstance(messages, list) and len(messages) > 0:
-                last_msg = messages[-1]
-                # Verifica se é AIMessage (tem .content) ou dict
-                if hasattr(last_msg, 'content'):
-                    content = last_msg.content
-                elif isinstance(last_msg, dict):
-                    content = last_msg.get("content", str(last_msg))
-                else:
-                    content = str(last_msg)
-            else:
-                content = str(response)
+            # Extrai conteúdo usando helper robusto
+            content = extract_markdown_content(response)
             
-            # Se o conteúdo for uma lista JSON (começa com '['), extrai o texto
-            if isinstance(content, str) and content.strip().startswith('['):
-                try:
-                    content_list = json.loads(content)
-                except json.JSONDecodeError:
-                    try:
-                        # Tenta parsear como literal Python (ex: lista com single quotes)
-                        content_list = ast.literal_eval(content)
-                    except:
-                        content_list = None
-
-                if isinstance(content_list, list) and len(content_list) > 0:
-                    # Extrai o texto do primeiro item
-                    if isinstance(content_list[0], dict):
-                        content = content_list[0].get('text', content)
-                    elif isinstance(content_list[0], str):
-                        content = content_list[0]
+            # Verifica código Python no conteúdo
+            code_errors = verify_python_code(content)
+            if code_errors:
+                from .config import print_error_panel
+                print_error_panel(
+                    f"Erros de Sintaxe em {chapter_name}",
+                    "\n".join(code_errors)
+                )
             
             ebook["chapters"].append({
                 "name": chapter_name,
@@ -1426,6 +1341,14 @@ def generate_ebook(test_mode: bool = False):
                     )
                 review_text = "\n\n".join([f"### {k}\n{v}" for k, v in review_results.items()])
                 
+                # Exibe logs de revisão técnica
+                from .config import print_panel
+                print_panel(
+                    f"📋 Revisão Técnica - {chapter['name']}",
+                    review_text[:500] + "..." if len(review_text) > 500 else review_text,
+                    style="yellow"
+                )
+                
                 # 2. Leitura Crítica
                 global_progress.update(task, description=f"[magenta]Leitura Crítica ({idx}/{len(ebook['chapters'])}): {chapter['name']}")
                 if test_mode:
@@ -1435,6 +1358,13 @@ def generate_ebook(test_mode: bool = False):
                         original_content, virtual_readers
                     )
                 critical_text = "\n\n".join([f"### {k}\n{v}" for k, v in critical_results.items()])
+                
+                # Exibe logs de leitura crítica
+                print_panel(
+                    f"📖 Leitura Crítica - {chapter['name']}",
+                    critical_text[:500] + "..." if len(critical_text) > 500 else critical_text,
+                    style="blue"
+                )
                 
                 # 3. Edição e Refinamento
                 global_progress.update(task, description=f"[magenta]Editando ({idx}/{len(ebook['chapters'])}): {chapter['name']}")
@@ -1458,33 +1388,19 @@ INSTRUÇÕES DE EDIÇÃO:
 - Retorne APENAS o conteúdo refinado do capítulo.
 """
                 if test_mode:
-                    response = {"messages": [{"content": f"{original_content}\n\n(Refinado em modo teste)"}]}
+                    # Extrai o conteúdo limpo antes de criar o mock
+                    clean_content = extract_markdown_content(original_content) if isinstance(original_content, (dict, list)) else original_content
+                    response = {"messages": [{"content": f"{clean_content}\n\n(Refinado em modo teste)"}]}
                 else:
-                    response = editing_agent.invoke({
-                        "messages": [{"role": "user", "content": editing_prompt}]
-                    })
+                    response = invoke_agent(
+                        editing_agent,
+                        {"messages": [{"role": "user", "content": editing_prompt}]},
+                        agent_name=f"Editing Agent ({chapter['name']})",
+                        mode="write"
+                    )
                 
-                last_msg = response["messages"][-1]
-                if hasattr(last_msg, 'content'):
-                    refined_content = last_msg.content
-                else:
-                    refined_content = last_msg.get('content', str(last_msg))
-                
-                # Limpeza básica se vier como lista/json
-                if isinstance(refined_content, str) and refined_content.strip().startswith('['):
-                    try:
-                        content_list = json.loads(refined_content)
-                    except json.JSONDecodeError:
-                        try:
-                            content_list = ast.literal_eval(refined_content)
-                        except:
-                            content_list = None
-
-                    if isinstance(content_list, list) and len(content_list) > 0:
-                        if isinstance(content_list[0], dict):
-                            refined_content = content_list[0].get('text', refined_content)
-                        elif isinstance(content_list[0], str):
-                            refined_content = content_list[0]
+                # Extrai conteúdo usando helper robusto
+                refined_content = extract_markdown_content(response)
                 
                 chapter["content"] = refined_content
                 
@@ -1717,36 +1633,17 @@ Retorne APENAS o conteúdo dos agradecimentos em Markdown."""
     
     from .agents import writer_agent
     
-    response = writer_agent.invoke({
-        "messages": [{"role": "user", "content": ack_prompt}]
-    })
+    response = invoke_agent(
+        writer_agent,
+        {"messages": [{"role": "user", "content": ack_prompt}]},
+        agent_name="Writer Agent (Acknowledgments)",
+        mode="write"
+    )
     
-    # Extrai conteúdo (mesma lógica dos outros)
-    messages = response.get("messages", [])
-    if messages and isinstance(messages, list) and len(messages) > 0:
-        last_msg = messages[-1]
-        if hasattr(last_msg, 'content'):
-            content = last_msg.content
-        elif isinstance(last_msg, dict):
-            content = last_msg.get("content", str(last_msg))
-        else:
-            content = str(last_msg)
-    else:
-        content = str(response)
-    
-    # Se o conteúdo for uma lista JSON, extrai o texto
-    if isinstance(content, str) and content.strip().startswith('['):
-        try:
-            content_list = json.loads(content)
-            if isinstance(content_list, list) and len(content_list) > 0:
-                if isinstance(content_list[0], dict):
-                    content = content_list[0].get('text', content)
-                elif isinstance(content_list[0], str):
-                    content = content_list[0]
-        except:
-            pass
+    # Extrai conteúdo usando helper robusto
+    content = extract_markdown_content(response)
         
-    return content if isinstance(content, str) else str(content)
+    return content
 
 
 def generate_preface(brd, test_mode=False):
@@ -1785,36 +1682,17 @@ Retorne APENAS o conteúdo do prefácio em Markdown."""
     
     from .agents import writer_agent
     
-    response = writer_agent.invoke({
-        "messages": [{"role": "user", "content": preface_prompt}]
-    })
+    response = invoke_agent(
+        writer_agent,
+        {"messages": [{"role": "user", "content": preface_prompt}]},
+        agent_name="Writer Agent (Preface)",
+        mode="write"
+    )
     
-    # Extrai conteúdo
-    messages = response.get("messages", [])
-    if messages and isinstance(messages, list) and len(messages) > 0:
-        last_msg = messages[-1]
-        if hasattr(last_msg, 'content'):
-            content = last_msg.content
-        elif isinstance(last_msg, dict):
-            content = last_msg.get("content", str(last_msg))
-        else:
-            content = str(last_msg)
-    else:
-        content = str(response)
-    
-    # Se o conteúdo for uma lista JSON, extrai o texto
-    if isinstance(content, str) and content.strip().startswith('['):
-        try:
-            content_list = json.loads(content)
-            if isinstance(content_list, list) and len(content_list) > 0:
-                if isinstance(content_list[0], dict):
-                    content = content_list[0].get('text', content)
-                elif isinstance(content_list[0], str):
-                    content = content_list[0]
-        except:
-            pass
+    # Extrai conteúdo usando helper robusto
+    content = extract_markdown_content(response)
         
-    return content if isinstance(content, str) else str(content)
+    return content
 
 
 def generate_toc(ebook, test_mode=False):
