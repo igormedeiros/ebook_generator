@@ -58,3 +58,11 @@ quality_criteria:
   - "Foco em responsabilidade"
   - "Fluxo lógico entre tópicos"
   - "Atende necessidades do público-alvo"
+
+research_requirements:
+  thematic:
+    minimum_word_count: 3000
+    minimum_sources: 7
+  chapter:
+    minimum_word_count: 2000
+    minimum_sources: 5

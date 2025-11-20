@@ -8,8 +8,8 @@ models:
     temperature: 0.7
     top_p: 0.95
     top_k: 40
-    timeout: 60
-    max_retries: 0
+    timeout: 300
+    max_retries: 3
     max_tokens: 4096
     description: "Modelo rápido para geração de conteúdo criativo"
     use_cases:
@@ -26,8 +26,8 @@ models:
     temperature: 0.3
     top_p: 0.95
     top_k: 40
-    timeout: 60
-    max_retries: 0
+    timeout: 300
+    max_retries: 3
     max_tokens: 8192
     description: "Modelo focado para análise profunda e recuperação RAG"
     use_cases:
@@ -88,6 +88,6 @@ token_limits:
 
 timeout_settings:
   agent_execution: 300
-  api_call: 60
+  api_call: 300
   file_operation: 30
   pipeline_complete: 1800

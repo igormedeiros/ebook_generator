@@ -6,7 +6,7 @@ import sys
 
 from .config import print_error_panel
 from .input_validator import validate_book_input
-from .main import run_ebook_pipeline
+from .pipeline import run_ebook_pipeline
 
 
 def main() -> None:

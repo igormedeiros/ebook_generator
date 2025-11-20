@@ -65,7 +65,11 @@ def load_yaml_config(filename: str) -> Dict[str, Any]:
     if not filename.endswith(".yaml"):
         filename += ".yaml"
     
-    config_path = SPECS_DIR / filename
+    # config.yaml está na raiz do projeto, outros arquivos em specs/
+    if filename == "config.yaml":
+        config_path = PROJECT_ROOT / filename
+    else:
+        config_path = SPECS_DIR / filename
 
     try:
         with open(config_path, 'r', encoding='utf-8') as f:

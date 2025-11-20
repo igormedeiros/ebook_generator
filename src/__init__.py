@@ -2,7 +2,7 @@
 Ebook Generator 1.0 - LangChain 1.0+ Pipeline
 """
 
-from .main import generate_ebook, save_ebook
+from .pipeline import generate_ebook, save_ebook
 from .agents import writer_agent
 from .tools import get_all_tools
 

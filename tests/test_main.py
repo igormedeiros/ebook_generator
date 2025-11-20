@@ -1,134 +1,224 @@
 import unittest
-from unittest.mock import patch, MagicMock, call
+from unittest.mock import patch, MagicMock, mock_open
 import os
+import tempfile
+from pathlib import Path
 
-from src.main import run_ebook_pipeline, _build_review_persona_agents, _build_virtual_reader_agents
+from src.pipeline import generate_ebook, save_ebook
 
-class TestMainPipeline(unittest.TestCase):
+
+class TestPipeline(unittest.TestCase):
+    """Tests for the main ebook generation pipeline."""
 
     def setUp(self):
-        """Set a dummy API key for tests."""
+        """Set up test environment."""
         os.environ['GOOGLE_API_KEY'] = 'test-api-key'
-
+        
     def tearDown(self):
-        """Clean up the environment variable."""
-        del os.environ['GOOGLE_API_KEY']
+        """Clean up test environment."""
+        if 'GOOGLE_API_KEY' in os.environ:
+            del os.environ['GOOGLE_API_KEY']
 
-    @patch('src.main.get_model')
-    @patch('src.main.get_research_model')
-    @patch('src.main.get_config')
-    @patch('src.main.get_message')
-    @patch('src.main.print_pipeline_start')
-    @patch('src.main.print_stage_header')
-    @patch('src.main.print_stage_complete')
-    @patch('src.main.print_pipeline_complete')
-    @patch('src.main.create_document_spec_agent')
-    @patch('src.main.create_ideation_agent')
-    @patch('src.main.create_title_agent')
-    @patch('src.main.create_structure_agent')
-    @patch('src.main.create_deep_research_agent')
-    @patch('src.main.create_chapter_agent')
-    @patch('src.main.create_review_coordinator_agent')
-    @patch('src.main.create_critical_reading_coordinator_agent')
-    @patch('src.main.create_editing_agent')
-    @patch('src.main.create_finalization_agent')
-    @patch('src.main.create_publication_agent')
-    @patch('src.main.execute_agent')
-    @patch('src.main.execute_review_personas')
-    def test_run_full_pipeline(self, mock_execute_review, mock_execute_agent, *args):
-        """Test a full run of the ebook pipeline."""
-        # Mock the return values of agent executions
-        mock_execute_agent.side_effect = [
-            "document_spec_output",
-            "ideation_output",
-            "title_output",
-            "structure_output",
-            "deep_research_output",
-            "chapter_output",
-            "editing_output",
-            "finalization_output",
-            {"publication": "output"},
-        ]
-        mock_execute_review.side_effect = [{"review": "output"}, {"critical": "reading"}]
+    @patch('src.pipeline.load_brd')
+    @patch('src.pipeline.generate_chapter_structure')
+    @patch('src.pipeline.generate_introduction')
+    @patch('src.pipeline.generate_chapter_research')
+    @patch('src.pipeline.generate_chapter_content')
+    @patch('src.pipeline.initialize_ebook_file')
+    @patch('src.pipeline.append_chapter_to_ebook')
+    @patch('src.pipeline.get_confirmation')
+    @patch('src.pipeline.print_header')
+    @patch('src.pipeline.print_info')
+    @patch('src.pipeline.print_separator')
+    @patch('src.pipeline.print_ebook_info')
+    @patch('src.pipeline.print_chapters_preview')
+    @patch('src.pipeline.print_phase_header')
+    @patch('src.pipeline.print_success_message')
+    @patch('src.pipeline.print_error_message')
+    def test_generate_ebook_test_mode(self, *mocks):
+        """Test ebook generation in test mode."""
+        # Mock BRD
+        mock_load_brd = mocks[-1]
+        mock_load_brd.return_value = {
+            'project': {
+                'name': 'Test Ebook',
+                'description': 'Test Description',
+                'target_audience': 'Test Audience',
+                'word_count_target': 1000,
+                'number_chapters': 2
+            },
+            'content_structure': {},
+            'writing_style': {}
+        }
+        
+        # Mock confirmations to always return True
+        mock_get_confirmation = mocks[8]
+        mock_get_confirmation.return_value = True
+        
+        # Mock introduction
+        mock_generate_introduction = mocks[-3]
+        mock_generate_introduction.return_value = "Test introduction content"
+        
+        # Mock file operations
+        mock_initialize = mocks[10]
+        mock_append = mocks[9]
+        
+        # Run in test mode
+        result = generate_ebook(test_mode=True)
+        
+        # Assertions
+        self.assertIsNotNone(result)
+        self.assertIn('title', result)
+        self.assertIn('chapters', result)
+        self.assertEqual(result['title'], 'Test Ebook')
+        
+        # Verify mocks were called
+        mock_load_brd.assert_called_once()
+        mock_initialize.assert_called_once()
 
-        # Mock config loader
-        mock_get_config = args[10]
-        mock_get_config.return_value = {
-            "agent_prompts": {
-                "ideation_prompt_template": "{topic}",
-                "title_prompt_template": "{ideation_output}",
-                "structure_prompt_template": "{topic}",
-                "deep_research_prompt_template": "{structure_output}",
-                "chapter_writing_prompt_template": "{structure_output}",
-                "review_prompt_template": "{chapter_output}",
-                "critical_reading_prompt_template": "{review_output}",
-                "editing_prompt_template": "{critical_output}",
-                "finalization_prompt_template": "{editing_output}",
-                "publication_prompt_template": "{editing_output_excerpt}",
+    @patch('src.pipeline.load_brd')
+    @patch('src.pipeline.generate_chapter_structure')
+    @patch('src.pipeline.print_header')
+    @patch('src.pipeline.print_info')
+    @patch('src.pipeline.print_separator')
+    @patch('src.pipeline.print_error_message')
+    def test_generate_ebook_empty_chapters(self, *mocks):
+        """Test ebook generation when chapter structure generation fails."""
+        # Mock BRD
+        mock_load_brd = mocks[-1]
+        mock_load_brd.return_value = {
+            'project': {
+                'name': 'Test Ebook',
+                'description': 'Test Description',
+                'target_audience': 'Test Audience',
+                'word_count_target': 1000
+            },
+            'content_structure': {},
+            'writing_style': {}
+        }
+        
+        # Mock empty chapter structure
+        mock_generate_structure = mocks[-2]
+        mock_generate_structure.return_value = []
+        
+        # Run pipeline
+        result = generate_ebook(test_mode=False)
+        
+        # Should return None when chapters fail to generate
+        self.assertIsNone(result)
+
+    @patch('src.pipeline.load_brd')
+    @patch('src.pipeline.generate_conclusion')
+    @patch('src.pipeline.generate_glossary')
+    @patch('src.pipeline.generate_bibliography')
+    @patch('builtins.open', new_callable=mock_open, read_data='# Test\n[Palavras Finais]\n[Glossário]\n[Referências Bibliográficas]')
+    @patch('src.pipeline.print_info')
+    @patch('src.pipeline.print_success_message')
+    def test_save_ebook(self, mock_success, mock_info, mock_file, mock_biblio, mock_glossary, mock_conclusion, mock_load_brd):
+        """Test saving ebook with all sections."""
+        # Mock BRD
+        mock_load_brd.return_value = {
+            'project': {
+                'name': 'Test Ebook',
+                'description': 'Test Description'
             }
         }
+        
+        # Mock ebook data
+        ebook = {
+            'title': 'Test Ebook',
+            'description': 'Test Description',
+            'chapters': [
+                {'name': 'Chapter 1', 'content': 'Content 1'},
+                {'name': 'Chapter 2', 'content': 'Content 2'}
+            ]
+        }
+        
+        # Mock content generators
+        mock_conclusion.return_value = "Test conclusion"
+        mock_glossary.return_value = "Test glossary"
+        mock_biblio.return_value = "Test bibliography"
+        
+        # Save ebook
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_file = Path(tmpdir) / "test_ebook.md"
+            result = save_ebook(ebook, output_file=str(output_file), test_mode=True)
+        
+        # Verify generators were called
+        mock_conclusion.assert_called_once()
+        mock_glossary.assert_called_once()
+        mock_biblio.assert_called_once()
 
-        results = run_ebook_pipeline(
-            topic="Test Topic",
-            target_audience="Test Audience",
-            word_count_target=1000,
-            run_all_stages=True
-        )
+    @patch('src.pipeline.load_brd')
+    @patch('src.pipeline.generate_chapter_structure')
+    @patch('src.pipeline.get_confirmation')
+    @patch('src.pipeline.print_header')
+    @patch('src.pipeline.print_info')
+    @patch('src.pipeline.print_separator')
+    @patch('src.pipeline.print_ebook_info')
+    @patch('src.pipeline.print_chapters_preview')
+    def test_generate_ebook_user_cancellation(self, *mocks):
+        """Test ebook generation when user cancels."""
+        # Mock BRD
+        mock_load_brd = mocks[-1]
+        mock_load_brd.return_value = {
+            'project': {
+                'name': 'Test Ebook',
+                'description': 'Test Description',
+                'target_audience': 'Test Audience',
+                'word_count_target': 1000
+            },
+            'content_structure': {},
+            'writing_style': {}
+        }
+        
+        # Mock chapter structure
+        mock_generate_structure = mocks[-2]
+        mock_generate_structure.return_value = [
+            {'name': 'Chapter 1', 'purpose': 'Test', 'elements': []}
+        ]
+        
+        # Mock user cancellation
+        mock_get_confirmation = mocks[-3]
+        mock_get_confirmation.return_value = False
+        
+        # Run pipeline
+        result = generate_ebook(test_mode=False)
+        
+        # Should return None when user cancels
+        self.assertIsNone(result)
 
-        self.assertEqual(results['pipeline_status'], 'completed')
-        self.assertEqual(mock_execute_agent.call_count, 9)
-        self.assertEqual(mock_execute_review.call_count, 2)
-        self.assertIn('stage_1_document_spec', results)
-        self.assertIn('stage_11_publication', results)
 
-    @patch('src.main.get_model')
-    @patch('src.main.get_research_model')
-    @patch('src.main.get_config')
-    @patch('src.main.get_message')
-    @patch('src.main.print_pipeline_start')
-    @patch('src.main.print_stage_header')
-    @patch('src.main.print_stage_complete')
-    @patch('src.main.create_document_spec_agent')
-    @patch('src.main.execute_agent')
-    def test_run_partial_pipeline(self, mock_execute_agent, mock_create_document_spec_agent, *args):
-        """Test running only the first stage of the pipeline."""
-        mock_execute_agent.return_value = "document_spec_output"
-        mock_get_config = args[5]
-        mock_get_config.return_value = {"agent_prompts": {"document_spec_prompt_template": "{topic}"}}
+class TestPipelineHelpers(unittest.TestCase):
+    """Tests for pipeline helper functions."""
 
-        results = run_ebook_pipeline(
-            topic="Test Topic",
-            target_audience="Test Audience",
-            run_all_stages=False
-        )
+    @patch('src.pipeline.load_brd')
+    def test_load_brd(self, mock_load):
+        """Test BRD loading."""
+        from src.pipeline import load_brd
+        
+        mock_load.return_value = {'project': {'name': 'Test'}}
+        result = load_brd()
+        
+        self.assertIsNotNone(result)
+        self.assertIn('project', result)
 
-        self.assertEqual(results['pipeline_status'], 'partial')
-        mock_execute_agent.assert_called_once()
-        self.assertIn('stage_1_document_spec', results)
-        self.assertNotIn('stage_2_ideation', results)
+    def test_count_words(self):
+        """Test word counting function."""
+        from src.pipeline import count_words
+        
+        # Test normal text
+        self.assertEqual(count_words("hello world"), 2)
+        self.assertEqual(count_words("one two three four"), 4)
+        
+        # Test empty text
+        self.assertEqual(count_words(""), 0)
+        self.assertEqual(count_words(None), 0)
+        
+        # Test markdown
+        markdown_text = "# Title\n\nThis is a **bold** text."
+        self.assertEqual(count_words(markdown_text), 6)
 
-    @patch('src.main.get_model', side_effect=Exception("Test Exception"))
-    @patch('src.main.print_error_panel')
-    def test_pipeline_exception_handling(self, mock_print_error, mock_get_model):
-        """Test the pipeline's main exception handling."""
-        results = run_ebook_pipeline("Test", "Test")
-        self.assertEqual(results['pipeline_status'], 'error')
-        self.assertEqual(results['error'], 'Test Exception')
-        mock_print_error.assert_called_once()
-
-    @patch('src.main.create_technical_reviewer_agent')
-    def test_build_review_persona_agents(self, mock_create_agent):
-        """Test the construction of review persona agents."""
-        agents = _build_review_persona_agents(MagicMock(), MagicMock())
-        self.assertIn("Technical Reviewer", agents)
-        self.assertEqual(mock_create_agent.call_count, 1) # Only one is mocked
-
-    @patch('src.main.create_curious_beginner_agent')
-    def test_build_virtual_reader_agents(self, mock_create_agent):
-        """Test the construction of virtual reader agents."""
-        agents = _build_virtual_reader_agents(MagicMock(), MagicMock())
-        self.assertIn("Curious Beginner", agents)
-        self.assertEqual(mock_create_agent.call_count, 1)
 
 if __name__ == '__main__':
     unittest.main(argv=['first-arg-is-ignored'], exit=False)

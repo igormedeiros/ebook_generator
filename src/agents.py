@@ -153,11 +153,11 @@ def create_chapter_agent(model: Any) -> Any:
 
 
 def create_review_coordinator_agent(model: Any) -> Any:
-    return _create_agent_from_config("review_coordinator_agent", model, get_review_tools)
+    return _create_agent_from_config("review_coordinator_agent", model, lambda: [])
 
 
 def create_critical_reading_coordinator_agent(model: Any) -> Any:
-    return _create_agent_from_config("critical_reading_coordinator_agent", model, get_review_tools)
+    return _create_agent_from_config("critical_reading_coordinator_agent", model, lambda: [])
 
 
 def create_editing_agent(model: Any) -> Any:
@@ -174,12 +174,12 @@ def create_publication_agent(model: Any) -> Any:
 
 def create_technical_reviewer_agent(model: Any) -> Any:
     prompt = _build_persona_prompt("technical_reviewer")
-    return create_agent(model=model, tools=list(get_review_tools()), system_prompt=prompt)
+    return create_agent(model=model, tools=[], system_prompt=prompt)
 
 
 def create_curious_beginner_agent(model: Any) -> Any:
     prompt = _build_reader_prompt("curious_beginner")
-    return create_agent(model=model, tools=list(get_review_tools()), system_prompt=prompt)
+    return create_agent(model=model, tools=[], system_prompt=prompt)
 
 
 # ============================================================================

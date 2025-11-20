@@ -74,7 +74,65 @@ Ao Dr. Paulo H Pires de Aguiar, o médico e amigo que, com maestria e humanidade
 
 [Palavras Finais]
 
-[Próximos passos]
+---
+
+## **Próximos Passos**
+
+Parabéns por ter chegado até o fim. A maioria dos leitores não conclui um livro técnico — e um número ainda menor transforma o conteúdo em prática. O fato de você ter finalizado esta leitura já o coloca em um grupo seleto: profissionais que realmente se comprometem com seu próprio desenvolvimento.
+
+Mas este não é o ponto final. É o início da etapa mais valiosa: **aplicar o conhecimento**.
+
+A seguir, algumas direções objetivas para consolidar o que aprendeu:
+
+### **1. Revise os pontos de maior impacto**
+
+Retorne aos conceitos centrais — arquiteturas, padrões, agentes, integrações, pipelines — e identifique quais podem gerar resultados imediatos nos seus projetos.
+
+### **2. Reproduza e modifique exemplos**
+
+Reimplemente o código apresentado. Ajuste dependências, altere fluxos, valide edge cases. É assim que o aprendizado deixa de ser teórico e se torna domínio técnico.
+
+### **3. Construa pequenos protótipos**
+
+Testes isolados aceleram a curva de aprendizado. Crie scripts, APIs, pipelines, agentes ou integrações simplificadas para experimentar ideias sem sobrecarga.
+
+### **4. Consulte documentação oficial**
+
+O ecossistema evolui rápido. Use changelogs, guias e referências para complementar e atualizar o que aprendeu aqui.
+
+### **5. Aprofunde temas complementares**
+
+Dependendo do tema deste livro, você pode avançar em:
+
+* agentes inteligentes e arquiteturas agentic
+* RAG e bases vetoriais
+* engenharia de prompts e orquestração
+* sistemas de IA em produção
+* governança e segurança de dados
+* otimização e boas práticas de engenharia
+
+### **6. Registre seu processo**
+
+Documente testes, ajustes, decisões e aprendizados. Isso cria uma base técnica pessoal muito valiosa.
+
+---
+
+Se você chegou até aqui, o próximo passo natural é **aplicar**. O avanço real começa agora.
+
+Para expandir seu repertório técnico com novos livros, conteúdos complementares e materiais atualizados, acesse:
+
+👉 **igormedeiros.com.br/seu-proximo-passo**
+
+E, se quiser fazer parte de um grupo ativo de discussão sobre IA, agentes, engenharia e tudo que envolve desenvolvimento moderno, junte-se à nossa comunidade no Telegram:
+
+👉 **t.me/igormedeiros**
+
+Lá compartilhamos novidades, exemplos práticos, insights técnicos e debates relevantes para quem está construindo projetos reais.
+
+Parabéns pela jornada até aqui — agora é hora de transformar conhecimento em prática.
+
+**Igor Medeiros**
+
 
 ## Sobre o Autor
 
@@ -91,4 +149,4 @@ Igor trabalha sob um princípio simples e profundo: **desenvolver tecnologia e s
 
 [Glossário]
 
-[Referências]
+[Referências Bibliográficas]

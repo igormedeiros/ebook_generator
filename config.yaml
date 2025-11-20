@@ -1,0 +1,289 @@
+# Configuração centralizada de strings em Português
+# Todas as mensagens, labels e textos parametrizáveis
+
+llm_profiles:
+  write_model:
+    model_id: "gemini-2.5-flash"
+    provider: "Google AI"
+    api_key_env: "GOOGLE_API_KEY"
+  
+  research_model:
+    model_id: "gemini-2.5-pro"
+    provider: "Google AI"
+    api_key_env: "GOOGLE_API_KEY"
+
+phase_auto_approve:
+  deep_research: "no"  # Perguntar antes de fazer deep research
+  content_generation: "no"  # Perguntar antes de gerar conteúdo
+  review_refinement: "no"  # Perguntar antes de revisar
+  supabase_upload: "no"  # Perguntar antes de fazer upload para Supabase
+
+deep_research:
+  include_word_count_in_header: true
+  prompt_template: |
+    # 📄 Prompt de Deep Research para Base de Conhecimento RAG
+
+    **INSTRUÇÃO PRINCIPAL:** Você é um Engenheiro de Pesquisa Sênior com foco em **Tecnologia Aplicada (IA, Agentes)**. Seu objetivo é conduzir uma pesquisa exaustiva e produzir um documento técnico denso, factual e altamente detalhado sobre **{topic}**.
+
+    Este documento será a **ÚNICA** fonte de verdade para um sistema Retrieval-Augmented Generation (RAG) usado por modelos de linguagem avançados. A qualidade, a profundidade e a granularidade da informação são críticas. Produza no mínimo **{minimum_words} palavras**.
+
+    ---
+
+    ## 🎯 Seções Mandatórias do Documento
+
+    O documento deve ser estruturado em tópicos e subtópicos claros, com foco na explicação técnica, em analogia a um **Artigo de Revisão Científica e um Whitepaper Técnico**.
+
+    ### 1. Resumo Executivo (Máx. 3 Parágrafos)
+    * Visão geral concisa da importância do tema e das principais conclusões técnicas do documento.
+
+    ### 2. Introdução e Contextualização do Tema
+    * **2.1. Definição e Escopo:** Definição formal, desmistificação de termos comuns e delimitação exata do escopo da pesquisa.
+    * **2.2. Relevância no Cenário Atual:** Explique por que este tema é crítico agora com estatísticas, tendências de mercado ou desafios científicos recentes.
+    * **2.3. Termos-Chave e Glossário:** Liste pelo menos 10 termos técnicos essenciais com definições precisas.
+
+    ### 3. Profundidade Técnica e Arquitetura/Fundamentos (Corpo Central)
+    * **3.1. Fundamentos Teóricos/Bases Científicas:** Princípios, equações ou modelos subjacentes.
+    * **3.2. Arquitetura/Implementação Técnica:** Componentes, workflows e tecnologias/frameworks envolvidos.
+    * **3.3. Casos de Uso Avançados e Aplicações:** Exemplos concretos, preferencialmente em saúde/neurologia ou automação corporativa.
+
+    ### 4. Desafios, Limitações e Ética (Análise Crítica)
+    * Gargalos técnicos atuais, implicações éticas, riscos e comparação com soluções alternativas (SWOT ou análise comparativa).
+
+    ### 5. Tendências Futuras e Conclusão
+    * Pesquisas em andamento, próximos passos e síntese final da viabilidade técnica e impacto potencial.
+
+    ---
+
+    ## ⚙️ Critérios de Qualidade para Geração (RAG Optimization)
+
+    1. **Granularidade (Chunking-Ready):** Cada parágrafo aborda uma única ideia ou fato técnico.
+    2. **Foco em Dados e Fatos:** Cite números, métricas, algoritmos, protocolos e referências técnicas sempre que possível.
+    3. **Priorize Fontes Oficiais:** Documentação oficial, órgãos reguladores, papers revisados por pares e fontes com reputação comprovada.
+    4. **Formato:** Use Markdown com listas numeradas/bullets para facilitar chunking.
+    5. **Profundidade:** Presuma leitor com background técnico sênior; evite explicações superficiais.
+    6. **Código:** Inclua exemplos em Python/YAML quando o tema for uma tecnologia, framework ou agente; explique linha a linha quando necessário.
+    7. **Conexão com o Ebook:** Reforce como o tema apoia o projeto "{ebook_name}" e o público-alvo "{target_audience}".
+
+    ---
+
+    ## 📌 Contexto Adicional Obrigatório
+
+    - Ebook: {ebook_name}
+    - Descrição: {ebook_description}
+    - Público-alvo: {target_audience}
+    - Tópicos Obrigatórios (BRD) para manter alinhamento entre pesquisas:
+    {required_topics_list}
+
+    **A SAÍDA DEVE SER APENAS O DOCUMENTO DE PESQUISA EM MARKDOWN, SEGUINDO A ESTRUTURA ACIMA, COM ALTA DENSIDADE INFORMACIONAL.**
+
+  research_defaults:
+    save_immediately: true
+    directory: "kb"
+    technical_depth: "deeply_technical"
+
+  thematic_research:
+    naming_pattern: "RAG_{sanitized_topic}.md"
+    technical_depth_description: |
+      NÍVEL DE PROFUNDIDADE: PROFUNDAMENTE TÉCNICO
+      
+      Este nível é apropriado para:
+      - Públicos com background técnico (dados scientists, engenheiros, arquitetos)
+      - Documentação que presume familiaridade com conceitos base
+      - Detalhamento de implementação, não apenas conceitos
+      - Discussão de trade-offs, performance e scalability
+      
+      Características:
+      ✓ Assume conhecimento prévio do domínio (não é introdutório)
+      ✓ Apresenta diagramas de arquitetura complexos
+      ✓ Exemplos de código são funcionais e reutilizáveis
+      ✓ Inclui performance metrics, benchmarks, comparações
+      ✓ Discussão de limitações, edge cases, anti-padrões
+      ✓ Referências a papers, RFC, documentação oficial
+      ✓ Explicação de trade-offs e decisões de design
+      ✓ Integração com ferramentas e frameworks reais
+    
+    metadata_format: |
+      # Pesquisa Temática: {topic}
+      
+      Ebook: {ebook_name}
+      Data: {timestamp}
+      Tipo: Pesquisa Temática Abrangente
+      Profundidade: Profundamente Técnico
+      
+      ---
+    
+    code_examples_requirement: |
+      IMPORTANTE: Se o tópico for um FRAMEWORK, BIBLIOTECA ou TECNOLOGIA:
+      
+      ✓ OBRIGATÓRIO incluir exemplos de código fonte:
+        - Estrutura de código comentada
+        - Snippets práticos funcionais
+        - Padrões de uso comum
+        - Integração com LangChain quando aplicável
+      
+      ✓ Formatos de código:
+        - Python (primário para este ebook)
+        - YAML para configurações
+        - Pseudocódigo para conceitos abstratos
+      
+      ✓ Elementos adicionais para frameworks:
+        - Diagrama de arquitetura textual (usando ASCII)
+        - Fluxo de execução comentado
+        - Casos de uso reais
+        - Erros comuns e como evitá-los
+      
+      Exemplos de tópicos que REQUEREM código:
+        - "LangChain 1.0" → código de agents, tools, chains
+        - "RAG" → código de retrieval, augmentation, generation
+        - "EHRs" → estrutura de dados, queries
+        - Qualquer ferramenta ou framework específico
+      
+      Exemplos de tópicos que SÃO CONCEITUAIS:
+        - "Ética em IA" → discussão, não requer código
+        - "Compliance em Saúde" → regulamentação, não requer código
+    
+    technical_guidelines: |
+      PROFUNDIDADE TÉCNICA - DIRETRIZES PARA REDAÇÃO:
+      
+      ✓ NÃO seja superficial: vá além de "o que é"
+      ✓ SIM para profundidade: explique "por quê", "como" e "trade-offs"
+      ✓ INCLUA diagramas de arquitetura (ASCII art)
+      ✓ DISCUTA performance: limitações, benchmarks, escalabilidade
+      ✓ ABORDE edge cases: situações especiais, erros, exceções
+      ✓ COMPARE com alternativas: qual é melhor em qual cenário?
+      ✓ CITE fontes: papers, documentação oficial, RFCs
+      ✓ USE exemplos funcionais: código que pode ser copiado e executado
+      ✓ EXPLIQUE decisões de design: por que foi feito assim?
+      ✓ CONTEXTUALIZE para saúde: como isso se aplica em ambientes clínicos?
+      
+      Estrutura esperada por seção (exemplo):
+        - Conceito
+        - Arquitetura / Como funciona internamente
+        - Implementação (com código)
+        - Performance / Limitações
+        - Trade-offs vs alternativas
+        - Casos de uso reais
+        - Erros frequentes
+        - Integração com LangChain
+        - Aplicação clínica
+  
+  chapter_research:
+    naming_pattern: "research_{sanitized_chapter}.md"
+    metadata_format: |
+      # Pesquisa: {chapter}
+      
+      Ebook: {ebook_name}
+      Data: {timestamp}
+      Tipo: Pesquisa por Capítulo
+      Profundidade: Profundamente Técnico
+      
+  retrieval_prompt: "Recupere o contexto relevante do sistema RAG para a seguinte consulta:"
+
+
+messages:
+  # Pipeline
+  pipeline_start: "🚀 Iniciando pipeline de geração de ebook..."
+  pipeline_complete: "✅ Pipeline concluído com sucesso!"
+  pipeline_error: "❌ Erro durante execução do pipeline"
+
+  # Agentes
+  agent_executing: "Executando agente"
+  agent_success: "Agente completou com sucesso"
+  agent_error: "Erro na execução do agente"
+  
+  # Personas de Revisão
+  persona_technical: "Revisor Técnico"
+  persona_editorial: "Revisor Editorial"
+  persona_stylist: "Estilista de Conteúdo"
+  persona_governance: "QA de Compliance"
+  persona_ethics: "Validador de Ética"
+  persona_author_stories: "Revisor de Histórias e Didática do Autor"
+  persona_author_positioning: "Revisor de Posicionamento do Autor"
+  persona_author_vision: "Revisor de Visão e Opiniões do Autor"
+  persona_code_reviewer: "Revisor de Código e Exercícios"
+  persona_research_validator: "Validador de Pesquisa e Referências"
+  
+  # Leitores Virtuais
+  reader_beginner: "Leitor Iniciante Curioso"
+  reader_professional: "Profissional Técnico"
+  reader_educator: "Educador Didático"
+  reader_specialist: "Especialista em Domínio"
+  reader_reflective: "Leitor Reflexivo"
+
+  # Operações RAG
+  rag_querying: "Consultando base de conhecimento"
+  rag_vectorizing: "Vetorizando resultados de pesquisa"
+  rag_storing: "Armazenando no rag_external"
+  rag_retrieving: "Recuperando contexto RAG"
+
+  # Validações
+  validation_passed: "✓ Validação passou"
+  validation_failed: "✗ Validação falhou"
+  syntax_valid: "Sintaxe válida"
+  syntax_error: "Erro de sintaxe detectado"
+
+  # Erros
+  error_missing_parameter: "Parâmetro obrigatório não fornecido"
+  error_invalid_value: "Valor inválido para parâmetro"
+  error_api_connection: "Erro ao conectar com API"
+  error_file_not_found: "Arquivo não encontrado"
+  error_insufficient_context: "Contexto insuficiente para decisão"
+
+  # Sucesso
+  success_import: "Importações verificadas com sucesso"
+  success_config: "Configuração carregada com sucesso"
+  success_iteration: "Iteração {num} concluída com sucesso"
+  success_pipeline_complete: "🎉 Pipeline completo! Seu ebook está pronto para publicação no KDP"
+
+labels:
+  topic: "Tópico"
+  audience: "Público-alvo"
+  word_count: "Contagem de Palavras"
+  title: "Título"
+  outline: "Outline"
+  feedback: "Feedback"
+  score: "Pontuação"
+  status: "Status"
+  duration: "Duração"
+  tokens_used: "Tokens Utilizados"
+  
+
+  
+
+
+# Prompts para validação de entrada
+input_prompts:
+  prompt_topic: "Qual é o tema principal do seu e-book?"
+  prompt_target_audience: "Quem é o público-alvo principal?"
+  prompt_word_count_target: "Qual é a contagem de palavras desejada? (5000-100000)"
+  prompt_transformation_promise: "Qual é a promessa de transformação para o leitor? (opcional)"
+  prompt_reading_level: "Qual é o nível de dificuldade? (beginner/intermediate/advanced, padrão: intermediate)"
+  prompt_author_name: "Qual é o seu nome? (opcional)"
+  prompt_author_bio: "Qual é sua biografia/credenciais? (opcional)"
+  prompt_publication_year: "Qual é o ano de publicação? (opcional)"
+
+spinner_text: "Processando... 🔄"
+success_icon: "✅"
+error_icon: "❌"
+warning_icon: "⚠️"
+info_icon: "ℹ️"
+
+# Mensagens de validação e input (adicionadas)
+validation_messages:
+  missing_field: "Campo obrigatório faltando: {field}"
+  file_not_found: "Arquivo {file} não encontrado"
+  invalid_yaml: "Arquivo YAML inválido: {error}"
+  yaml_processing_error: "Erro ao processar YAML: {error}"
+  invalid_value: "Valor inválido: {error}"
+  field_cannot_be_empty: "Este campo é obrigatório"
+  validation_complete: "Validação de specs concluída com sucesso"
+  interactive_mode_start: "Criando entrada interativa"
+  new_project_prompt: "Novo Projeto de E-book"
+  new_project_detail: "Vou guiá-lo através da criação de um novo e-book"
+  word_count_integer_error: "word_count_target deve ser um número inteiro"
+  word_count_range_error: "word_count_target deve estar entre 5000 e 100000"
+  reading_level_error: "reading_level deve ser um de: {valid_levels}"
+  string_not_empty_error: "{field} deve ser uma string não vazia"
+  invalid_default_warning: "{field} - usando valor padrão"
+  optional_field_prompt: "(deixe em branco para pular)"
+  leave_blank_skip: "(deixe em branco para pular)"
