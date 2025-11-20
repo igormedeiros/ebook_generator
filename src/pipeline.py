@@ -1145,12 +1145,20 @@ def generate_ebook(test_mode: bool = False):
         print_info("Gerando estrutura de capítulos...")
         struct_task = global_progress.add_task("[cyan]Gerando estrutura...", total=None)
         if test_mode:
-            print_info("🧪 MODO TESTE ATIVADO: Mockando estrutura de capítulos.")
+            print_info("🧪 MODO TESTE ATIVADO: Gerando estrutura de 10 capítulos mockados.")
             chapters = [
-                {"name": "Capítulo Teste 1", "purpose": "Testar fluxo", "elements": ["Elemento A", "Elemento B"]},
-                {"name": "Capítulo Teste 2", "purpose": "Testar fluxo final", "elements": ["Elemento C"]}
+                {"name": "Capítulo 1: Introdução à IA na Saúde", "purpose": "Contextualizar o papel da IA em ambientes clínicos modernos", "elements": ["Fundamentos de IA", "Aplicações em saúde", "Desafios iniciais"]},
+                {"name": "Capítulo 2: Fundamentos do LangChain 1.0", "purpose": "Explorar os conceitos básicos e a arquitetura do LangChain", "elements": ["Agentes", "Ferramentas", "Prompts"]},
+                {"name": "Capítulo 3: RAG para Dados Clínicos", "purpose": "Aprender a implementar Retrieval Augmented Generation em contexto clínico", "elements": ["Arquitetura RAG", "Vetorização de dados", "Similaridade semântica"]},
+                {"name": "Capítulo 4: Memory em LangChain", "purpose": "Gerenciar contexto e memória em conversas com agentes", "elements": ["Buffer de memória", "Resumo de contexto", "Limpeza de histórico"]},
+                {"name": "Capítulo 5: Compliance em Saúde", "purpose": "Garantir conformidade com regulamentações de saúde", "elements": ["LGPD", "Auditoria", "Rastreabilidade"]},
+                {"name": "Capítulo 6: Ética em IA", "purpose": "Abordar questões éticas na implementação de IA clínica", "elements": ["Viés algorítmico", "Transparência", "Responsabilidade"]},
+                {"name": "Capítulo 7: Arquitetura de Agentes RAG", "purpose": "Projetar e implementar arquiteturas robustas de agentes RAG", "elements": ["Design de agentes", "Integração de ferramentas", "Fluxo de decisão"]},
+                {"name": "Capítulo 8: Registros Eletrônicos (EHRs)", "purpose": "Trabalhar com dados de registros eletrônicos de saúde", "elements": ["Estrutura de EHRs", "Privacidade de dados", "Integração com RAG"]},
+                {"name": "Capítulo 9: UI com Chainlit", "purpose": "Criar interfaces de usuário intuitivas com Chainlit", "elements": ["Componentes Chainlit", "Fluxo de chat", "Personalização"]},
+                {"name": "Capítulo 10: Implantação e Futuro", "purpose": "Estratégias de implantação e tendências futuras em IA clínica", "elements": ["Deploy em produção", "Monitoramento", "Roadmap futuro"]}
             ]
-            brd["project"]["word_count_target"] = 1000
+            brd["project"]["word_count_target"] = 10000
         else:
             chapters = generate_chapter_structure(brd)
             
@@ -1642,23 +1650,23 @@ def save_ebook(ebook, output_file="result/ebook.md", test_mode=False):
         json.dump(pub_data, f, ensure_ascii=False, indent=2)
     print_success_message(f"✓ Metadata de publicação salvo: {pub_file}")
     
-    if not test_mode:
-        print_info("Gerando EPUB...")
-        try:
-            from .epub_generator import generate_epub_from_markdown, validate_epub
-            
-            epub_path = generate_epub_from_markdown(
-                markdown_file=dist_markdown,
-                output_dir="dist/",
-                metadata=metadata
-            )
-            
-            if validate_epub(epub_path):
-                print_success_message(f"✓ EPUB gerado: {epub_path}")
-            else:
-                print_error_message("⚠️ EPUB gerado mas validação falhou")
-        except Exception as e:
-            print_error_message(f"⚠️ Erro ao gerar EPUB: {str(e)}")
+    print_info("Gerando EPUB...")
+    try:
+        from .epub_generator import generate_epub_from_markdown, validate_epub
+        
+        epub_output_path = "dist/ebook.epub"
+        success = generate_epub_from_markdown(
+            markdown_file_path=dist_markdown,
+            output_file_path=epub_output_path,
+            metadata=metadata
+        )
+        
+        if success and validate_epub(epub_output_path):
+            print_success_message(f"✓ EPUB gerado: {epub_output_path}")
+        else:
+            print_error_message("⚠️ Erro ao gerar EPUB")
+    except Exception as e:
+        print_error_message(f"⚠️ Erro ao gerar EPUB: {str(e)}")
     
     return output_file
 
