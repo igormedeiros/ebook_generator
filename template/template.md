@@ -62,17 +62,17 @@ Aos meus pais, José Maurício e Genilda, a quem busco honrar todos os dias send
 Ao Dr. Paulo H Pires de Aguiar, o médico e amigo que, com maestria e humanidade, orquestrou o salvamento da minha vida.
 
 ---
-[Agradecimentos]
+<<AGRADECIMENTOS>>
 
-[Sumário](#sumário)
+<<SUMÁRIO>>
 
-[Prefácio]
+<<PREFÁCIO>>
 
-[Introdução]
+<<INTRODUÇÃO>>
 
-[Capitulos]
+<<CAPÍTULOS>>
 
-[Palavras Finais]
+<<PALAVRAS_FINAIS>>
 
 ---
 
@@ -147,6 +147,6 @@ Embora profundamente técnico, Igor traz uma visão humana rara na área. Sobrev
 Igor trabalha sob um princípio simples e profundo: **desenvolver tecnologia e soluções que apoiem médicos, ampliem o cuidado e contribuam para salvar vidas — tornando o trabalho na saúde mais humano, preciso e eficiente.**
 
 
-[Glossário]
+<<GLOSSÁRIO>>
 
-[Referências Bibliográficas]
+<<REFERÊNCIAS_BIBLIOGRÁFICAS>>

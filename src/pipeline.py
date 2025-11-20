@@ -610,17 +610,11 @@ def validate_template_placeholders(output_file="result/ebook.md"):
     with open(output_file, "r", encoding="utf-8") as f:
         content = f.read()
     
-    # Procura por placeholders no formato [Texto]
-    placeholders = re.findall(r'\[([^\]]+)\]', content)
+    # Procura por placeholders no formato <<PLACEHOLDER_NAME>>
+    placeholders = re.findall(r'<<([A-Z_]+)>>', content)
     
-    # Filtra placeholders válidos (ignora links markdown e âncoras)
-    unfilled = []
-    for placeholder in placeholders:
-        # Ignora se for link (#sumário) ou se for muito curto
-        if not placeholder.startswith('#') and len(placeholder) > 2:
-            # Verifica se não é um link markdown comum
-            if placeholder not in ['x', 'X', ' ']:
-                unfilled.append(placeholder)
+    # Retorna todos os placeholders encontrados como não preenchidos
+    unfilled = list(set(placeholders))  # Remove duplicatas
     
     return len(unfilled) == 0, unfilled
 
@@ -1202,10 +1196,10 @@ def generate_ebook(test_mode: bool = False):
         print_info("Gerando introdução do ebook...")
         intro_content = generate_introduction(brd, chapters, test_mode=test_mode)
         
-        # Substitui placeholder [Introdução]
+        # Substitui placeholder <<INTRODUÇÃO>>
         with open("result/ebook.md", "r", encoding="utf-8") as f:
             ebook_content = f.read()
-        ebook_content = ebook_content.replace("[Introdução]", intro_content)
+        ebook_content = ebook_content.replace("<<INTRODUÇÃO>>", intro_content)
         with open("result/ebook.md", "w", encoding="utf-8") as f:
             f.write(ebook_content)
         
@@ -1489,7 +1483,7 @@ INSTRUÇÕES DE EDIÇÃO:
     return ebook
 
 def append_chapter_to_ebook(chapter_name, content, output_file="result/ebook.md"):
-    """Adiciona um capítulo ao arquivo do ebook, substituindo o placeholder [Capitulos] ou anexando."""
+    """Adiciona um capítulo ao arquivo do ebook, substituindo o placeholder <<CAPÍTULOS>> ou anexando."""
     import os
     
     if not os.path.exists(output_file):
@@ -1500,11 +1494,11 @@ def append_chapter_to_ebook(chapter_name, content, output_file="result/ebook.md"
     
     new_chapter_block = f"## {chapter_name}\n\n{content}\n\n---\n\n"
     
-    if "[Capitulos]" in current_content:
+    if "<<CAPÍTULOS>>" in current_content:
         # Substitui o placeholder pelo capítulo + novo placeholder para o próximo
         updated_content = current_content.replace(
-            "[Capitulos]", 
-            f"{new_chapter_block}[Capitulos]"
+            "<<CAPÍTULOS>>", 
+            f"{new_chapter_block}<<CAPÍTULOS>>"
         )
     else:
         # Se não tiver placeholder, anexa ao final
@@ -1516,7 +1510,7 @@ def append_chapter_to_ebook(chapter_name, content, output_file="result/ebook.md"
     return True
 
 def finalize_ebook_file(output_file="result/ebook.md"):
-    """Remove o placeholder [Capitulos] restante."""
+    """Remove o placeholder <<CAPÍTULOS>> restante."""
     import os
     if not os.path.exists(output_file):
         return
@@ -1524,7 +1518,7 @@ def finalize_ebook_file(output_file="result/ebook.md"):
     with open(output_file, "r", encoding="utf-8") as f:
         content = f.read()
         
-    final_content = content.replace("[Capitulos]", "")
+    final_content = content.replace("<<CAPÍTULOS>>", "")
     
     with open(output_file, "w", encoding="utf-8") as f:
         f.write(final_content)
@@ -1564,12 +1558,12 @@ def save_ebook(ebook, output_file="result/ebook.md", test_mode=False):
     with open(output_file, "r", encoding="utf-8") as f:
         content = f.read()
     
-    content = content.replace("[Agradecimentos]", acknowledgments_content)
-    content = content.replace("[Prefácio]", preface_content)
-    content = content.replace("[Sumário]", toc_content)
-    content = content.replace("[Palavras Finais]", conclusion_content)
-    content = content.replace("[Glossário]", glossary_content)
-    content = content.replace("[Referências Bibliográficas]", bibliography_content)
+    content = content.replace("<<AGRADECIMENTOS>>", acknowledgments_content)
+    content = content.replace("<<PREFÁCIO>>", preface_content)
+    content = content.replace("<<SUMÁRIO>>", toc_content)
+    content = content.replace("<<PALAVRAS_FINAIS>>", conclusion_content)
+    content = content.replace("<<GLOSSÁRIO>>", glossary_content)
+    content = content.replace("<<REFERÊNCIAS_BIBLIOGRÁFICAS>>", bibliography_content)
     
     with open(output_file, "w", encoding="utf-8") as f:
         f.write(content)
