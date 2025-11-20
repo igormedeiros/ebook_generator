@@ -1070,6 +1070,59 @@ Escreva o conteúdo em Markdown puro. Foco em prático, educativo e ético. O co
     
     return queries
 
+
+def _build_review_persona_agents(model):
+    """
+    Constrói agentes revisores especializados para feedback técnico.
+    
+    Returns:
+        dict: Dicionário com agentes revisores por persona
+    """
+    from .agents import create_technical_reviewer_agent
+    
+    # Por enquanto, retorna apenas o technical reviewer
+    # Pode ser expandido com mais personas
+    return {
+        "technical_reviewer": create_technical_reviewer_agent(model)
+    }
+
+
+def _build_virtual_reader_agents(model):
+    """
+    Constrói agentes leitores virtuais para feedback de UX/clareza.
+    
+    Returns:
+        dict: Dicionário com agentes leitores por persona
+    """
+    from .agents import create_curious_beginner_agent
+    
+    # Por enquanto, retorna apenas o curious beginner
+    # Pode ser expandido com mais personas
+    return {
+        "curious_beginner": create_curious_beginner_agent(model)
+    }
+
+
+def execute_review_personas(content, personas):
+    """
+    Executa um conjunto de personas e coleta feedback.
+    
+    Args:
+        content: Conteúdo a revisar
+        personas: Dict de agentes {persona_name: agent}
+    
+    Returns:
+        dict: Feedback consolidado {persona_name: feedback}
+    """
+    from .agents import execute_agent
+    
+    feedback = {}
+    for persona_name, persona_agent in personas.items():
+        prompt = f"[{persona_name}] Revise e forneça feedback especializado:\n\n{content}"
+        feedback[persona_name] = execute_agent(persona_agent, prompt)
+    return feedback
+
+
 def generate_ebook(test_mode: bool = False):
     """Gera o ebook executando agente para estrutura e depois para cada capítulo."""
     brd = load_brd()
@@ -1477,13 +1530,26 @@ def finalize_ebook_file(output_file="result/ebook.md"):
         f.write(final_content)
 
 def save_ebook(ebook, output_file="result/ebook.md", test_mode=False):
-    """Finaliza o arquivo do ebook gerando conclusão, glossário, bibliografia e validando."""
+    """Finaliza o arquivo do ebook gerando todos os materiais front matter e validando."""
     from .ui import print_info, print_success_message, print_error_message
+    
+    brd = load_brd()
+    chapters = [{"name": ch["name"], "purpose": ""} for ch in ebook.get("chapters", [])]
+    
+    # Gera Agradecimentos
+    print_info("Gerando agradecimentos...")
+    acknowledgments_content = generate_acknowledgments(brd, test_mode=test_mode)
+    
+    # Gera Prefácio
+    print_info("Gerando prefácio...")
+    preface_content = generate_preface(brd, test_mode=test_mode)
+    
+    # Gera Sumário
+    print_info("Gerando sumário...")
+    toc_content = generate_toc(ebook, test_mode=test_mode)
     
     # Gera conclusão
     print_info("Gerando conclusão do ebook...")
-    brd = load_brd()
-    chapters = [{"name": ch["name"], "purpose": ""} for ch in ebook.get("chapters", [])]
     conclusion_content = generate_conclusion(brd, chapters, test_mode=test_mode)
     
     # Gera glossário
@@ -1498,6 +1564,9 @@ def save_ebook(ebook, output_file="result/ebook.md", test_mode=False):
     with open(output_file, "r", encoding="utf-8") as f:
         content = f.read()
     
+    content = content.replace("[Agradecimentos]", acknowledgments_content)
+    content = content.replace("[Prefácio]", preface_content)
+    content = content.replace("[Sumário]", toc_content)
     content = content.replace("[Palavras Finais]", conclusion_content)
     content = content.replace("[Glossário]", glossary_content)
     content = content.replace("[Referências Bibliográficas]", bibliography_content)
@@ -1520,217 +1589,168 @@ def save_ebook(ebook, output_file="result/ebook.md", test_mode=False):
     return output_file
 
 
-def _prepare_prompt(template: str, **context) -> str:
-    """Safely render prompt templates without raising on missing keys."""
+def generate_acknowledgments(brd, test_mode=False):
+    """
+    Gera a seção de Agradecimentos do ebook em primeira pessoa.
+    
+    Args:
+        brd: Configuração BRD
+        test_mode: Se True, retorna conteúdo mockado
+    
+    Returns:
+        str: Conteúdo dos agradecimentos em Markdown
+    """
+    if test_mode:
+        return "Agradecimentos sinceros a todos que contribuíram para este projeto."
+    
+    project = brd["project"]
+    author_name = project.get("author_name", "Autor")
+    author_bio = project.get("author_bio", "")
+    
+    ack_prompt = f"""Escreva uma seção de AGRADECIMENTOS emocionante e sincera para o ebook "{project['name']}".
 
-    if not template:
-        return ""
-    try:
-        return template.format(**context)
-    except KeyError:
-        return template
+AUTOR: {author_name}
+BIO DO AUTOR: {author_bio}
+DESCRIÇÃO DO EBOOK: {project['description']}
+
+INSTRUÇÕES:
+1. Escreva na primeira pessoa (voz do autor).
+2. Agradeça à comunidade de tecnologia e saúde.
+3. Agradeça aos mentores e inspirações (se houver menção na bio).
+4. Agradeça aos leitores pelo apoio.
+5. Mantenha um tom humilde, grato e inspirador.
+
+EXTENSÃO: Aproximadamente 300-500 palavras.
+FORMATO: Markdown puro, sem título de seção (o título "Agradecimentos" já estará no template).
+
+Retorne APENAS o conteúdo dos agradecimentos em Markdown."""
+    
+    from .agents import writer_agent
+    
+    response = writer_agent.invoke({
+        "messages": [{"role": "user", "content": ack_prompt}]
+    })
+    
+    # Extrai conteúdo (mesma lógica dos outros)
+    messages = response.get("messages", [])
+    if messages and isinstance(messages, list) and len(messages) > 0:
+        last_msg = messages[-1]
+        if hasattr(last_msg, 'content'):
+            content = last_msg.content
+        elif isinstance(last_msg, dict):
+            content = last_msg.get("content", str(last_msg))
+        else:
+            content = str(last_msg)
+    else:
+        content = str(response)
+    
+    # Se o conteúdo for uma lista JSON, extrai o texto
+    if isinstance(content, str) and content.strip().startswith('['):
+        try:
+            content_list = json.loads(content)
+            if isinstance(content_list, list) and len(content_list) > 0:
+                if isinstance(content_list[0], dict):
+                    content = content_list[0].get('text', content)
+                elif isinstance(content_list[0], str):
+                    content = content_list[0]
+        except:
+            pass
+        
+    return content if isinstance(content, str) else str(content)
 
 
-def _build_review_persona_agents(model, personas_config=None):
-    """Instantiate review personas using the configured model."""
+def generate_preface(brd, test_mode=False):
+    """
+    Gera a seção de Prefácio do ebook.
+    
+    Args:
+        brd: Configuração BRD
+        test_mode: Se True, retorna conteúdo mockado
+    
+    Returns:
+        str: Conteúdo do prefácio em Markdown
+    """
+    if test_mode:
+        return "Bem-vindo a este livro. Aqui começamos uma jornada de aprendizado e transformação."
+    
+    project = brd["project"]
+    target_audience = project.get("target_audience", "Leitores")
+    
+    preface_prompt = f"""Escreva um PREFÁCIO cativante para o ebook "{project['name']}".
 
-    return {
-        "Technical Reviewer": create_technical_reviewer_agent(model)
-    }
+DESCRIÇÃO DO EBOOK: {project['description']}
+PÚBLICO-ALVO: {target_audience}
+
+INSTRUÇÕES:
+1. Estabeleça o cenário atual e a necessidade deste livro.
+2. Fale diretamente com o leitor sobre o que esperar.
+3. Explique a filosofia por trás do livro (por que foi escrito).
+4. Convide o leitor para a jornada.
+5. Mantenha um tom acolhedor e visionário.
+
+EXTENSÃO: Aproximadamente 500-800 palavras.
+FORMATO: Markdown puro, sem título de seção (o título "Prefácio" já estará no template).
+
+Retorne APENAS o conteúdo do prefácio em Markdown."""
+    
+    from .agents import writer_agent
+    
+    response = writer_agent.invoke({
+        "messages": [{"role": "user", "content": preface_prompt}]
+    })
+    
+    # Extrai conteúdo
+    messages = response.get("messages", [])
+    if messages and isinstance(messages, list) and len(messages) > 0:
+        last_msg = messages[-1]
+        if hasattr(last_msg, 'content'):
+            content = last_msg.content
+        elif isinstance(last_msg, dict):
+            content = last_msg.get("content", str(last_msg))
+        else:
+            content = str(last_msg)
+    else:
+        content = str(response)
+    
+    # Se o conteúdo for uma lista JSON, extrai o texto
+    if isinstance(content, str) and content.strip().startswith('['):
+        try:
+            content_list = json.loads(content)
+            if isinstance(content_list, list) and len(content_list) > 0:
+                if isinstance(content_list[0], dict):
+                    content = content_list[0].get('text', content)
+                elif isinstance(content_list[0], str):
+                    content = content_list[0]
+        except:
+            pass
+        
+    return content if isinstance(content, str) else str(content)
 
 
-def _build_virtual_reader_agents(model, readers_config=None):
-    """Instantiate virtual reader personas."""
-
-    return {
-        "Curious Beginner": create_curious_beginner_agent(model)
-    }
-
-
-def run_ebook_pipeline(
-    topic: str,
-    target_audience: str,
-    word_count_target: int = 10000,
-    transformation_promise: str | None = None,
-    reading_level: str | None = None,
-    run_all_stages: bool = True,
-):
-    """Execute the multi-stage ebook pipeline orchestrated via LangChain agents."""
-
-    results = {}
-    try:
-        print_pipeline_start(topic, target_audience, word_count_target)
-        get_message("pipeline_start")
-        config = get_config()
-        prompt_templates = config.get("agent_prompts", {})
-
-        write_model = get_model()
-        research_model = get_research_model()
-
-        context = {
-            "topic": topic,
-            "target_audience": target_audience,
-            "word_count_target": word_count_target,
-            "transformation_promise": transformation_promise or "",
-            "reading_level": reading_level or "",
-        }
-
-        # Stage 1 - Document Spec
-        print_stage_header(1, "Document Spec", "Consolidação do BRD")
-        doc_prompt = (
-            f"Topic: {topic}\nTarget Audience: {target_audience}\n"
-            f"Word Count Target: {word_count_target}\n"
-            f"Transformation Promise: {transformation_promise or 'N/A'}\n"
-            f"Reading Level: {reading_level or 'N/A'}"
-        )
-        stage_start = time.time()
-        document_spec_agent = create_document_spec_agent(research_model)
-        doc_output = execute_agent(document_spec_agent, doc_prompt)
-        context["document_spec_output"] = doc_output
-        results["stage_1_document_spec"] = doc_output
-        print_stage_complete(1, time.time() - stage_start)
-
-        if not run_all_stages:
-            results["pipeline_status"] = "partial"
-            return results
-
-        # Stage 2 - Ideation
-        print_stage_header(2, "Ideation", "Expansão criativa")
-        ideation_prompt = _prepare_prompt(
-            prompt_templates.get("ideation_prompt_template", "{topic}"),
-            **context,
-        )
-        stage_start = time.time()
-        ideation_agent = create_ideation_agent(write_model)
-        ideation_output = execute_agent(ideation_agent, ideation_prompt)
-        context["ideation_output"] = ideation_output
-        results["stage_2_ideation"] = ideation_output
-        print_stage_complete(2, time.time() - stage_start)
-
-        # Stage 3 - Title
-        print_stage_header(3, "Title", "Geração de títulos")
-        title_prompt = _prepare_prompt(
-            prompt_templates.get("title_prompt_template", "{ideation_output}"),
-            **context,
-        )
-        stage_start = time.time()
-        title_agent = create_title_agent(write_model)
-        title_output = execute_agent(title_agent, title_prompt)
-        context["title_output"] = title_output
-        results["stage_3_title"] = title_output
-        print_stage_complete(3, time.time() - stage_start)
-
-        # Stage 4 - Structure
-        print_stage_header(4, "Structure", "Construção de capítulos")
-        structure_prompt = _prepare_prompt(
-            prompt_templates.get("structure_prompt_template", "{topic}"),
-            **context,
-        )
-        stage_start = time.time()
-        structure_agent = create_structure_agent(write_model)
-        structure_output = execute_agent(structure_agent, structure_prompt)
-        context["structure_output"] = structure_output
-        results["stage_4_structure"] = structure_output
-        print_stage_complete(4, time.time() - stage_start)
-
-        # Stage 5 - Deep Research
-        print_stage_header(5, "Deep Research", "Pesquisa especializada")
-        research_prompt = _prepare_prompt(
-            prompt_templates.get("deep_research_prompt_template", "{structure_output}"),
-            **context,
-        )
-        stage_start = time.time()
-        deep_research_agent = create_deep_research_agent(research_model)
-        deep_research_output = execute_agent(deep_research_agent, research_prompt)
-        context["deep_research_output"] = deep_research_output
-        results["stage_5_deep_research"] = deep_research_output
-        print_stage_complete(5, time.time() - stage_start)
-
-        # Stage 6 - Chapter Writing
-        print_stage_header(6, "Chapter Writing", "Redação técnica")
-        chapter_prompt = _prepare_prompt(
-            prompt_templates.get("chapter_writing_prompt_template", "{structure_output}"),
-            **context,
-        )
-        stage_start = time.time()
-        chapter_agent = create_chapter_agent(write_model)
-        chapter_output = execute_agent(chapter_agent, chapter_prompt)
-        context["chapter_output"] = chapter_output
-        results["stage_6_chapter_writing"] = chapter_output
-        print_stage_complete(6, time.time() - stage_start)
-
-        # Stage 7 - Specialized Review
-        print_stage_header(7, "Review Personas", "Coordenação de revisores")
-        review_agent = create_review_coordinator_agent(research_model)
-        review_personas = _build_review_persona_agents(research_model)
-        review_feedback = execute_review_personas(
-            review_agent, chapter_output, review_personas
-        )
-        context["review_output"] = review_feedback
-        results["stage_7_review"] = review_feedback
-        print_stage_complete(7)
-
-        # Stage 8 - Virtual Readers
-        print_stage_header(8, "Virtual Readers", "Leitura crítica")
-        critical_agent = create_critical_reading_coordinator_agent(research_model)
-        virtual_readers = _build_virtual_reader_agents(write_model)
-        critical_feedback = execute_review_personas(
-            critical_agent, chapter_output, virtual_readers
-        )
-        context["critical_output"] = critical_feedback
-        results["stage_8_critical_reading"] = critical_feedback
-        print_stage_complete(8)
-
-        # Stage 9 - Editing
-        print_stage_header(9, "Editing", "Higienização editorial")
-        editing_prompt = _prepare_prompt(
-            prompt_templates.get("editing_prompt_template", "{critical_output}"),
-            **context,
-        )
-        stage_start = time.time()
-        editing_agent = create_editing_agent(write_model)
-        editing_output = execute_agent(editing_agent, editing_prompt)
-        context["editing_output"] = editing_output
-        results["stage_9_editing"] = editing_output
-        print_stage_complete(9, time.time() - stage_start)
-
-        # Stage 10 - Finalization
-        print_stage_header(10, "Finalization", "Materiais finais")
-        final_prompt = _prepare_prompt(
-            prompt_templates.get("finalization_prompt_template", "{editing_output}"),
-            **context,
-        )
-        stage_start = time.time()
-        finalization_agent = create_finalization_agent(write_model)
-        finalization_output = execute_agent(finalization_agent, final_prompt)
-        context["finalization_output"] = finalization_output
-        results["stage_10_finalization"] = finalization_output
-        print_stage_complete(10, time.time() - stage_start)
-
-        # Stage 11 - Publication
-        print_stage_header(11, "Publication", "Exportação e KDP")
-        publication_prompt = _prepare_prompt(
-            prompt_templates.get("publication_prompt_template", "{editing_output}"),
-            **context,
-        )
-        stage_start = time.time()
-        publication_agent = create_publication_agent(write_model)
-        publication_output = execute_agent(publication_agent, publication_prompt)
-        results["stage_11_publication"] = publication_output
-        print_stage_complete(11, time.time() - stage_start)
-
-        results["pipeline_status"] = "completed"
-        results["summary"] = {
-            "topic": topic,
-            "target_audience": target_audience,
-            "stages_completed": 11,
-            "total_stages": 11,
-            "final_ebook_path": None,
-        }
-        print_pipeline_complete(results)
-        return results
-    except Exception as exc:  # noqa: BLE001
-        print_error_panel("Erro no Pipeline", str(exc))
-        return {"pipeline_status": "error", "error": str(exc)}
+def generate_toc(ebook, test_mode=False):
+    """
+    Gera o Sumário (Table of Contents) do ebook.
+    
+    Args:
+        ebook: Dicionário com dados do ebook (incluindo chapters)
+        test_mode: Se True, retorna conteúdo mockado
+    
+    Returns:
+        str: Conteúdo do sumário em Markdown com links para os capítulos
+    """
+    if test_mode:
+        return "- [Capítulo Teste 1](#capitulo-teste-1)\n- [Capítulo Teste 2](#capitulo-teste-2)"
+    
+    chapters = ebook.get("chapters", [])
+    toc_lines = []
+    
+    for idx, chapter in enumerate(chapters, 1):
+        # Cria um slug simples para o link markdown
+        title = chapter['name']
+        # Converte para slug: minúsculas, replace spaces com hífen, remove caracteres especiais
+        slug = title.lower().replace(" ", "-").replace(".", "").replace(",", "").replace(":", "").replace("(", "").replace(")", "")
+        toc_lines.append(f"- [{title}](#{slug})")
+        
+    return "\n".join(toc_lines)
 
 
