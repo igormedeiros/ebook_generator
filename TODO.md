@@ -23,5 +23,5 @@
 [x] Implement incremental saving of chapters to ebook.md
 [x] Update get_confirmation to support skip_prompt parameter
 [x] Fix JSON parsing errors in chapter structure generation using json_repair
-[ ] Test EPUB generation end-to-end with --test mode
-[ ] git add -A && git commit -m "feat: implement EPUB generation from markdown"
+[x] Test EPUB generation end-to-end with --test mode
+[x] git add -A && git commit -m "feat: implement EPUB generation from markdown"
