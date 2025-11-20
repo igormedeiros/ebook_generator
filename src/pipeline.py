@@ -17,6 +17,7 @@ import json
 import os
 import sys
 import ast
+import shutil
 import json_repair
 from functools import lru_cache
 from pathlib import Path
@@ -1523,6 +1524,36 @@ def finalize_ebook_file(output_file="result/ebook.md"):
     with open(output_file, "w", encoding="utf-8") as f:
         f.write(final_content)
 
+
+def extract_epub_metadata(ebook: dict, brd: dict) -> dict:
+    """
+    Extrai metadata para geração de EPUB a partir de ebook e BRD.
+    
+    Args:
+        ebook: Dicionário com dados do ebook gerado
+        brd: Configuração BRD
+    
+    Returns:
+        dict: Metadata para EPUB com title, author, language, copyright, etc.
+    """
+    from datetime import datetime
+    
+    project = brd.get("project", {})
+    
+    metadata = {
+        "title": ebook.get("title", project.get("name", "Untitled")),
+        "author": project.get("author", "Igor Medeiros"),
+        "language": project.get("language", "pt-BR"),
+        "description": project.get("description", ""),
+        "date": datetime.now().strftime("%Y-%m-%d"),
+        "copyright": "© 2025 Igor Medeiros. Todos os direitos reservados.",
+        "publisher": "Igor Medeiros - IA na Prática",
+        "subject": ["IA", "LangChain", "Desenvolvimento", "Tecnologia"],
+    }
+    
+    return metadata
+
+
 def save_ebook(ebook, output_file="result/ebook.md", test_mode=False):
     """Finaliza o arquivo do ebook gerando todos os materiais front matter e validando."""
     from .ui import print_info, print_success_message, print_error_message
@@ -1579,6 +1610,31 @@ def save_ebook(ebook, output_file="result/ebook.md", test_mode=False):
         print_error_message(f"⚠️ Atenção: {len(unfilled)} placeholder(s) não preenchido(s): {', '.join(unfilled)}")
     else:
         print_success_message("✓ Todos os placeholders foram preenchidos!")
+    
+    # Copia markdown para dist/ e gera EPUB
+    os.makedirs("dist", exist_ok=True)
+    dist_markdown = "dist/ebook.md"
+    shutil.copy2(output_file, dist_markdown)
+    print_success_message(f"✓ Markdown salvo: {dist_markdown}")
+    
+    if not test_mode:
+        print_info("Gerando EPUB...")
+        try:
+            from .epub_generator import generate_epub_from_markdown, validate_epub
+            
+            metadata = extract_epub_metadata(ebook, brd)
+            epub_path = generate_epub_from_markdown(
+                markdown_file=dist_markdown,
+                output_dir="dist/",
+                metadata=metadata
+            )
+            
+            if validate_epub(epub_path):
+                print_success_message(f"✓ EPUB gerado: {epub_path}")
+            else:
+                print_error_message("⚠️ EPUB gerado mas validação falhou")
+        except Exception as e:
+            print_error_message(f"⚠️ Erro ao gerar EPUB: {str(e)}")
     
     return output_file
 
