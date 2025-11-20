@@ -757,7 +757,8 @@ def generate_chapter_research(chapter_name, chapter_purpose, chapter_elements, b
         print(f"\n  🔍 Preparando pesquisa para: {chapter_name}")
         should_research = get_confirmation(
             f"Deseja realizar pesquisa profunda (Deep Research) para o capítulo '{chapter_name}'?",
-            default=True
+            default=True,
+            phase="deep_research"
         )
         
         if not should_research:
@@ -1290,13 +1291,17 @@ def generate_ebook(test_mode: bool = False):
         global_progress.stop()
         try:
             if test_mode:
-                perform_content_generation = True
+                perform_generation = True
             else:
-                perform_content_generation = get_confirmation("Deseja gerar o CONTEÚDO dos capítulos?", default=True)
+                perform_generation = get_confirmation(
+                    "Deseja prosseguir com a GERAÇÃO DE CONTEÚDO?",
+                    default=True,
+                    phase="content_generation"
+                )
         finally:
             global_progress.start()
         
-        if not perform_content_generation:
+        if not perform_generation:
             print_info("Geração de conteúdo cancelada. Encerrando pipeline.")
             return None
         
@@ -1357,7 +1362,12 @@ def generate_ebook(test_mode: bool = False):
             })
             
             # Salva incrementalmente se não for fazer revisão
-            if not get_confirmation("Deseja realizar a REVISÃO E REFINAMENTO?", default=True, skip_prompt=True):
+            if not get_confirmation(
+                "Deseja realizar a REVISÃO E REFINAMENTO?",
+                default=True,
+                skip_prompt=True,
+                phase="review_refinement"
+            ):
                  append_chapter_to_ebook(chapter_name, content)
             
             # print_content_generated(len(content))
@@ -1380,7 +1390,11 @@ def generate_ebook(test_mode: bool = False):
             if test_mode:
                 perform_review = True
             else:
-                perform_review = get_confirmation("Deseja realizar a REVISÃO E REFINAMENTO?", default=True)
+                perform_review = get_confirmation(
+                    "Deseja realizar a REVISÃO E REFINAMENTO?",
+                    default=True,
+                    phase="review_refinement"
+                )
         finally:
             global_progress.start()
         

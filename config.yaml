@@ -18,6 +18,16 @@ phase_auto_approve:
   review_refinement: "yes"  # Perguntar antes de revisar
   supabase_upload: "no"  # Perguntar antes de fazer upload para Supabase
 
+# Configuração de observabilidade detalhada dos agentes
+observability:
+  enabled: true  # Ativa/desativa logging detalhado de agentes
+  show_agent_thoughts: true  # Mostra pensamentos do agente (chain of thought)
+  show_tool_calls: true  # Mostra chamadas de tools com argumentos
+  show_tokens: true  # Mostra contagem de tokens
+  show_timing: true  # Mostra tempo de execução
+  show_rag_operations: true  # Mostra operações RAG (retrieval, vectorization)
+  parallel_review: true  # Executa revisores em paralelo (mais rápido)
+
 deep_research:
   include_word_count_in_header: true
   prompt_template: |

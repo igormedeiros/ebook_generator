@@ -72,8 +72,32 @@ def print_chapters_preview(chapters: list):
     
     console.print(table)
 
-def get_confirmation(prompt_text: str = "Deseja prosseguir com a geração?", default: bool = True, skip_prompt: bool = False):
-    """Obtém confirmação do usuário de forma bonita."""
+def get_confirmation(prompt_text: str = "Deseja prosseguir com a geração?", default: bool = True, skip_prompt: bool = False, phase: str = None):
+    """
+    Obtém confirmação do usuário de forma bonita.
+    
+    Args:
+        prompt_text: Texto do prompt
+        default: Valor padrão se usuário apenas pressionar Enter
+        skip_prompt: Se True, pula o prompt e retorna default
+        phase: Nome da fase para verificar auto-approve (ex: 'deep_research', 'content_generation')
+    
+    Returns:
+        bool: True se confirmado, False caso contrário
+    """
+    # Verifica se deve auto-aprovar baseado na configuração
+    if phase:
+        from .config import get_config
+        phase_auto_approve = get_config("phase_auto_approve") or {}
+        auto_approve_value = phase_auto_approve.get(phase, "no")
+        
+        # Se configurado como "yes", auto-aprova
+        if auto_approve_value == "yes":
+            console.print(f"[dim]⚡ Auto-aprovado (phase_auto_approve.{phase} = yes)[/dim]")
+            return True
+        # Se configurado como "no", sempre pergunta (comportamento padrão)
+        # Qualquer outro valor também pergunta
+    
     if skip_prompt:
         return default
     

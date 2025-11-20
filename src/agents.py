@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional
 
@@ -198,11 +199,24 @@ def _extract_text_from_response(response: Any) -> str:
     return response if isinstance(response, str) else str(response)
 
 
-def execute_agent(agent: Any, query: str) -> str:
-    """Execute an agent safely and normalize the response."""
-
+def execute_agent(agent: Any, query: str, callbacks: Optional[List[BaseCallbackHandler]] = None) -> str:
+    """
+    Execute an agent safely and normalize the response.
+    
+    Args:
+        agent: Agent to execute
+        query: Query string
+        callbacks: Optional list of callback handlers (e.g., DetailedAgentObserver)
+    
+    Returns:
+        str: Normalized response text
+    """
     messages = [{"role": "user", "content": query}]
-    callbacks = [AgentExecutionLogger()]
+    
+    # Use provided callbacks or default to AgentExecutionLogger
+    if callbacks is None:
+        callbacks = [AgentExecutionLogger()]
+    
     try:
         result = agent.invoke({"messages": messages}, config={"callbacks": callbacks})
         return _extract_text_from_response(result)
@@ -210,13 +224,53 @@ def execute_agent(agent: Any, query: str) -> str:
         return f"Error executing agent: {exc}"
 
 
-def execute_review_personas(content: str, personas: Dict[str, Any]) -> Dict[str, str]:
-    """Execute a set of persona agents and collect their feedback."""
-
+def execute_review_personas(
+    content: str,
+    personas: Dict[str, Any],
+    use_parallel: bool = True,
+    callbacks: Optional[List[BaseCallbackHandler]] = None
+) -> Dict[str, str]:
+    """
+    Execute a set of persona agents and collect their feedback.
+    
+    Args:
+        content: Content to review
+        personas: Dict of persona agents {persona_name: agent}
+        use_parallel: If True, execute personas in parallel (faster)
+        callbacks: Optional callbacks for observability
+    
+    Returns:
+        dict: Feedback consolidated {persona_name: feedback}
+    """
     feedback: Dict[str, str] = {}
-    for persona_name, persona_agent in personas.items():
-        prompt = f"[{persona_name}] Review and provide specialized feedback:\n\n{content}"
-        feedback[persona_name] = execute_agent(persona_agent, prompt)
+    
+    if use_parallel and len(personas) > 1:
+        # Parallel execution using ThreadPoolExecutor
+        
+        def review_with_persona(persona_name: str, persona_agent: Any) -> tuple[str, str]:
+            """Helper function to execute single persona review."""
+            prompt = f"[{persona_name}] Review and provide specialized feedback:\n\n{content}"
+            result = execute_agent(persona_agent, prompt, callbacks=callbacks)
+            return persona_name, result
+        
+        # Execute all personas in parallel
+        with ThreadPoolExecutor(max_workers=min(len(personas), 4)) as executor:
+            # Submit all tasks
+            future_to_persona = {
+                executor.submit(review_with_persona, name, agent): name
+                for name, agent in personas.items()
+            }
+            
+            # Collect results as they complete
+            for future in as_completed(future_to_persona):
+                persona_name, result = future.result()
+                feedback[persona_name] = result
+    else:
+        # Sequential execution (original behavior)
+        for persona_name, persona_agent in personas.items():
+            prompt = f"[{persona_name}] Review and provide specialized feedback:\n\n{content}"
+            feedback[persona_name] = execute_agent(persona_agent, prompt, callbacks=callbacks)
+    
     return feedback
 
 
