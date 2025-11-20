@@ -1617,12 +1617,36 @@ def save_ebook(ebook, output_file="result/ebook.md", test_mode=False):
     shutil.copy2(output_file, dist_markdown)
     print_success_message(f"✓ Markdown salvo: {dist_markdown}")
     
+    # Gera arquivo .pub com metadata de publicação
+    print_info("Gerando metadata de publicação...")
+    metadata = extract_epub_metadata(ebook, brd)
+    pub_data = {
+        "title": metadata["title"],
+        "author": metadata["author"],
+        "language": metadata["language"],
+        "description": metadata["description"],
+        "date_generated": metadata["date"],
+        "copyright": metadata["copyright"],
+        "publisher": metadata["publisher"],
+        "subjects": metadata["subject"],
+        "chapters": len(ebook.get("chapters", [])),
+        "word_count": count_words(content),
+        "formats": {
+            "markdown": "dist/ebook.md",
+            "epub": "dist/ebook.epub"
+        }
+    }
+    
+    pub_file = "dist/ebook.pub"
+    with open(pub_file, "w", encoding="utf-8") as f:
+        json.dump(pub_data, f, ensure_ascii=False, indent=2)
+    print_success_message(f"✓ Metadata de publicação salvo: {pub_file}")
+    
     if not test_mode:
         print_info("Gerando EPUB...")
         try:
             from .epub_generator import generate_epub_from_markdown, validate_epub
             
-            metadata = extract_epub_metadata(ebook, brd)
             epub_path = generate_epub_from_markdown(
                 markdown_file=dist_markdown,
                 output_dir="dist/",
