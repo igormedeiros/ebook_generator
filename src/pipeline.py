@@ -809,7 +809,7 @@ def generate_chapter_research(chapter_name, chapter_purpose, chapter_elements, b
 - Informe a contagem aproximada de palavras logo após o título do documento.
 
 ## ✅ Checklist Obrigatório
-- Estruture o texto seguindo as seções do template principal (Resumo Executivo → Introdução → Corpo Técnico → Desafios → Tendências).
+- Estruture o texto seguindo as seções do template principal (Resumo Executivo -> Introdução -> Corpo Técnico -> Desafios -> Tendências).
 - Cada parágrafo deve conter apenas uma ideia e pode ser convertido em chunk RAG sem perda de contexto.
 - Destaque riscos de segurança de dados clínicos, implicações éticas e comparações com abordagens alternativas.
 - Inclua exemplos de código Python/LangChain quando o capítulo abordar tecnologias, frameworks ou agentes."""
@@ -1028,17 +1028,6 @@ def build_chapter_queries_with_research(chapters, research_data, brd):
         
         # Detecta se a pesquisa foi pulada
         skipped_research = research_context.startswith("# Pesquisa ignorada")
-        
-        if skipped_research:
-            context_instruction = f"""CONTEXTO DE RESEARCH:
-(A etapa de pesquisa profunda foi pulada pelo usuário)
-
-⚠️ INSTRUÇÃO CRÍTICA DE RAG:
-Como não há research prévio, você DEVE usar suas ferramentas (retrieve_rag_context, retrieve_author_stories, retrieve_author_vision, search_knowledge_base) para buscar informações no banco de dados.
-1. Busque por termos-chave do título: "{chapter['name']}"
-2. Busque por histórias do autor relacionadas ao tema.
-3. Busque por conteúdo técnico em 'rag_external'.
-
 NÃO invente fatos técnicos. Use as ferramentas para embasar o conteúdo."""
         else:
             context_instruction = f"""CONTEXTO DE RESEARCH (use como base):
