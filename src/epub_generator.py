@@ -213,12 +213,9 @@ def generate_epub_from_markdown(
         book.spine = ['nav'] + chapters
         book.toc = chapters
         
-        # Add style
-        c1 = epub.EpubNcx()
-        book.add_item(c1)
-        
-        c2 = epub.EpubNcx()
-        book.add_item(c2)
+        # Add required EPUB files
+        book.add_item(epub.EpubNcx())
+        book.add_item(epub.EpubNav())
         
         # Create directories if needed
         output_path = Path(output_file_path)
