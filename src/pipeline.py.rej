@@ -1,0 +1,27 @@
+--- src/pipeline.py
++++ src/pipeline.py
+@@ -481,7 +481,23 @@ CONTEÚDO DOS CAPÍTULOS (AMOSTRA):
+ {all_chapters_content[:5000]}
+ 
+ FORMATO DE SAÍDA:
+-- Markdown puro
++- Markdown puro
++- Sem título de seção (já estará no template)
++- Organizado alfabeticamente
++- Cada termo em uma linha
++- Definições claras e objetivas
++
++**IMPORTANTE - FORMATO DE SAÍDA:**
++- Retorne APENAS o glossário em Markdown puro
++- NÃO retorne JSON, NÃO retorne listas Python, NÃO retorne objetos
++- Use o formato: **Termo**: Definição.
++- Organize em ordem alfabética
++
++EXEMPLO:
++**Agent**: Sistema autônomo capaz de tomar decisões e executar ações.
++**API**: Application Programming Interface, interface para comunicação entre sistemas.
++
++Retorne APENAS o glossário em Markdown."""
+     
+     from .agents import writer_agent
+ 
