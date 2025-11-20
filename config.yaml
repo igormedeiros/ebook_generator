@@ -14,8 +14,8 @@ llm_profiles:
 
 phase_auto_approve:
   deep_research: "no"  # Perguntar antes de fazer deep research
-  content_generation: "no"  # Perguntar antes de gerar conteúdo
-  review_refinement: "no"  # Perguntar antes de revisar
+  content_generation: "yes"  # Perguntar antes de gerar conteúdo
+  review_refinement: "yes"  # Perguntar antes de revisar
   supabase_upload: "no"  # Perguntar antes de fazer upload para Supabase
 
 deep_research:
