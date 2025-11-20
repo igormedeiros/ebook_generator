@@ -68,9 +68,15 @@ def extract_markdown_content(response: Union[str, List, Any]) -> str:
     Handles:
     - Direct string markdown
     - Dict with 'messages' list (LangChain style)
+    - Objects with 'content' attribute (LangChain AIMessage)
     - JSON strings (single or list) with keys like 'content', 'text', 'markdown'
     - Python literal dict strings (e.g. "{'messages':[{'content':'...'}]}")
     """
+    # 0. Check for LangChain AIMessage-like object (has .content)
+    # Check this first before dict/list checks
+    if hasattr(response, "content") and not isinstance(response, (str, dict, list)):
+        return extract_markdown_content(response.content)
+
     # 1. Direct dict with messages
     if isinstance(response, dict) and 'messages' in response:
         return _extract_from_message_obj(response['messages'])

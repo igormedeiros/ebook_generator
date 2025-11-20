@@ -70,9 +70,11 @@ class TestSpecValidator(unittest.TestCase):
         mock_input.assert_called_once()
 
     @patch('src.input_validator.SpecValidator._prompt_for_field')
-    def test_validate_metadata_prompts_for_missing(self, mock_prompt):
+    @patch('src.input_validator.SpecValidator._prompt_optional_field')
+    def test_validate_metadata_prompts_for_missing(self, mock_prompt_optional, mock_prompt):
         """Test that _validate_metadata prompts for missing mandatory fields."""
         mock_prompt.return_value = "Filled by prompt"
+        mock_prompt_optional.return_value = "Optional Value"
         metadata = {'author_name': 'Test Author'} # Missing topic and target_audience
         
         validated_metadata = self.validator._validate_metadata(metadata)
@@ -82,9 +84,11 @@ class TestSpecValidator(unittest.TestCase):
         self.assertEqual(validated_metadata['target_audience'], "Filled by prompt")
 
     @patch('src.input_validator.SpecValidator._prompt_for_field')
-    def test_validate_parameters_prompts_for_missing(self, mock_prompt):
+    @patch('src.input_validator.SpecValidator._prompt_optional_field')
+    def test_validate_parameters_prompts_for_missing(self, mock_prompt_optional, mock_prompt):
         """Test that _validate_parameters prompts for missing mandatory fields."""
         mock_prompt.return_value = "Filled by prompt"
+        mock_prompt_optional.return_value = "Optional Value"
         parameters = {'word_count_target': 50000} # Missing transformation_promise
         
         validated_params = self.validator._validate_parameters(parameters)

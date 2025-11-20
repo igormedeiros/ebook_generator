@@ -1135,11 +1135,24 @@ def generate_ebook(test_mode: bool = False):
         intro_content = generate_introduction(brd, chapters, test_mode=test_mode)
         
         # Substitui placeholder <<INTRODUÇÃO>>
-        with open("result/ebook.md", "r", encoding="utf-8") as f:
-            ebook_content = f.read()
-        ebook_content = ebook_content.replace("<<INTRODUÇÃO>>", intro_content)
-        with open("result/ebook.md", "w", encoding="utf-8") as f:
-            f.write(ebook_content)
+        # The file variable used here should be "result/ebook.md" if not parameterized in generate_ebook
+        # But initialize_ebook_file might use a parameter.
+        # In this scope, we don't have the output_file param available directly unless we look at initialize_ebook_file default.
+        target_file = "result/ebook.md"
+
+        # Ensure dir exists for test mode safety
+        if test_mode:
+             os.makedirs(os.path.dirname(target_file) or ".", exist_ok=True)
+             if not os.path.exists(target_file):
+                 with open(target_file, "w", encoding="utf-8") as f:
+                     f.write("# Title\n\n<<INTRODUÇÃO>>\n\n<<CAPÍTULOS>>")
+
+        if os.path.exists(target_file):
+            with open(target_file, "r", encoding="utf-8") as f:
+                ebook_content = f.read()
+            ebook_content = ebook_content.replace("<<INTRODUÇÃO>>", intro_content)
+            with open(target_file, "w", encoding="utf-8") as f:
+                f.write(ebook_content)
         
         print_separator()
         

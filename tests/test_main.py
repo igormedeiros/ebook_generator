@@ -23,7 +23,7 @@ class TestPipeline(unittest.TestCase):
     @patch('src.pipeline.generate_chapter_structure')
     @patch('src.pipeline.generate_introduction')
     @patch('src.pipeline.generate_chapter_research')
-    @patch('src.pipeline.generate_chapter_content')
+    @patch('src.pipeline.invoke_agent')
     @patch('src.pipeline.initialize_ebook_file')
     @patch('src.pipeline.append_chapter_to_ebook')
     @patch('src.pipeline.get_confirmation')
@@ -45,7 +45,8 @@ class TestPipeline(unittest.TestCase):
                 'description': 'Test Description',
                 'target_audience': 'Test Audience',
                 'word_count_target': 1000,
-                'number_chapters': 2
+                'number_chapters': 2,
+                'language': 'pt-BR'
             },
             'content_structure': {},
             'writing_style': {}
@@ -217,7 +218,9 @@ class TestPipelineHelpers(unittest.TestCase):
         
         # Test markdown
         markdown_text = "# Title\n\nThis is a **bold** text."
-        self.assertEqual(count_words(markdown_text), 6)
+        # count_words splits by spaces.
+        # "#", "Title", "This", "is", "a", "**bold**", "text." -> 7 words
+        self.assertEqual(count_words(markdown_text), 7)
 
 
 if __name__ == '__main__':

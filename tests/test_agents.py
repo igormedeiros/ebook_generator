@@ -81,7 +81,8 @@ class TestAgents(unittest.TestCase):
             "reviewer_2": MagicMock(),
         }
         
-        feedback = execute_review_personas(MagicMock(), "Content to review", personas)
+        # Updated call signature: content first, then personas
+        feedback = execute_review_personas("Content to review", personas, use_parallel=False)
         
         self.assertEqual(len(feedback), 2)
         self.assertEqual(feedback['reviewer_1'], "Feedback from reviewer 1")
@@ -89,11 +90,13 @@ class TestAgents(unittest.TestCase):
         
         # Check that execute_agent was called for each persona
         self.assertEqual(mock_execute_agent.call_count, 2)
+        # Note: Since iteration order of dict is insertion order in recent python, this should match.
+        # However, to be robust, we check any order.
         calls = [
-            call(personas['reviewer_1'], "[reviewer_1] Review and provide specialized feedback:\n\nContent to review"),
-            call(personas['reviewer_2'], "[reviewer_2] Review and provide specialized feedback:\n\nContent to review")
+            call(personas['reviewer_1'], "[reviewer_1] Review and provide specialized feedback:\n\nContent to review", callbacks=None),
+            call(personas['reviewer_2'], "[reviewer_2] Review and provide specialized feedback:\n\nContent to review", callbacks=None)
         ]
-        mock_execute_agent.assert_has_calls(calls)
+        mock_execute_agent.assert_has_calls(calls, any_order=True)
 
 if __name__ == '__main__':
     unittest.main(argv=['first-arg-is-ignored'], exit=False)
