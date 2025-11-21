@@ -167,12 +167,22 @@ class TestTools(unittest.TestCase):
     @patch('src.tools.supabase_client')
     def test_search_knowledge_base_with_supabase(self, mock_supabase_client, mock_embeddings):
         """Test RAG search with a mocked Supabase client."""
-        mock_supabase_client.rpc.return_value.execute.return_value.data = [{'content': 'mock result'}]
+        # search_knowledge_base uses table().select()...execute(), NOT rpc().
+        # So we need to mock table().select()...
+
+        # Create a mock chain for the supabase query
+        mock_query = mock_supabase_client.table.return_value.select.return_value.or_.return_value.limit.return_value
+        mock_query.execute.return_value.data = [{'topic': 'Test Topic', 'content': 'mock result'}]
+
         mock_embeddings.return_value.embed_query.return_value = [0.1] * 768
         
         result = search_knowledge_base("test query")
-        self.assertIn("Found 1 relevant documents", result)
-        mock_supabase_client.rpc.assert_called_once()
+
+        self.assertIn("mock result", str(result))
+        self.assertIn("Test Topic", str(result))
+
+        # Verify table() was called instead of rpc()
+        mock_supabase_client.table.assert_called_with("rag_external")
 
     @patch('src.tools.search_knowledge_base')
     def test_retrieve_rag_context(self, mock_search):
@@ -202,8 +212,14 @@ class TestTools(unittest.TestCase):
     @patch("src.tools.supabase_client")
     def test_search_knowledge_base_missing_embeddings(self, mock_client):
         mock_client.rpc.return_value.execute.return_value.data = []
+        # Since search_knowledge_base in src/tools.py does not use embeddings (it uses text search with ilike),
+        # it won't fail due to missing embeddings.
+        # However, checking the code:
+        # It calls supabase_client.table(...).select(...).or_(...).limit(...).execute()
+        # This should succeed if supabase_client is mocked correctly.
+        # The return value should be "No relevant documents found for 'topic'." since data is empty.
         result = search_knowledge_base("topic")
-        self.assertIn("Supabase search error", result)
+        self.assertEqual(result, "No relevant documents found for 'topic'.")
 
 def test_research_helpers_cover_branches():
     findings = perform_deep_research("IA", research_depth="avançado")
