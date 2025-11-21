@@ -194,6 +194,13 @@ deep_research:
       
   retrieval_prompt: "Recupere o contexto relevante do sistema RAG para a seguinte consulta:"
 
+# Email Notification Configuration
+email_notification:
+  enabled: false            # Set to true to enable email sending
+  auto_send: false          # If true, sends automatically. If false, asks user/requires manual trigger.
+  subject: "Seu Ebook Gerado: {title}"
+  body: "Olá,\n\nSegue em anexo o ebook '{title}' gerado automaticamente.\n\nAtenciosamente,\nEbook Generator"
+
 
 messages:
   # Pipeline

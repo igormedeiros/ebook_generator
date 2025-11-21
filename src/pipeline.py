@@ -1600,6 +1600,18 @@ def save_ebook(ebook, output_file="result/ebook.md", test_mode=False):
         
         if success and validate_epub(epub_output_path):
             print_success_message(f"✓ EPUB gerado: {epub_output_path}")
+
+            # Check for email notification
+            email_config = get_config("email_notification")
+            if email_config.get("enabled"):
+                from .email_service import send_epub_email
+                if email_config.get("auto_send"):
+                    print_info("Enviando email automático...")
+                    send_epub_email(epub_output_path, metadata["title"])
+                elif get_confirmation("Deseja enviar o EPUB por email?", default=True):
+                     print_info("Enviando email...")
+                     send_epub_email(epub_output_path, metadata["title"])
+
         else:
             print_error_message("⚠️ Erro ao gerar EPUB")
     except Exception as e:
