@@ -49,8 +49,12 @@ def should_use_parallel_review() -> bool:
 def _extract_from_message_obj(msg_obj: Any) -> str:
     """Recursively extract markdown text from a message-like object.
     Handles dicts with 'content' or 'text', lists of messages, and raw strings.
+    LangChain 1.0+ content structure: [{'type': 'text', 'text': '...', 'extras': {...}}]
     """
     if isinstance(msg_obj, dict):
+        # Handle LangChain 1.0+ content blocks with type='text'
+        if msg_obj.get('type') == 'text' and 'text' in msg_obj:
+            return _extract_from_message_obj(msg_obj['text'])
         # Prefer 'content' then 'text'
         if 'content' in msg_obj:
             return _extract_from_message_obj(msg_obj['content'])
@@ -59,6 +63,11 @@ def _extract_from_message_obj(msg_obj: Any) -> str:
         # Fallback: stringify dict
         return str(msg_obj)
     if isinstance(msg_obj, list) and len(msg_obj) > 0:
+        # For lists, find first text block (LangChain 1.0+ structure)
+        for item in msg_obj:
+            if isinstance(item, dict) and item.get('type') == 'text':
+                return _extract_from_message_obj(item['text'])
+        # Fallback to last item if no text block found
         return _extract_from_message_obj(msg_obj[-1])
     # Base case: assume string
     return str(msg_obj)
