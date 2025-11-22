@@ -1,64 +1,186 @@
-# specs/brd.yaml
-# Business Requirements Document (BRD) for Ebook Generator
-# This is the canonical BRD referenced by all agents
-
 project:
-  name: "LangChain 1.0 - Agentes de IA na Area da Saude"
-  description: "Guia prático sobre implementação de agentes LangChain 1.0 em ambientes clínicos com compliance e ética"
-  target_audience: "Engenheiros, médicos residentes e profissionais de saúde interessados em IA clínica"
-  language: "Portuguese (Brazilian)"
+  name: LangChain 1.0 - Agentes de IA na Area da Saude
+  description: Guia prático sobre implementação de agentes LangChain 1.0 em ambientes
+    clínicos com compliance e ética
+  target_audience: Engenheiros, médicos residentes e profissionais de saúde interessados
+    em IA clínica
+  language: Portuguese (Brazilian)
   number_chapters: 10
   target_word_count: 15000
   required_topics:
-    - "LangChain 1.0"
-    - "RAG"
-    - "Memory em LangChain"
-    - "Compliance em Saúde"
-    - "Ética em IA"
-    - "Agentes RAG"
-    - "Registros Eletrônicos de Saúde (EHRs)"
-    - "Compliance em Saúde"
-    - "Chainlit"
+  - LangChain 1.0
+  - RAG
+  - Memory em LangChain
+  - Compliance em Saúde
+  - Ética em IA
+  - Agentes RAG
+  - Registros Eletrônicos de Saúde (EHRs)
+  - Compliance em Saúde
+  - Chainlit
   main_use_case:
-    description: "Chat conversacional com UI Chainlit usando Langchain 1.0 e RAG com chromadb para responder sobre dados de evolução clínica de pacientes internados numa UTI"
+    description: Chat conversacional com UI Chainlit usando Langchain 1.0 e RAG com
+      chromadb para responder sobre dados de evolução clínica de pacientes internados
+      numa UTI
     features:
-      - "Implementação de agentes LangChain 1.0"
-      - "Arquitetura RAG com EHRs"
-      - "Compliance e auditoria"
-      - "Balanceamento entre automação e revisão humana"
-      - "UI Chainlit"
-
+    - Implementação de agentes LangChain 1.0
+    - Arquitetura RAG com EHRs
+    - Compliance e auditoria
+    - Balanceamento entre automação e revisão humana
+    - UI Chainlit
 writing_style:
-  file: "specs/system_writer.md"
-
+  file: specs/system_writer.md
 content_structure:
   num_chapters: 10
-  chapter_structure:
+  chapter_structure: null
   target_word_count: 15000
-  structure_prompt: "Crie uma estrutura de <num_chapters> capítulos para este ebook, cada um com nome, propósito e elementos obrigatórios a incluir. Total de aproximadamente <target_word_count> palavras. Os capitulos devem seguir a estrutura: <chapter_structure>"
-
+  structure_prompt: 'Crie uma estrutura de <num_chapters> capítulos para este ebook,
+    cada um com nome, propósito e elementos obrigatórios a incluir. Total de aproximadamente
+    <target_word_count> palavras. Os capitulos devem seguir a estrutura: <chapter_structure>'
+  chapters:
+  - name: Introdução à Inteligência Artificial na Saúde Clínica e o Papel do LangChain
+      1.0
+    purpose: Estabelecer o cenário da IA na saúde, destacar os desafios e oportunidades,
+      e apresentar o LangChain 1.0 como uma ferramenta essencial para construir soluções
+      robustas e éticas.
+    elements:
+    - 'Panorama da IA na área da saúde: avanços e expectativas.'
+    - Desafios e responsabilidades na aplicação da IA em contextos clínicos.
+    - O que é LangChain 1.0 e por que ele é relevante para a saúde clínica.
+    - 'Visão geral do caso de uso principal: chat conversacional com dados de UTI.'
+    - Princípios de um desenvolvimento ético e responsável em IA na saúde.
+  - name: 'Fundamentos do LangChain 1.0: Construindo a Base para Agentes Clínicos'
+    purpose: Aprofundar nos componentes fundamentais do LangChain 1.0, capacitando
+      o leitor a entender e manipular suas estruturas para desenvolver aplicações
+      customizadas para a saúde.
+    elements:
+    - Modelos de Linguagem Grandes (LLMs) e sua integração com LangChain.
+    - Prompts e Prompt Engineering para cenários clínicos.
+    - 'Chains: sequenciando operações para fluxos de trabalho complexos.'
+    - 'Output Parsers: estruturando as respostas dos LLMs.'
+    - 'Hands-on: Criando uma ''chain'' simples para extração de informações de texto
+      médico.'
+  - name: 'RAG (Retrieval-Augmented Generation): Superando as Limitações dos LLMs
+      na Saúde'
+    purpose: Explicar o conceito de RAG, sua importância para mitigar alucinações
+      e garantir a factualidade das respostas em um ambiente clínico, e apresentar
+      sua arquitetura básica.
+    elements:
+    - O problema da alucinação em LLMs e a necessidade de contextualização.
+    - O que é RAG e como ele funciona.
+    - 'Vantagens do RAG para a área da saúde: precisão, rastreabilidade e dados atualizados.'
+    - 'Arquitetura de um sistema RAG: componentes e fluxo de dados.'
+    - Considerações iniciais para a implementação de RAG com dados sensíveis.
+  - name: Registros Eletrônicos de Saúde (EHRs) e Bases de Conhecimento Vetoriais
+      com ChromaDB
+    purpose: Detalhar a integração e o gerenciamento de EHRs, transformando-os em
+      uma base de conhecimento pesquisável para sistemas RAG, com foco no uso do ChromaDB.
+    elements:
+    - 'Desafios com Registros Eletrônicos de Saúde (EHRs): estrutura, padronização
+      e privacidade.'
+    - Processamento de Linguagem Natural (PLN) para extração de informações de EHRs.
+    - 'Vetorização de documentos clínicos: embeddings e modelos.'
+    - 'Introdução ao ChromaDB: um banco de dados vetorial para dados de saúde.'
+    - Estratégias para indexar e pesquisar dados de evolução clínica de pacientes
+      de UTI no ChromaDB.
+  - name: 'Agentes Inteligentes com LangChain 1.0: Automação e Assistência na UTI'
+    purpose: Apresentar o conceito de Agentes LangChain, demonstrando como eles podem
+      ser projetados para interagir com ferramentas e tomar decisões em tempo real
+      para auxiliar no gerenciamento de pacientes de UTI.
+    elements:
+    - O que são Agentes LangChain e como eles diferem das Chains.
+    - 'Ferramentas (Tools): Capacitando agentes a interagir com sistemas externos
+      e bases de dados.'
+    - 'Executores (Agents Executors): Controlando o fluxo de raciocínio dos agentes.'
+    - Projetando um Agente RAG para responder a perguntas sobre a evolução clínica
+      de pacientes.
+    - Exemplos práticos de ferramentas para consultar EHRs e outros sistemas clínicos.
+  - name: 'Memory em LangChain: Mantendo o Contexto Conversacional e a Continuidade
+      Assistencial'
+    purpose: Explorar os diferentes tipos de mecanismos de memória em LangChain e
+      como implementá-los para garantir que os agentes mantenham o contexto em conversas
+      longas e complexas sobre pacientes.
+    elements:
+    - A importância da memória em chats conversacionais na saúde.
+    - 'Tipos de memória em LangChain: ConversationBufferMemory, ConversationSummaryMemory,
+      etc.'
+    - Implementando memória para o agente conversacional de UTI.
+    - Desafios da gestão de memória com informações sensíveis e longos históricos
+      de pacientes.
+    - Estratégias para otimizar a memória em cenários de alta demanda e múltiplos
+      pacientes.
+  - name: 'Compliance em Saúde (LGPD) e Ética em IA: Construindo Confiança no Ambiente
+      Clínico'
+    purpose: Abordar as questões críticas de compliance regulatório (LGPD) e ética
+      em IA, fornecendo diretrizes para construir e operar sistemas de IA de forma
+      responsável e segura na saúde.
+    elements:
+    - Legislação de proteção de dados na saúde (LGPD e outras relevantes).
+    - 'Princípios éticos da IA na saúde: transparência, explicabilidade, equidade
+      e privacidade.'
+    - Estratégias para garantir a privacidade e segurança dos dados de pacientes com
+      LangChain e RAG.
+    - Auditoria e monitoramento de sistemas de IA para conformidade e responsabilidade.
+    - Mitigação de vieses e garantia de justiça algorítmica em diagnósticos e recomendações.
+  - name: 'Chainlit: Construindo a Interface Conversacional Intuitiva para o Chat
+      de UTI'
+    purpose: Guiar o leitor na criação de uma interface de usuário interativa e amigável
+      com Chainlit, permitindo que médicos e profissionais de saúde interajam de forma
+      eficaz com o agente de IA.
+    elements:
+    - 'Introdução ao Chainlit: o que é e por que usá-lo para aplicações LangChain.'
+    - Configurando um ambiente Chainlit para o projeto de chat de UTI.
+    - Integrando o agente LangChain com a interface Chainlit.
+    - 'Desenvolvendo a experiência do usuário: feedback visual, histórico de conversas
+      e interação com ferramentas.'
+    - 'Boas práticas de design de UI para aplicações de IA na saúde: clareza e facilidade
+      de uso.'
+  - name: 'Integração e Otimização do Agente RAG para o Cenário de UTI: Da Teoria
+      à Prática'
+    purpose: Unir todos os conceitos aprendidos, demonstrando a implementação completa
+      do agente RAG com EHRs e Chainlit, e discutindo estratégias para otimização,
+      testes e o balanceamento entre automação e revisão humana.
+    elements:
+    - 'Arquitetura completa do chat conversacional: LangChain 1.0, RAG, ChromaDB e
+      Chainlit.'
+    - 'Implementação passo a passo do caso de uso principal: respondendo a perguntas
+      sobre evolução clínica.'
+    - Estratégias de teste e validação para garantir a precisão e segurança das respostas.
+    - 'Balanceamento entre automação e revisão humana: quando a intervenção médica
+      é crucial.'
+    - Monitoramento contínuo e feedback para aprimoramento do agente em ambiente real.
+  - name: 'O Futuro da IA Conversacional na Saúde Clínica: Inovação e Responsabilidade
+      Contínua'
+    purpose: Concluir o ebook com uma visão sobre as tendências futuras da IA na saúde,
+      desafios emergentes e a importância da inovação contínua com responsabilidade
+      e ética.
+    elements:
+    - 'Desafios e oportunidades futuras para agentes de IA na saúde: expansão para
+      outras áreas clínicas.'
+    - Avanços em IA multimodal e sua aplicação em diagnósticos e tratamentos.
+    - 'Personalização da assistência à saúde com IA: planos de tratamento adaptativos.'
+    - A importância da pesquisa e desenvolvimento contínuos em IA ética e compliance.
+    - A visão de um futuro onde a IA e a expertise humana colaboram para uma saúde
+      mais eficiente e humana.
 output_requirements:
-  format: "Markdown"
-  file: "result/ebook.md"
-  base_template: "templates/template.md"
+  format: Markdown
+  file: result/ebook.md
+  base_template: templates/template.md
   no_json_output: true
   validation:
-    - "Content must be in Portuguese (Brazilian)"
-    - "Must follow the number of chapters structure defined in the BRD"
-    - "Target approximately 15000 words"
-    - "Must include code examples"
-    - "Must be technically accurate"
-
+  - Content must be in Portuguese (Brazilian)
+  - Must follow the number of chapters structure defined in the BRD
+  - Target approximately 15000 words
+  - Must include code examples
+  - Must be technically accurate
 quality_criteria:
-  - "Código é executável e testado"
-  - "Exemplos são realistas e clínicos"
-  - "Explica trade-offs éticos"
-  - "Acessível a engenheiros e médicos"
-  - "Balance entre teoria e prática"
-  - "Foco em responsabilidade"
-  - "Fluxo lógico entre tópicos"
-  - "Atende necessidades do público-alvo"
-
+- Código é executável e testado
+- Exemplos são realistas e clínicos
+- Explica trade-offs éticos
+- Acessível a engenheiros e médicos
+- Balance entre teoria e prática
+- Foco em responsabilidade
+- Fluxo lógico entre tópicos
+- Atende necessidades do público-alvo
 research_requirements:
   thematic:
     minimum_word_count: 3000
