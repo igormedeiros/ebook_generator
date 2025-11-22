@@ -242,6 +242,30 @@ def ask_rag_storage_method():
             return 'local'
         print("Resposta inválida. Digite 's' ou 'l'")
 
+def cleanup_result_directory(output_file="result/ebook.md"):
+    """
+    Limpa a pasta result/ antes de gerar novos artefatos.
+    Remove a pasta inteira e a recria vazia.
+    
+    Args:
+        output_file: Caminho do arquivo de saída (para extrair o diretório)
+    """
+    result_dir = os.path.dirname(output_file) or "result"
+    
+    # Remove a pasta inteira se existir
+    if os.path.exists(result_dir):
+        try:
+            shutil.rmtree(result_dir)
+            print_info(f"Pasta {result_dir}/ limpa (artefatos anteriores removidos)")
+        except Exception as e:
+            print_error_message(f"Aviso ao limpar {result_dir}/: {e}")
+    
+    # Recria pasta vazia
+    try:
+        os.makedirs(result_dir, exist_ok=True)
+    except Exception as e:
+        print_error_message(f"Erro ao criar diretório {result_dir}/: {e}")
+
 def initialize_ebook_file(brd, output_file="result/ebook.md"):
     """Cria o arquivo ebook.md inicial usando o template."""
     import os
@@ -1126,6 +1150,9 @@ def generate_ebook(test_mode: bool = False):
                 return None
         finally:
             global_progress.start()
+        
+        # Limpa pasta result/ antes de criar novos artefatos
+        cleanup_result_directory()
         
         # Inicializa arquivo do ebook imediatamente
         initialize_ebook_file(brd)
