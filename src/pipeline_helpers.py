@@ -91,6 +91,39 @@ def extract_markdown_content(response: Union[str, List, Any]) -> str:
     # 3. If it's a string, try to parse JSON or Python literal
     if isinstance(response, str):
         stripped = response.strip()
+        
+        # Check for stringified AIMessage or content list
+        # Example: "content=[{'type': 'text', ...}]" or "AIMessage(content=[...])"
+        if "content=[" in stripped:
+            try:
+                import re
+                # Regex to find content=[...] pattern
+                # We look for content=\[ and then capture everything until the last ]
+                # This is still heuristic but better than fixed indices
+                match = re.search(r'content=(\[.*\])', stripped, re.DOTALL)
+                if match:
+                    list_str = match.group(1)
+                    # Try to parse the list string
+                    try:
+                        parsed = ast.literal_eval(list_str)
+                        if isinstance(parsed, list):
+                            return extract_markdown_content(parsed)
+                    except (ValueError, SyntaxError):
+                        # If simple eval fails, it might be due to unescaped characters or complex nesting
+                        # Let's try to be more aggressive: find the last ]
+                        last_bracket = stripped.rfind(']')
+                        first_bracket = stripped.find('[')
+                        if first_bracket != -1 and last_bracket != -1 and last_bracket > first_bracket:
+                             candidate = stripped[first_bracket:last_bracket+1]
+                             try:
+                                 parsed = ast.literal_eval(candidate)
+                                 if isinstance(parsed, list):
+                                     return extract_markdown_content(parsed)
+                             except:
+                                 pass
+            except Exception:
+                pass
+
         # Try JSON first
         if (stripped.startswith('{') and stripped.endswith('}')) or (stripped.startswith('[') and stripped.endswith(']')):
             try:
