@@ -30,6 +30,7 @@ from .tools import (
     get_title_tools,
     get_writing_tools,
 )
+from .pipeline_helpers import extract_markdown_content
 
 load_dotenv()
 
@@ -189,14 +190,7 @@ def create_curious_beginner_agent(model: Any) -> Any:
 
 
 def _extract_text_from_response(response: Any) -> str:
-    if isinstance(response, Mapping) and "messages" in response:
-        messages = response["messages"] or []
-        if messages:
-            last = messages[-1]
-            content = getattr(last, "content", None)
-            if content:
-                return content if isinstance(content, str) else str(content)
-    return response if isinstance(response, str) else str(response)
+    return extract_markdown_content(response)
 
 
 def execute_agent(agent: Any, query: str, callbacks: Optional[List[BaseCallbackHandler]] = None) -> str:

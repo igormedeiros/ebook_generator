@@ -25,3 +25,4 @@
 [x] Fix JSON parsing errors in chapter structure generation using json_repair
 [x] Test EPUB generation end-to-end with --test mode
 [x] git add -A && git commit -m "feat: implement EPUB generation from markdown"
+[x] Fix persistent JSON output in markdown by handling AIMessage objects in pipeline_helpers and agents

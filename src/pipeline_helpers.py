@@ -51,6 +51,10 @@ def _extract_from_message_obj(msg_obj: Any) -> str:
     Handles dicts with 'content' or 'text', lists of messages, and raw strings.
     LangChain 1.0+ content structure: [{'type': 'text', 'text': '...', 'extras': {...}}]
     """
+    # Handle objects with .content attribute (like AIMessage)
+    if hasattr(msg_obj, "content") and not isinstance(msg_obj, (str, dict, list)):
+        return _extract_from_message_obj(msg_obj.content)
+
     if isinstance(msg_obj, dict):
         # Handle LangChain 1.0+ content blocks with type='text'
         if msg_obj.get('type') == 'text' and 'text' in msg_obj:
@@ -67,7 +71,14 @@ def _extract_from_message_obj(msg_obj: Any) -> str:
         for item in msg_obj:
             if isinstance(item, dict) and item.get('type') == 'text':
                 return _extract_from_message_obj(item['text'])
-        # Fallback to last item if no text block found
+            # Handle list of AIMessage objects
+            if hasattr(item, "content"):
+                 # If we find an AIMessage in a list, we might want the last one if it's a conversation history,
+                 # but usually this function is called on a specific message content list.
+                 # However, if called on response['messages'], it iterates.
+                 pass 
+        
+        # Fallback to last item if no text block found (common for conversation history)
         return _extract_from_message_obj(msg_obj[-1])
     # Base case: assume string
     return str(msg_obj)
