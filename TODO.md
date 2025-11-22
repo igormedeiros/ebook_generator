@@ -30,3 +30,5 @@
 [x] Implementar fluxo de aprovação de títulos de capítulos com persistência no BRD
 [x] Garantir uso obrigatório de RAG na geração de capítulos
 [x] git add -A && git commit -m "feat: habilitar aprovação de títulos e forçar RAG"
+[x] Corrigir bloqueio do prompt de aprovação de títulos ao pausar a barra de progresso
+[ ] git add -A && git commit -m "fix: pausar barra antes de aprovar títulos"

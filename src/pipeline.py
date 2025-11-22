@@ -1200,7 +1200,11 @@ def generate_ebook(test_mode: bool = False):
             print_error_message("Falha ao preparar estrutura de capítulos")
             return None
 
-        chapters = approve_chapter_titles(brd, chapters, test_mode=test_mode)
+        global_progress.stop()
+        try:
+            chapters = approve_chapter_titles(brd, chapters, test_mode=test_mode)
+        finally:
+            global_progress.start()
         content_structure["chapters"] = chapters
         if not test_mode:
             save_brd(brd)
