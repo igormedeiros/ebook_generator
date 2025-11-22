@@ -31,4 +31,8 @@
 [x] Garantir uso obrigatório de RAG na geração de capítulos
 [x] git add -A && git commit -m "feat: habilitar aprovação de títulos e forçar RAG"
 [x] Corrigir bloqueio do prompt de aprovação de títulos ao pausar a barra de progresso
-[ ] git add -A && git commit -m "fix: pausar barra antes de aprovar títulos"
+[x] git add -A && git commit -m "fix: pausar barra antes de aprovar títulos"
+[x] Persistir capitulos imediatamente em result/ebook.md
+[x] Salvar backup bruto dos capitulos em result/raw/
+[x] git add -A && git commit -m "feat: persistir capitulos e backups brutos"
+[ ] git add -A && git commit -m "TODO proximo trabalho"

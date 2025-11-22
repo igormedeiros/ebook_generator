@@ -25,6 +25,8 @@ import sys
 import ast
 import shutil
 import json_repair
+import re
+import unicodedata
 from functools import lru_cache
 from pathlib import Path
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeRemainingColumn
@@ -1337,15 +1339,9 @@ def generate_ebook(test_mode: bool = False):
                 "name": chapter_name,
                 "content": content
             })
-            
-            # Salva incrementalmente se não for fazer revisão
-            if not get_confirmation(
-                "Deseja realizar a REVISÃO E REFINAMENTO?",
-                default=True,
-                skip_prompt=True,
-                phase="review_refinement"
-            ):
-                 append_chapter_to_ebook(chapter_name, content)
+
+            save_raw_chapter(idx, chapter_name, content)
+            append_chapter_to_ebook(chapter_name, content)
             
             # print_content_generated(len(content))
             global_progress.advance(task)
@@ -1467,7 +1463,7 @@ INSTRUÇÕES DE EDIÇÃO:
                 chapter["content"] = refined_content
                 
                 # Salva incrementalmente o capítulo revisado
-                append_chapter_to_ebook(chapter['name'], refined_content)
+                update_chapter_in_ebook(chapter['name'], refined_content)
                 
                 global_progress.advance(task)
                 if idx < len(ebook["chapters"]):
@@ -1482,6 +1478,25 @@ INSTRUÇÕES DE EDIÇÃO:
         global_progress.advance(overall_task)
 
     return ebook
+def _slugify_chapter_name(chapter_name: str) -> str:
+    """Gera slug ASCII seguro para nome de capítulo."""
+    normalized = unicodedata.normalize("NFKD", chapter_name)
+    ascii_name = normalized.encode("ascii", "ignore").decode("ascii")
+    ascii_name = ascii_name.lower()
+    slug = re.sub(r"[^a-z0-9]+", "-", ascii_name).strip("-")
+    return slug or "capitulo"
+
+
+def save_raw_chapter(chapter_index: int, chapter_name: str, content: str, raw_dir: str = "result/raw") -> Path:
+    """Salva versão bruta do capítulo em pasta dedicada com slug previsível."""
+    directory = Path(raw_dir)
+    directory.mkdir(parents=True, exist_ok=True)
+    slug = _slugify_chapter_name(chapter_name)
+    file_path = directory / f"{chapter_index:02d}-{slug}.md"
+    with open(file_path, "w", encoding="utf-8") as file_handle:
+        file_handle.write(f"## {chapter_name}\n\n{content}\n")
+    return file_path
+
 
 def append_chapter_to_ebook(chapter_name, content, output_file="result/ebook.md"):
     """Adiciona um capítulo ao arquivo do ebook, substituindo o placeholder <<CAPÍTULOS>> ou anexando."""
@@ -1508,6 +1523,32 @@ def append_chapter_to_ebook(chapter_name, content, output_file="result/ebook.md"
     with open(output_file, "w", encoding="utf-8") as f:
         f.write(updated_content)
         
+    return True
+
+
+def update_chapter_in_ebook(chapter_name, content, output_file="result/ebook.md"):
+    """Atualiza conteúdo já salvo para evitar duplicação durante refinamentos."""
+    import os
+
+    if not os.path.exists(output_file):
+        return False
+
+    with open(output_file, "r", encoding="utf-8") as file_handle:
+        current_content = file_handle.read()
+
+    new_chapter_block = f"## {chapter_name}\n\n{content}\n\n---\n\n"
+    pattern = re.compile(rf"## {re.escape(chapter_name)}\n\n.*?\n\n---\n\n", re.DOTALL)
+
+    if pattern.search(current_content):
+        updated_content = pattern.sub(new_chapter_block, current_content, count=1)
+    elif "<<CAPÍTULOS>>" in current_content:
+        updated_content = current_content.replace("<<CAPÍTULOS>>", f"{new_chapter_block}<<CAPÍTULOS>>")
+    else:
+        updated_content = current_content + "\n\n" + new_chapter_block
+
+    with open(output_file, "w", encoding="utf-8") as file_handle:
+        file_handle.write(updated_content)
+
     return True
 
 def finalize_ebook_file(output_file="result/ebook.md"):
