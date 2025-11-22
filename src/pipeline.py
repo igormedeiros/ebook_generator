@@ -3,10 +3,9 @@ Pipeline de geração de ebook usando LangChain 1.0+.
 
 Padrão LangChain 1.0:
 - Carrega BRD do YAML
-- Gera estrutura de capítulos via agent
-- Faz deep research de cada capítulo
-- Salva research em kb/ como .md
-- Gera conteúdo final baseado no research
+- Reutiliza ou gera estrutura de capítulos via agent
+- Aprova títulos e salva no BRD
+- Gera conteúdo final com RAG direto do Supabase
 - Salva resultado final em result/
 - Upload para Supabase (future)
 """
@@ -66,11 +65,10 @@ from .config import (
     print_stage_header,
 )
 from .ui import (
-    print_header, print_ebook_info, print_chapters_preview,
-    get_confirmation, print_phase_header, print_research_start,
-    print_research_saved, print_content_generation_start,
-    print_content_generated, print_success_message, print_error_message,
-    print_completion_summary, print_separator, print_info
+    console, print_header, print_ebook_info, print_chapters_preview,
+    get_confirmation, print_phase_header,
+    print_success_message, print_error_message,
+    print_separator, print_info
 )
 
 # Import get_confirmation from ui explicitly to avoid circular import issues if any
@@ -81,6 +79,13 @@ def load_brd():
     brd_path = Path(__file__).parent.parent / "specs" / "brd.yaml"
     with open(brd_path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
+
+
+def save_brd(brd: dict) -> None:
+    """Persiste o BRD atualizado em specs/brd.yaml."""
+    brd_path = Path(__file__).parent.parent / "specs" / "brd.yaml"
+    with open(brd_path, "w", encoding="utf-8") as f:
+        yaml.safe_dump(brd, f, allow_unicode=True, sort_keys=False)
 
 def load_writing_style(brd):
     """
@@ -567,8 +572,8 @@ def validate_template_placeholders(output_file="result/ebook.md"):
         content = f.read()
     
     # Procura por placeholders no formato <<PLACEHOLDER_NAME>>
-    placeholders = re.findall(r'<<([A-Z_]+)>>', content)
-    
+    placeholders = re.findall(r'<<([^<>]+)>>', content)
+
     # Retorna todos os placeholders encontrados como não preenchidos
     unfilled = list(set(placeholders))  # Remove duplicatas
     
@@ -620,7 +625,7 @@ Funcionalidades principais do caso de uso:
 {use_case_features}
 
 Tom e estilo esperado:
-- Tone: {writing_style['tone']}
+- Tom: {writing_style['tone']}
 - Abordagem: {writing_style['approach']}
 - Características: {', '.join(writing_style['characteristics'])}
 
@@ -704,6 +709,64 @@ Exemplo formato:
             
     print("❌ Não foi possível gerar estrutura de capítulos após várias tentativas")
     return []
+
+
+def approve_chapter_titles(brd: dict, chapters: list[dict], test_mode: bool = False) -> list[dict]:
+        """Permite aprovar ou editar os títulos dos capítulos antes da geração."""
+        if test_mode:
+            return chapters
+
+        updated = [
+            {
+                "name": chapter.get("name", ""),
+                "purpose": chapter.get("purpose", ""),
+                "elements": chapter.get("elements", []) or [],
+            }
+            for chapter in chapters
+        ]
+
+        print_info("Revise os títulos dos capítulos antes de continuar.")
+
+        while True:
+            print_separator()
+            print_chapters_preview(updated)
+            print_separator()
+
+            if get_confirmation("Os títulos exibidos estão corretos?", default=True):
+                print_success_message("Títulos aprovados para a próxima etapa.")
+                return updated
+
+            console.print(
+                "[cyan]Digite o número do capítulo que deseja editar (1-{0}) ou pressione Enter para cancelar.[/cyan]".format(
+                    len(updated)
+                )
+            )
+            selection = console.input("[bold cyan]Capítulo:[/bold cyan] ").strip()
+
+            if not selection:
+                console.print("[yellow]Nenhuma alteração realizada. Confirme novamente os títulos exibidos.[/yellow]")
+                continue
+
+            if not selection.isdigit():
+                console.print("[red]Entrada inválida. Informe apenas números inteiros.[/red]")
+                continue
+
+            index = int(selection)
+            if index < 1 or index > len(updated):
+                console.print("[red]Número fora do intervalo válido.[/red]")
+                continue
+
+            current_title = updated[index - 1]["name"]
+            console.print(f"[cyan]Título atual:[/cyan] {current_title}")
+            new_title = console.input("[bold cyan]Novo título:[/bold cyan] ").strip()
+
+            if not new_title:
+                console.print("[yellow]Título vazio. Nenhuma alteração aplicada.[/yellow]")
+                continue
+
+            updated[index - 1]["name"] = new_title
+            console.print(f"[green]Título atualizado para:[/green] {new_title}")
+
 
 def generate_chapter_research(chapter_name, chapter_purpose, chapter_elements, brd, skip_prompt=False):
     """Conduz pesquisa profunda sobre um capítulo usando research_agent."""
@@ -967,25 +1030,23 @@ def build_chapter_queries_with_research(chapters, research_data, brd):
     
     queries = []
     for idx, chapter in enumerate(chapters, 1):
-        research_context = research_data.get(chapter['name'], "")
-        
-        # Detecta se a pesquisa foi pulada
-        skipped_research = research_context.startswith("# Pesquisa ignorada")
-        
-        if skipped_research:
-            context_instruction = f"""CONTEXTO DE RESEARCH:
-(A etapa de pesquisa profunda foi pulada pelo usuário)
+        research_context = (research_data.get(chapter['name']) or "").strip()
 
-⚠️ INSTRUÇÃO CRÍTICA DE RAG:
-Como não há research prévio, você DEVE usar suas ferramentas (retrieve_rag_context, retrieve_author_stories, retrieve_author_vision, search_knowledge_base) para buscar informações no banco de dados.
-1. Busque por termos-chave do título: "{chapter['name']}"
-2. Busque por histórias do autor relacionadas ao tema.
-3. Busque por conteúdo técnico em 'rag_external'.
+        keywords = [chapter['name']] + [elem for elem in chapter.get('elements', []) if elem]
+        keyword_lines = "\n".join(f"- {term}" for term in keywords if term)
 
-NÃO invente fatos técnicos. Use as ferramentas para embasar o conteúdo."""
+        rag_instruction = f"""## 🔁 Fluxo obrigatório de RAG
+    - Utilize retrieve_rag_context com cada termo abaixo, priorizando combinações de dois elementos quando necessário:
+    {keyword_lines}
+    - Consulte retrieve_author_stories, retrieve_author_positioning e retrieve_author_vision para manter a voz editorial do autor.
+    - Integre os trechos selecionados, cite a origem utilizando o formato [[Fonte: descrição]] e mantenha transparência sobre limitações.
+    - Se algum tópico não possuir material suficiente no Supabase, explique a lacuna e sugira próximos passos responsáveis."""
+
+        if research_context:
+            context_instruction = f"""## 📚 Contexto adicional aprovado
+    {research_context[:3000]}"""
         else:
-            context_instruction = f"""CONTEXTO DE RESEARCH (use como base):
-{research_context[:3000]}..."""
+            context_instruction = ""
 
         query = f"""Gere o capítulo {idx}/{number_chapters} "{chapter['name']}" do ebook: {project['name']}
 
@@ -993,7 +1054,9 @@ REQUISITOS:
 - Aproximadamente {words_per_chapter} palavras
 - Este é o capítulo {idx} de {number_chapters}
 
-{context_instruction}
+    {rag_instruction}
+
+    {context_instruction}
 
 Propósito do capítulo:
 {chapter['purpose']}
@@ -1012,7 +1075,7 @@ Características do estilo de escrita:
 Público-alvo: {project['target_audience']}
 Idioma: {project['language']}
 
-Escreva o conteúdo em Markdown puro. Foco em prático, educativo e ético. O conteúdo deve ter aproximadamente {words_per_chapter} palavras."""
+Escreva o conteúdo em Markdown puro. Foco em prático, educativo e ético. Utilize apenas informações validadas pelas ferramentas de RAG e cite cada fonte recuperada. O conteúdo deve ter aproximadamente {words_per_chapter} palavras."""
         
         queries.append((chapter["name"], query))
     
@@ -1091,12 +1154,16 @@ def generate_ebook(test_mode: bool = False):
     ) as global_progress:
         
         # Define etapas principais
-        total_stages = 5 # Estrutura, Temática, Deep Research, Conteúdo, Revisão
+        total_stages = 3  # Estrutura aprovada, Conteúdo, Revisão
         overall_task = global_progress.add_task("[bold blue]Progresso Total do Ebook", total=total_stages)
         
         # Etapa 1: Gerar estrutura
-        print_info("Gerando estrutura de capítulos...")
-        struct_task = global_progress.add_task("[cyan]Gerando estrutura...", total=None)
+        print_info("Preparando estrutura de capítulos...")
+        struct_task = global_progress.add_task("[cyan]Preparando capítulos...", total=None)
+
+        content_structure = brd.setdefault("content_structure", {})
+        existing_chapters = content_structure.get("chapters") or []
+
         if test_mode:
             print_info("🧪 MODO TESTE ATIVADO: Gerando estrutura de 10 capítulos mockados.")
             chapters = [
@@ -1113,17 +1180,38 @@ def generate_ebook(test_mode: bool = False):
             ]
             brd["project"]["word_count_target"] = 10000
         else:
-            chapters = generate_chapter_structure(brd)
-            
+            if existing_chapters:
+                print_info("Capítulos aprovados encontrados no BRD.")
+                print_separator()
+                print_chapters_preview(existing_chapters)
+                print_separator()
+                reuse_existing = get_confirmation(
+                    "Deseja reutilizar a estrutura aprovada no BRD?",
+                    default=True
+                )
+                chapters = existing_chapters if reuse_existing else generate_chapter_structure(brd)
+            else:
+                print_info("Nenhuma estrutura aprovada encontrada. Gerando nova proposta...")
+                chapters = generate_chapter_structure(brd)
+
         global_progress.remove_task(struct_task)
-        global_progress.advance(overall_task)
-        
+
         if not chapters:
-            print_error_message("Falha ao gerar estrutura de capítulos")
+            print_error_message("Falha ao preparar estrutura de capítulos")
             return None
-        
+
+        chapters = approve_chapter_titles(brd, chapters, test_mode=test_mode)
+        content_structure["chapters"] = chapters
+        if not test_mode:
+            save_brd(brd)
+            print_success_message("BRD atualizado com os títulos aprovados.")
+
+        global_progress.advance(overall_task)
+
         print_separator()
-        
+        print_chapters_preview(chapters)
+        print_separator()
+
         # Etapa 2: Preparar dados do ebook
         ebook = {
             "title": brd["project"]["name"],
@@ -1137,10 +1225,6 @@ def generate_ebook(test_mode: bool = False):
             ebook['description'],
             brd['project']['target_audience']
         )
-        print_separator()
-        
-        # Exibir preview dos capítulos
-        print_chapters_preview(chapters)
         print_separator()
         
         # Pedir aprovação
@@ -1182,82 +1266,16 @@ def generate_ebook(test_mode: bool = False):
                 f.write(ebook_content)
         
         print_separator()
-        
-        # FASE 1: Deep Research de Todos os Capítulos e Salvamento
-        print_phase_header(1, "DEEP RESEARCH DE TODOS OS CAPÍTULOS E SALVAMENTO", "Pesquisa profunda e salvamento em kb/")
-        
-        # Pergunta se deve realizar Deep Research
-        global_progress.stop()
-        try:
-            if test_mode:
-                perform_deep_research = True
-            else:
-                perform_deep_research = get_confirmation(
-                    "Deseja realizar DEEP RESEARCH para TODOS os capítulos?", 
-                    default=True,
-                    phase="deep_research"
-                )
-        finally:
-            global_progress.start()
-        
-        
-        research_data = {}
-        task = global_progress.add_task("[cyan]Processando pesquisa...", total=len(chapters))
-        
-        for idx, chapter in enumerate(chapters, 1):
-            global_progress.update(task, description=f"[cyan]Pesquisando ({idx}/{len(chapters)}): {chapter['name']}")
-            
-            if perform_deep_research:
-                if test_mode:
-                    research_content = f"# Pesquisa Mockada para {chapter['name']}\n\nConteúdo de teste gerado automaticamente."
-                    research_word_count = 100
-                else:
-                    # Gera research real
-                    research_content, research_word_count = generate_chapter_research(
-                        chapter['name'],
-                        chapter['purpose'],
-                        chapter['elements'],
-                        brd,
-                        skip_prompt=True # Novo parâmetro para pular o prompt individual
-                    )
-            else:
-                # Pula research
-                # print(f"  ⏩ Pulando pesquisa para '{chapter['name']}'. Usando apenas conhecimento interno e contexto existente.")
-                research_content = f"# Pesquisa ignorada para {chapter['name']}\n\nO usuário optou por pular a etapa de pesquisa profunda para este capítulo."
-                research_word_count = 0
 
-            research_data[chapter['name']] = research_content
+        # FASE 1: Conteúdo via RAG
+        print_phase_header(1, "GERAÇÃO DE CONTEÚDO COM RAG", "Contextualização obrigatória a partir do Supabase e da voz do autor")
 
-            # Salva em kb/
-            kb_path = save_research_to_kb(
-                chapter['name'], research_content, brd, word_count=research_word_count
-            )
-            # print_research_saved(kb_path, len(research_content))
-            
-            global_progress.advance(task)
-            if idx < len(chapters):
-                time.sleep(0.5)  # Pequeno delay entre requests
-        
-        global_progress.remove_task(task)
-        global_progress.advance(overall_task)
-        
+        research_data = {chapter['name']: "" for chapter in chapters}
+
         print_separator()
-        print_success_message("Todas as pesquisas foram salvas em kb/")
-        print_separator()
-        
-        # Pergunta sobre upload para Supabase
-        if not test_mode and perform_deep_research:
-            global_progress.stop()
-            try:
-                upload_to_supabase = get_confirmation("Deseja fazer upload e vetorizar no Supabase?", default=False)
-                if upload_to_supabase:
-                    print_info("📤 Upload para Supabase será implementado em breve.")
-            finally:
-                global_progress.start()
-            print_separator()
-        
+
         # FASE 2: Geração de conteúdo
-        print_phase_header(2, "GERAÇÃO DE CONTEÚDO", "Geração de conteúdo final baseado em research")
+        print_phase_header(2, "GERAÇÃO DE CONTEÚDO", "Geração de capítulos fundamentada em RAG")
         
         # Pergunta se deve gerar conteúdo
         global_progress.stop()
@@ -1503,6 +1521,15 @@ def finalize_ebook_file(output_file="result/ebook.md"):
         f.write(final_content)
 
 
+def _format_section_block(title: str, body: str) -> str:
+    """Retorna o texto da seção com um heading Markdown simples."""
+    heading = f"## {title}"
+    body_clean = body.strip()
+    if body_clean:
+        return f"{heading}\n\n{body_clean}\n\n"
+    return f"{heading}\n\n"
+
+
 def extract_epub_metadata(ebook: dict, brd: dict) -> dict:
     """
     Extrai metadata para geração de EPUB a partir de ebook e BRD.
@@ -1567,12 +1594,30 @@ def save_ebook(ebook, output_file="result/ebook.md", test_mode=False):
     with open(output_file, "r", encoding="utf-8") as f:
         content = f.read()
     
-    content = content.replace("<<AGRADECIMENTOS>>", acknowledgments_content)
-    content = content.replace("<<PREFÁCIO>>", preface_content)
-    content = content.replace("<<SUMÁRIO>>", toc_content)
-    content = content.replace("<<PALAVRAS_FINAIS>>", conclusion_content)
-    content = content.replace("<<GLOSSÁRIO>>", glossary_content)
-    content = content.replace("<<REFERÊNCIAS_BIBLIOGRÁFICAS>>", bibliography_content)
+    content = content.replace(
+        "<<AGRADECIMENTOS>>",
+        _format_section_block("Agradecimentos", acknowledgments_content)
+    )
+    content = content.replace(
+        "<<PREFÁCIO>>",
+        _format_section_block("Prefácio", preface_content)
+    )
+    content = content.replace(
+        "<<SUMÁRIO>>",
+        _format_section_block("Sumário", toc_content)
+    )
+    content = content.replace(
+        "<<PALAVRAS_FINAIS>>",
+        _format_section_block("Palavras Finais", conclusion_content)
+    )
+    content = content.replace(
+        "<<GLOSSÁRIO>>",
+        _format_section_block("Glossário", glossary_content)
+    )
+    content = content.replace(
+        "<<REFERÊNCIAS_BIBLIOGRÁFICAS>>",
+        _format_section_block("Referências Bibliográficas", bibliography_content)
+    )
     
     with open(output_file, "w", encoding="utf-8") as f:
         f.write(content)

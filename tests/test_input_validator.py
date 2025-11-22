@@ -3,11 +3,11 @@ from unittest.mock import patch, MagicMock, mock_open
 from pathlib import Path
 import yaml
 
-# Temporarily add src to path to allow imports
+# Temporarily add project root to path to allow imports
 import sys
-sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from input_validator import SpecValidator, validate_book_input
+from src.input_validator import SpecValidator, validate_book_input
 
 class TestSpecValidator(unittest.TestCase):
 

@@ -26,3 +26,7 @@
 [x] Test EPUB generation end-to-end with --test mode
 [x] git add -A && git commit -m "feat: implement EPUB generation from markdown"
 [x] Fix persistent JSON output in markdown by handling AIMessage objects in pipeline_helpers and agents
+[x] Atualizar pipeline para reutilizar capítulos aprovados do BRD
+[x] Implementar fluxo de aprovação de títulos de capítulos com persistência no BRD
+[x] Garantir uso obrigatório de RAG na geração de capítulos
+[x] git add -A && git commit -m "feat: habilitar aprovação de títulos e forçar RAG"

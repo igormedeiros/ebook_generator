@@ -6,10 +6,12 @@ Executa apenas os primeiros 2 capítulos para teste rápido.
 
 import os
 import sys
+from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, '/home/igormedeiros/projects/ebook-generator')
+# Add project root to path
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 if (
     os.getenv("PYTEST_CURRENT_TEST")
@@ -18,7 +20,7 @@ if (
 ):
     pytest.skip("Research integration test requires live credentials", allow_module_level=True)
 
-from src.main import load_brd, generate_chapter_structure, generate_chapter_research, save_research_to_kb
+from src.pipeline import load_brd, generate_chapter_structure, generate_chapter_research, save_research_to_kb
 
 def test_research():
     """Testa geração de research e salvamento em kb/"""
