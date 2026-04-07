@@ -1,0 +1,16 @@
+# Arquivos de ambiente
+.env
+
+# Diretórios virtuais
+venv/
+env/
+.venv/
+
+# Caches e arquivos temporários
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+.gemini/
+output/
+

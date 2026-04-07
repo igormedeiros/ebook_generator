@@ -1,0 +1,9 @@
+# Core Ebook Factory Dependencies
+pypandoc>=1.11
+jinja2>=3.1.2
+pyyaml>=6.0.1
+markdown>=3.4.4
+Pillow>=10.0.0
+requests>=2.31.0
+python-dotenv>=1.0.0
+mermaid-cli>=0.1.0  # Placeholder if using CLI wrapper
